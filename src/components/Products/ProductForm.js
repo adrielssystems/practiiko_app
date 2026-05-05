@@ -109,16 +109,6 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
 
     const formData = new FormData(e.target);
     
-    // Usamos .set para asegurar que sobrescribimos cualquier valor automático del formulario
-    formData.set("images", JSON.stringify(media.images));
-    formData.set("video_url", media.video || "");
-    formData.set("tags", JSON.stringify(tags));
-    formData.set("features", JSON.stringify(featuresInput.split(",").map(f => f.trim()).filter(f => f)));
-    formData.set("pricing_matrix", JSON.stringify(pricingMatrix));
-    formData.set("is_featured", String(formValues.is_featured));
-    formData.set("is_promotion", String(formValues.is_promotion));
-    formData.set("price_valid_until", formValues.price_valid_until || "");
-
     try {
       const result = await onSubmitAction(formData);
       
@@ -162,6 +152,12 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
         boxShadow: '0 10px 30px rgba(0,0,0,0.02)'
       }}>
         
+        {/* CAMPOS OCULTOS PARA DATOS COMPLEJOS (JSON) */}
+        <input type="hidden" name="images_json" value={JSON.stringify(media.images)} />
+        <input type="hidden" name="tags_json" value={JSON.stringify(tags)} />
+        <input type="hidden" name="features_json" value={JSON.stringify(featuresInput.split(",").map(f => f.trim()).filter(f => f))} />
+        <input type="hidden" name="pricing_matrix_json" value={JSON.stringify(pricingMatrix)} />
+
         {/* SECCIÓN 1: BÁSICO */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
           <Box size={20} color="var(--primary)" />

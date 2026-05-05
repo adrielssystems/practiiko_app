@@ -53,20 +53,24 @@ export default async function EditProductPage({ params }) {
         const status = formData.get("status");
         
         // Datos de medios
-        const images = JSON.parse(formData.get("images") || "[]");
+        const images = JSON.parse(formData.get("images_json") || "[]");
         const video_url = formData.get("video_url") || null;
 
         // Nuevos campos (parsear strings de FormData)
-        const tags = formData.get("tags") || "[]";
-        const features = formData.get("features") || "[]";
-        const pricing_matrix = formData.get("pricing_matrix") || "[]";
-        const is_featured = String(formData.get("is_featured")) === "true";
-        const is_promotion = String(formData.get("is_promotion")) === "true";
+        const tags = formData.get("tags_json") || "[]";
+        const features = formData.get("features_json") || "[]";
+        const pricing_matrix = formData.get("pricing_matrix_json") || "[]";
+        
+        // Manejar checkbox: puede venir como 'on' (nativo) o 'true' (manual)
+        const is_featured = formData.get("is_featured") === "on" || String(formData.get("is_featured")) === "true";
+        const is_promotion = formData.get("is_promotion") === "on" || String(formData.get("is_promotion")) === "true";
         const price_valid_until = formData.get("price_valid_until") || null;
 
         try {
             const catIdNum = category_id ? parseInt(category_id) : null;
             const stockNum = stock ? parseInt(stock) : 0;
+
+            console.log(`DEBUG: Updating product ${id}`, { images, tags, is_featured });
 
             // 1. Actualizar datos base
             const updateRes = await query(`
