@@ -142,7 +142,7 @@ async function getInventory(term, intent, location) {
 /**
  * RESPUESTA FINAL (LLM con Deepseek)
  */
-async function buildResponse(message, customerName, inventory, location, history) {
+async function buildResponse(message, customerName, inventory, location, history, source) {
   const isMargarita = location === "MARGARITA";
 
   const prompt = `
@@ -166,6 +166,10 @@ REGLAS MILITARES DE BREVEDAD:
 13. TAMAÑOS: Menciona siempre si el producto es Individual, Matrimonial, Queen o de 2/3 asientos según la descripción. Es un dato crítico para el cliente.
 14. CASHEA: Aceptamos Cashea (Precio BCV). Promo Mamá (hasta 10/05): Inicial desde 20% y hasta 12 cuotas. Niveles 3-4 (min $200): 25-30% inicial, 6 cuotas. Nivel 5 (min $450): 25% inicial, 9 cuotas. Nivel 6 (min $600): 20% inicial, 12 cuotas. Sé muy breve.
 15. DESCONOCIMIENTO: Si te preguntan algo que no sepas o no esté en estas reglas, di que no manejas esa info y avisarás a un asesor para que lo contacte. No inventes.
+16. OBJETIVO SEGÚN ORIGEN:
+    - SI ES INSTAGRAM: Tu meta es llevar al cliente a WhatsApp para cerrar la venta. Dile: "Para concretar su pedido y darle atención personalizada, escríbanos aquí: https://wa.me/584248948664".
+    - SI ES WHATSAPP: Tu meta es asesorar y facilitar la compra directa.
+17. DESPEDIDA: Si el cliente se despide o agradece, responde amablemente y cierra siempre con: "Es lujo, es simple, es Practiiko 💎".
 
 INVENTARIO (Usa solo lo necesario):
 ${inventory.text}
@@ -173,11 +177,12 @@ ${inventory.text}
 HISTORIAL:
 ${history}
 
+ORIGEN DEL MENSAJE: ${source}
 CLIENTE NOMBRE: ${customerName}
 MENSAJE ACTUAL: ${message}
 
 CIERRE:
-Es lujo, es simple, es Practiiko.
+Es lujo, es simple, es Practiiko 💎
 `;
 
   try {
@@ -247,7 +252,7 @@ export async function processChatMessage(message, sessionId, source = 'dm', comm
       return noProdMsg;
     }
 
-    const response = await buildResponse(message, customerName, inventory, location, history);
+    const response = await buildResponse(message, customerName, inventory, location, history, source);
 
     // guardar
     if (source === 'whatsapp') {
