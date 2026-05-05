@@ -16,7 +16,8 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
   
   const [media, setMedia] = useState({ 
     images: initialData.images || [], 
-    video: initialData.video_url || null 
+    video: initialData.video_url || null,
+    localPreviews: {}
   });
   
   // Estados para nuevos campos
@@ -430,7 +431,11 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
           {/* Media Preview */}
           <div style={{ width: '100%', height: '300px', background: '#f1f5f9', position: 'relative' }}>
             {media.images.length > 0 ? (
-              <img src={media.images[0]} alt="Main" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <img 
+                src={media.localPreviews[media.images[0]] || media.images[0]} 
+                alt="Main" 
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+              />
             ) : (
               <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Package size={64} color="#cbd5e1" strokeWidth={1} />

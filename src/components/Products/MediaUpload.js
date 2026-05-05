@@ -21,8 +21,8 @@ export default function MediaUpload({ onMediaChange, initialMedia = { images: []
 
   // Sincronizar con el padre cada vez que cambie algo localmente
   useEffect(() => {
-    onMediaChange({ images, video });
-  }, [images, video, onMediaChange]);
+    onMediaChange({ images, video, localPreviews });
+  }, [images, video, localPreviews, onMediaChange]);
 
   const onDrop = useCallback(async (acceptedFiles) => {
     setIsUploading(true);
