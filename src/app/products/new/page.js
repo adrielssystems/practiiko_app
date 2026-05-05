@@ -35,13 +35,31 @@ export default async function NewProductPage() {
         const images = JSON.parse(formData.get("images") || "[]");
         const video_url = formData.get("video_url") || null;
 
+        // Nuevos campos
+        const tags = formData.get("tags") || "[]";
+        const features = formData.get("features") || "[]";
+        const pricing_matrix = formData.get("pricing_matrix") || "[]";
+        const is_featured = formData.get("is_featured") === "true";
+        const is_promotion = formData.get("is_promotion") === "true";
+        const price_valid_until = formData.get("price_valid_until") || null;
+
         try {
             // 1. Insertar producto base
             const productRes = await query(`
-                INSERT INTO products (name, code, description, price_bcv, price_cash, stock, category_id, status, video_url)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                INSERT INTO products (
+                    name, code, description, price_bcv, price_cash, 
+                    stock, category_id, status, video_url,
+                    tags, features, pricing_matrix, 
+                    is_featured, is_promotion, price_valid_until
+                )
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
                 RETURNING id
-            `, [name, code, description, price_bcv, price_cash, stock, category_id, status, video_url]);
+            `, [
+                name, code, description, price_bcv, price_cash, 
+                stock, category_id, status, video_url,
+                tags, features, pricing_matrix,
+                is_featured, is_promotion, price_valid_until
+            ]);
 
             const productId = productRes.rows[0].id;
 

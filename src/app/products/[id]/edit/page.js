@@ -56,13 +56,30 @@ export default async function EditProductPage({ params }) {
         const images = JSON.parse(formData.get("images") || "[]");
         const video_url = formData.get("video_url") || null;
 
+        // Nuevos campos
+        const tags = formData.get("tags") || "[]";
+        const features = formData.get("features") || "[]";
+        const pricing_matrix = formData.get("pricing_matrix") || "[]";
+        const is_featured = formData.get("is_featured") === "true";
+        const is_promotion = formData.get("is_promotion") === "true";
+        const price_valid_until = formData.get("price_valid_until") || null;
+
         try {
             // 1. Actualizar datos base
             await query(`
                 UPDATE products 
-                SET name = $1, code = $2, description = $3, price_bcv = $4, price_cash = $5, stock = $6, category_id = $7, status = $8, video_url = $9
-                WHERE id = $10
-            `, [name, code, description, price_bcv, price_cash, stock, category_id, status, video_url, id]);
+                SET name = $1, code = $2, description = $3, price_bcv = $4, price_cash = $5, 
+                    stock = $6, category_id = $7, status = $8, video_url = $9,
+                    tags = $10, features = $11, pricing_matrix = $12, 
+                    is_featured = $13, is_promotion = $14, price_valid_until = $15
+                WHERE id = $16
+            `, [
+                name, code, description, price_bcv, price_cash, 
+                stock, category_id, status, video_url,
+                tags, features, pricing_matrix,
+                is_featured, is_promotion, price_valid_until,
+                id
+            ]);
 
             // 2. Sincronizar imágenes (Borrar y re-insertar para mantener orden)
             await query("DELETE FROM product_images WHERE product_id = $1", [id]);

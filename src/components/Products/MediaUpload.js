@@ -9,7 +9,15 @@ export default function MediaUpload({ onMediaChange, initialMedia = { images: []
   const { addToast } = useToast();
   const [images, setImages] = useState(initialMedia.images || []);
   const [video, setVideo] = useState(initialMedia.video || null);
+  const [localPreviews, setLocalPreviews] = useState({});
   const [isUploading, setIsUploading] = useState(false);
+
+  // Limpiar URLs locales al desmontar para evitar fugas de memoria
+  useEffect(() => {
+    return () => {
+      Object.values(localPreviews).forEach(url => URL.revokeObjectURL(url));
+    };
+  }, [localPreviews]);
 
   // Sincronizar con el padre cada vez que cambie algo localmente
   useEffect(() => {
@@ -32,6 +40,9 @@ export default function MediaUpload({ onMediaChange, initialMedia = { images: []
         continue;
       }
 
+      // Crear URL local inmediata para preview resiliente
+      const localUrl = URL.createObjectURL(file);
+
       const formData = new FormData();
       formData.append('file', file);
       formData.append('type', isVideo ? 'video' : 'image');
@@ -47,6 +58,9 @@ export default function MediaUpload({ onMediaChange, initialMedia = { images: []
         const data = await res.json();
 
         if (data.url) {
+          // Mapear la URL del servidor a la URL local para la preview
+          setLocalPreviews(prev => ({ ...prev, [data.url]: localUrl }));
+
           if (isVideo) {
             setVideo(data.url);
             addToast("Video subido con éxito", "success");
@@ -58,6 +72,7 @@ export default function MediaUpload({ onMediaChange, initialMedia = { images: []
       } catch (err) {
         console.error("Upload error:", err);
         addToast("Error al subir archivo. Verifica tu conexión.", "error");
+        URL.revokeObjectURL(localUrl); // Limpiar si falla
       }
     }
     
@@ -170,7 +185,7 @@ export default function MediaUpload({ onMediaChange, initialMedia = { images: []
           onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
           onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
           >
-            <img src={url} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <img src={localPreviews[url] || url} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             <button 
               type="button"
               onClick={() => removeImage(index)}
@@ -228,7 +243,7 @@ export default function MediaUpload({ onMediaChange, initialMedia = { images: []
           onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
           onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
           >
-            <video src={video} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6 }} />
+            <video src={localPreviews[video] || video} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6 }} />
             <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
               <Film size={24} color="white" />
             </div>
