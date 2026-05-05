@@ -44,6 +44,9 @@ export default async function NewProductPage() {
         const price_valid_until = formData.get("price_valid_until") || null;
 
         try {
+            const catIdNum = category_id ? parseInt(category_id) : null;
+            const stockNum = stock ? parseInt(stock) : 0;
+
             // 1. Insertar producto base
             const productRes = await query(`
                 INSERT INTO products (
@@ -56,7 +59,7 @@ export default async function NewProductPage() {
                 RETURNING id
             `, [
                 name, code, description, price_bcv, price_cash, 
-                stock, category_id, status, video_url,
+                stockNum, catIdNum, status, video_url,
                 tags, features, pricing_matrix,
                 is_featured, is_promotion, price_valid_until
             ]);
@@ -73,10 +76,14 @@ export default async function NewProductPage() {
                 }
             }
 
+            // REVALIDACIÓN GLOBAL
             revalidatePath("/products");
+            revalidatePath("/");
+            revalidatePath("/catalogo");
+            
             return { success: true };
         } catch (e) {
-            console.error("Error creating product with media:", e);
+            console.error("Error creating product:", e);
             return { success: false, error: e.message };
         }
     }

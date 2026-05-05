@@ -65,23 +65,31 @@ export default async function EditProductPage({ params }) {
         const price_valid_until = formData.get("price_valid_until") || null;
 
         try {
+            const catIdNum = category_id ? parseInt(category_id) : null;
+            const stockNum = stock ? parseInt(stock) : 0;
+
             // 1. Actualizar datos base
-            await query(`
+            const updateRes = await query(`
                 UPDATE products 
                 SET name = $1, code = $2, description = $3, price_bcv = $4, price_cash = $5, 
                     stock = $6, category_id = $7, status = $8, video_url = $9,
                     tags = $10, features = $11, pricing_matrix = $12, 
                     is_featured = $13, is_promotion = $14, price_valid_until = $15
                 WHERE id = $16
+                RETURNING id
             `, [
                 name, code, description, price_bcv, price_cash, 
-                stock, category_id, status, video_url,
+                stockNum, catIdNum, status, video_url,
                 tags, features, pricing_matrix,
                 is_featured, is_promotion, price_valid_until,
                 id
             ]);
 
-            // 2. Sincronizar imágenes (Borrar y re-insertar para mantener orden)
+            if (updateRes.rowCount === 0) {
+                return { success: false, error: "No se encontró el producto para actualizar" };
+            }
+
+            // 2. Sincronizar imágenes
             await query("DELETE FROM product_images WHERE product_id = $1", [id]);
             
             if (images.length > 0) {
@@ -93,11 +101,15 @@ export default async function EditProductPage({ params }) {
                 }
             }
 
+            // REVALIDACIÓN CRÍTICA
             revalidatePath("/products");
             revalidatePath(`/products/${id}/edit`);
+            revalidatePath("/");
+            revalidatePath("/catalogo");
+            
             return { success: true };
         } catch (e) {
-            console.error("Error updating product with media:", e);
+            console.error("Error updating product:", e);
             return { success: false, error: e.message };
         }
     }
