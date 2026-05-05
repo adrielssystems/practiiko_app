@@ -39,8 +39,8 @@ export default async function NewProductPage() {
         const tags = formData.get("tags") || "[]";
         const features = formData.get("features") || "[]";
         const pricing_matrix = formData.get("pricing_matrix") || "[]";
-        const is_featured = formData.get("is_featured") === "true";
-        const is_promotion = formData.get("is_promotion") === "true";
+        const is_featured = String(formData.get("is_featured")) === "true";
+        const is_promotion = String(formData.get("is_promotion")) === "true";
         const price_valid_until = formData.get("price_valid_until") || null;
 
         try {

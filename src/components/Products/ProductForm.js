@@ -108,14 +108,16 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
     setIsSaving(true);
 
     const formData = new FormData(e.target);
-    formData.append("images", JSON.stringify(media.images));
-    formData.append("video_url", media.video || "");
-    formData.append("tags", JSON.stringify(tags));
-    formData.append("features", JSON.stringify(featuresInput.split(",").map(f => f.trim()).filter(f => f)));
-    formData.append("pricing_matrix", JSON.stringify(pricingMatrix));
-    formData.append("is_featured", formValues.is_featured);
-    formData.append("is_promotion", formValues.is_promotion);
-    formData.append("price_valid_until", formValues.price_valid_until || "");
+    
+    // Usamos .set para asegurar que sobrescribimos cualquier valor automático del formulario
+    formData.set("images", JSON.stringify(media.images));
+    formData.set("video_url", media.video || "");
+    formData.set("tags", JSON.stringify(tags));
+    formData.set("features", JSON.stringify(featuresInput.split(",").map(f => f.trim()).filter(f => f)));
+    formData.set("pricing_matrix", JSON.stringify(pricingMatrix));
+    formData.set("is_featured", String(formValues.is_featured));
+    formData.set("is_promotion", String(formValues.is_promotion));
+    formData.set("price_valid_until", formValues.price_valid_until || "");
 
     try {
       const result = await onSubmitAction(formData);
