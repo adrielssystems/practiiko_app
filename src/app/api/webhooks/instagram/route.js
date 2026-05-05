@@ -40,7 +40,7 @@ export async function POST(req) {
 
           for (const messaging of entry.messaging) {
             const senderId = messaging.sender?.id;
-            
+
             // FILTRO CRÍTICO: Si el remitente es la misma página, es un eco. IGNORAR.
             if (senderId === pageId) {
               console.log("[WEBHOOK] Mensaje propio de la página detectado. Ignorando para evitar bucle.");
@@ -75,7 +75,7 @@ export async function POST(req) {
               // 1. Verificar Breaker Global
               const globalRes = await query("SELECT value FROM app_settings WHERE key = 'global_bot_enabled'");
               const isGlobalEnabled = globalRes.rows.length > 0 ? globalRes.rows[0].value === 'true' : true;
-              
+
               // 🌟 WHITELIST DE PRUEBAS IG
               const TEST_ACCOUNTS = ['practiiko']; // Puedes añadir tu @username personal aquí
               const isTester = TEST_ACCOUNTS.includes(userInfo?.username) || TEST_ACCOUNTS.includes(senderId);
@@ -139,7 +139,7 @@ export async function POST(req) {
               // Verificar Breaker Global
               const globalRes = await query("SELECT value FROM app_settings WHERE key = 'global_bot_enabled'");
               const isGlobalEnabled = globalRes.rows.length > 0 ? globalRes.rows[0].value === 'true' : true;
-              
+
               // 🌟 WHITELIST DE PRUEBAS IG
               const TEST_ACCOUNTS = ['practiiko']; // Puedes añadir tu @username personal aquí
               const isTester = TEST_ACCOUNTS.includes(username) || TEST_ACCOUNTS.includes(senderId);
@@ -160,8 +160,8 @@ export async function POST(req) {
 
               processChatMessage(userMessage, senderId, 'comment', commentId, username || 'Cliente').then(aiResponse => {
                 // 1. Respuesta pública corta con guía de solicitudes
-                replyToInstagramComment(commentId, "¡Hola! Te enviamos el detalle al DM (revisa tu bandeja de solicitudes/otros) 💎");
-                
+                replyToInstagramComment(commentId, "¡Hola! Te enviamos el detalle al DM (revisa tu bandeja de solicitudes) 💎");
+
                 // 2. Respuesta privada con el detalle de la IA
                 sendInstagramPrivateReply(commentId, aiResponse);
               }).catch(e => console.error("[ERROR ASYNC COMMENT]:", e));
@@ -218,7 +218,7 @@ async function getInstagramUserInfo(userId) {
 // Función para enviar mensajes vía API de Instagram (Graph API)
 async function sendInstagramMessage(recipientId, text) {
   const PAGE_ACCESS_TOKEN = process.env.INSTAGRAM_PAGE_ACCESS_TOKEN;
-  
+
   if (!PAGE_ACCESS_TOKEN) {
     console.error("Falta INSTAGRAM_PAGE_ACCESS_TOKEN en las variables de entorno.");
     return;
