@@ -24,7 +24,7 @@ export async function processImage(buffer) {
     
     const filename = `${uuidv4()}.webp`;
     const filepath = path.join(UPLOAD_DIR, filename);
-    const relativeUrl = `/uploads/products/${filename}`;
+    const relativeUrl = `/api/media/${filename}`;
 
     console.log(`[MEDIA]: Procesando imagen... Destino: ${filepath}`);
 
@@ -53,7 +53,7 @@ export async function processVideo(buffer, originalFilename) {
   const ext = path.extname(originalFilename);
   const filename = `${uuidv4()}${ext}`;
   const filepath = path.join(UPLOAD_DIR, filename);
-  const relativeUrl = `/uploads/products/${filename}`;
+  const relativeUrl = `/api/media/${filename}`;
 
   // Por ahora, guardamos el archivo original optimizado para streaming.
   await fs.writeFile(filepath, buffer);
