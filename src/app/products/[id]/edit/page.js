@@ -78,22 +78,62 @@ export default async function EditProductPage({ params }) {
 
             revalidatePath("/products");
             revalidatePath(`/products/${id}/edit`);
+            return { success: true };
         } catch (e) {
             console.error("Error updating product with media:", e);
-            throw e;
+            return { success: false, error: e.message };
         }
-
-        redirect("/products");
     }
 
     return (
-        <div style={{ maxWidth: '800px' }}>
-            <header style={{ marginBottom: '2.5rem' }}>
-                <Link href="/products" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--muted-foreground)', textDecoration: 'none', marginBottom: '1rem' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+            <header style={{ 
+                marginBottom: '3rem', 
+                display: 'flex', 
+                flexDirection: 'column', 
+                gap: '0.75rem' 
+            }}>
+                <Link 
+                    href="/products" 
+                    style={{ 
+                        display: 'inline-flex', 
+                        alignItems: 'center', 
+                        gap: '0.5rem', 
+                        color: 'var(--muted-foreground)', 
+                        textDecoration: 'none', 
+                        fontSize: '0.875rem',
+                        fontWeight: 600,
+                        transition: 'color 0.2s'
+                    }}
+                    onMouseEnter={(e) => e.target.style.color = 'var(--primary)'}
+                    onMouseLeave={(e) => e.target.style.color = 'var(--muted-foreground)'}
+                >
                     <ArrowLeft size={16} />
-                    Volver a Productos
+                    Volver a la lista de productos
                 </Link>
-                <h1 style={{ fontSize: '2.25rem', fontWeight: 800 }}>Editar Producto</h1>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <div style={{ 
+                        width: '48px', 
+                        height: '48px', 
+                        borderRadius: '12px', 
+                        background: 'var(--gradient-primary)', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        color: 'white',
+                        boxShadow: '0 8px 16px rgba(4, 119, 191, 0.2)'
+                    }}>
+                        <ArrowLeft size={24} style={{ transform: 'rotate(90deg)' }} />
+                    </div>
+                    <h1 style={{ 
+                        fontSize: '2.5rem', 
+                        fontWeight: 800, 
+                        letterSpacing: '-0.02em',
+                        color: 'var(--foreground)'
+                    }}>
+                        Editar <span style={{ color: 'var(--primary)' }}>Producto</span>
+                    </h1>
+                </div>
             </header>
 
             <ProductForm categories={categories} initialData={product} onSubmitAction={updateProduct} />

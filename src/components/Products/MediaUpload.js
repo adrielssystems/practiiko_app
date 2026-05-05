@@ -85,74 +85,195 @@ export default function MediaUpload({ onMediaChange, initialMedia = { images: []
 
   return (
     <div style={{ width: '100%' }}>
-      <label className="label" style={{ marginBottom: '1rem', display: 'block', fontWeight: 800 }}>Multimedia del Producto</label>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
+        <Upload size={18} color="var(--primary)" />
+        <label className="label" style={{ margin: 0, display: 'block', fontWeight: 800, fontSize: '0.9rem' }}>Multimedia del Producto</label>
+      </div>
 
       {/* ZONA DE ARRASTRE */}
       <div 
         {...getRootProps()} 
         style={{ 
           width: '100%',
-          minHeight: '160px',
-          border: `2px dashed ${isDragActive ? 'var(--primary)' : '#cbd5e1'}`,
-          borderRadius: '16px',
-          background: isDragActive ? 'rgba(4, 119, 191, 0.05)' : '#f8fafc',
+          minHeight: '180px',
+          border: `2px dashed ${isDragActive ? 'var(--primary)' : '#e2e8f0'}`,
+          borderRadius: '20px',
+          background: isDragActive ? 'rgba(4, 119, 191, 0.05)' : '#ffffff',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
           cursor: isUploading ? 'wait' : 'pointer',
-          padding: '1.5rem',
-          marginBottom: '1.5rem',
-          transition: 'all 0.2s'
+          padding: '2rem',
+          marginBottom: '2rem',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          boxShadow: isDragActive ? '0 0 20px rgba(4, 119, 191, 0.1)' : 'none',
+          position: 'relative',
+          overflow: 'hidden'
+        }}
+        onMouseEnter={(e) => {
+          if (!isUploading) e.currentTarget.style.borderColor = 'var(--primary)';
+        }}
+        onMouseLeave={(e) => {
+          if (!isUploading && !isDragActive) e.currentTarget.style.borderColor = '#e2e8f0';
         }}
       >
         <input {...getInputProps()} />
-        {isUploading ? (
-          <Loader2 className="animate-spin" size={32} color="var(--primary)" />
-        ) : (
-          <>
-            <Upload size={32} color="#64748b" style={{ marginBottom: '0.5rem' }} />
-            <p style={{ fontWeight: 700, margin: 0 }}>Arrastra tus fotos aquí</p>
-            <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>Hasta 5 fotos y 1 video</p>
-          </>
+        
+        {isUploading && (
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
+            <div style={{ textAlign: 'center' }}>
+              <div className="animate-spin" style={{ width: '40px', height: '40px', border: '3px solid var(--primary)', borderTopColor: 'transparent', borderRadius: '50%', margin: '0 auto 1rem' }}></div>
+              <p style={{ fontWeight: 800, color: 'var(--primary)', fontSize: '0.85rem' }}>Subiendo y optimizando...</p>
+            </div>
+          </div>
         )}
+
+        <div style={{ textAlign: 'center', opacity: isUploading ? 0.3 : 1, transition: 'opacity 0.3s' }}>
+          <div style={{ 
+            width: '64px', 
+            height: '64px', 
+            borderRadius: '50%', 
+            background: 'rgba(4, 119, 191, 0.05)', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            margin: '0 auto 1.25rem',
+            color: 'var(--primary)'
+          }}>
+            <Upload size={28} />
+          </div>
+          <p style={{ fontWeight: 800, margin: '0 0 0.5rem 0', fontSize: '1rem', color: '#1e293b' }}>Arrastra tus archivos aquí</p>
+          <p style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500 }}>Soporta imágenes (WebP, JPG) y Video (MP4)</p>
+          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', marginTop: '1rem' }}>
+            <span style={{ padding: '0.25rem 0.75rem', borderRadius: '20px', background: '#f1f5f9', fontSize: '0.65rem', fontWeight: 700, color: '#475569' }}>MAX 5 FOTOS</span>
+            <span style={{ padding: '0.25rem 0.75rem', borderRadius: '20px', background: '#f1f5f9', fontSize: '0.65rem', fontWeight: 700, color: '#475569' }}>1 VIDEO</span>
+          </div>
+        </div>
       </div>
 
       {/* MINIATURAS (CRÍTICO: Asegurar visualización) */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 110px))', gap: '1.25rem' }}>
         
         {images.map((url, index) => (
-          <div key={index} style={{ width: '120px', height: '120px', position: 'relative', borderRadius: '12px', overflow: 'hidden', border: '2px solid #e2e8f0' }}>
+          <div key={index} style={{ 
+            width: '110px', 
+            height: '110px', 
+            position: 'relative', 
+            borderRadius: '16px', 
+            overflow: 'hidden', 
+            border: '2px solid #ffffff',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+            transition: 'transform 0.2s',
+            cursor: 'default'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+          >
             <img src={url} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             <button 
               type="button"
               onClick={() => removeImage(index)}
-              style={{ position: 'absolute', top: '4px', right: '4px', background: 'white', border: 'none', borderRadius: '50%', width: '24px', height: '24px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}
+              style={{ 
+                position: 'absolute', 
+                top: '6px', 
+                right: '6px', 
+                background: 'rgba(255,255,255,0.9)', 
+                backdropFilter: 'blur(4px)',
+                border: 'none', 
+                borderRadius: '8px', 
+                width: '24px', 
+                height: '24px', 
+                cursor: 'pointer', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#ef4444'}
             >
-              <X size={14} color="#ef4444" />
+              <X size={14} className="icon-close" />
             </button>
             {index === 0 && (
-              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'var(--primary)', color: 'white', fontSize: '8px', textAlign: 'center', padding: '2px', fontWeight: 900 }}>PORTADA</div>
+              <div style={{ 
+                position: 'absolute', 
+                bottom: 0, 
+                left: 0, 
+                right: 0, 
+                background: 'var(--primary)', 
+                color: 'white', 
+                fontSize: '9px', 
+                textAlign: 'center', 
+                padding: '4px 0', 
+                fontWeight: 900,
+                letterSpacing: '0.05em'
+              }}>PORTADA</div>
             )}
           </div>
         ))}
 
         {video && (
-          <div style={{ width: '120px', height: '120px', position: 'relative', borderRadius: '12px', overflow: 'hidden', border: '2px solid #e2e8f0', background: '#000' }}>
-            <video src={video} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.7 }} />
-            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ 
+            width: '110px', 
+            height: '110px', 
+            position: 'relative', 
+            borderRadius: '16px', 
+            overflow: 'hidden', 
+            border: '2px solid #0f172a', 
+            background: '#000',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+            transition: 'transform 0.2s'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+          >
+            <video src={video} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6 }} />
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
               <Film size={24} color="white" />
             </div>
             <button 
               type="button"
               onClick={removeVideo}
-              style={{ position: 'absolute', top: '4px', right: '4px', background: 'white', border: 'none', borderRadius: '50%', width: '24px', height: '24px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}
+              style={{ 
+                position: 'absolute', 
+                top: '6px', 
+                right: '6px', 
+                background: 'rgba(255,255,255,0.9)', 
+                backdropFilter: 'blur(4px)',
+                border: 'none', 
+                borderRadius: '8px', 
+                width: '24px', 
+                height: '24px', 
+                cursor: 'pointer', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+              }}
             >
               <X size={14} color="#ef4444" />
             </button>
+            <div style={{ 
+              position: 'absolute', 
+              bottom: 0, 
+              left: 0, 
+              right: 0, 
+              background: '#0f172a', 
+              color: 'white', 
+              fontSize: '9px', 
+              textAlign: 'center', 
+              padding: '4px 0', 
+              fontWeight: 900 
+            }}>VIDEO</div>
           </div>
         )}
       </div>
+
+      <style jsx>{`
+        .icon-close { color: #ef4444; transition: color 0.2s; }
+        button:hover .icon-close { color: white; }
+      `}</style>
     </div>
   );
 }
