@@ -105,8 +105,6 @@ export default async function EditProductPage({ params }) {
                         fontWeight: 600,
                         transition: 'color 0.2s'
                     }}
-                    onMouseEnter={(e) => e.target.style.color = 'var(--primary)'}
-                    onMouseLeave={(e) => e.target.style.color = 'var(--muted-foreground)'}
                 >
                     <ArrowLeft size={16} />
                     Volver a la lista de productos
