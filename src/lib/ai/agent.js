@@ -127,19 +127,41 @@ async function getInventory(terms, intent, location) {
 
     console.log(`[DB DEBUG] Categorías: ${categories.join(", ")} | Productos: ${rows.length}`);
 
-    // 3. Formatear el texto para la IA
-    const productsText = rows.map(p => {
+    // 3. Formatear el texto para la IA (AGRUPADO POR PSEUDONIMO)
+    const groups = {};
+    rows.forEach(p => {
+      const key = p.pseudonimo || p.name;
+      if (!groups[key]) {
+        groups[key] = {
+          name: key,
+          categoria: p.categoria,
+          description: p.description,
+          variants: []
+        };
+      }
+      groups[key].variants.push(p);
+    });
+
+    const productsText = Object.values(groups).map(g => {
+      const colors = g.variants
+        .map(v => {
+          const match = v.name.match(/COLOR\s+([A-ZÁÉÍÓÚÑ\s]+)/i) || v.description?.match(/COLOR\s+([A-ZÁÉÍÓÚÑ\s]+)/i);
+          return match ? match[1].trim() : null;
+        })
+        .filter((v, i, a) => v && a.indexOf(v) === i); // Únicos
+
       let priceInfo = "";
+      const first = g.variants[0];
       if (location === "MARGARITA") {
-        priceInfo = `- Precio BCV: $${p.price_bcv || 'Consultar'}\n- Precio ESPECIAL (Divisas/Zelle): $${p.price_cash || 'Consultar'}\n- Envío: Gratis en Margarita`;
+        priceInfo = `- Precio BCV: $${first.price_bcv}\n- Precio Especial: $${first.price_cash}`;
       } else {
-        priceInfo = `- Precio: [OCULTO] Dile al cliente que debe contactar al asesor de ventas en WhatsApp para acordar precio y envío.\n- Envío: Nacional (Cobro Destino), acordar en WhatsApp.`;
+        priceInfo = `- Precios: Ocultos (Redirigir a WhatsApp)`;
       }
 
-      return `💎 PRODUCTO: ${p.name} ${p.pseudonimo ? `(${p.pseudonimo})` : ""}
-- Código: ${p.code}
-- Categoría: ${p.categoria}
-- Descripción: ${p.description || "N/A"}
+      return `💎 MODELO: ${g.name}
+- Categoría: ${g.categoria}
+- Colores Disponibles: ${colors.length > 0 ? colors.join(", ") : "Consultar"}
+- Descripción: ${g.description || "N/A"}
 ${priceInfo} 💎`;
     }).join("\n\n");
 
@@ -167,7 +189,10 @@ IDENTIDAD: Asesor de Ventas de Lujo de Practiiko. Eres muy amable, servicial y s
 
 REGLAS DE ATENCIÓN AL CLIENTE:
 1. AMABILIDAD Y SALUDO: SIEMPRE saluda al cliente de manera cordial al iniciar la conversación, usando su nombre si lo sabes (Ej: "¡Hola ${customerName}! Qué gusto saludarte."). Sé empático y amable.
-2. BREVEDAD: Mantén tus respuestas claras y concisas, pero siempre con un tono humano y servicial.
+2. BREVEDAD Y ESTILO: Mantén tus respuestas claras, concisas y elegantes. 
+   - REGLA DE ORO: Si el cliente pregunta de forma general (ej: "¿Qué sofás tienen?"), NO listes cada producto de forma individual. Agrupa los modelos por nombre (ej: "Tenemos los modelos Caterpillar, Tofu y Merey...") y menciona los colores disponibles de forma fluida.
+   - Evita listas verticales numeradas de más de 5 ítems. Prefiere párrafos cortos y descriptivos.
+   - NUNCA menciones códigos técnicos (SKU) al cliente, a menos que él lo pida específicamente.
 3. UBICACIÓN Y PRECIOS (CRÍTICO):
    - SI EL CLIENTE ESTÁ EN MARGARITA (NUEVA ESPARTA): El envío es GRATIS. Puedes darle los precios de los productos. **OBLIGATORIO: Debes mostrar SIEMPRE primero el 'Precio BCV'. Luego, como una opción secundaria, muestra el 'Precio ESPECIAL (Divisas/Zelle)'. Nunca los inviertas ni omitas el Precio BCV.**
    - SI EL CLIENTE NO ESTÁ EN MARGARITA O ES DE OTRO ESTADO: **PROHIBIDO** dar precios. Debes decirle amablemente que para compras con envíos nacionales y para acordar el precio del producto, debe comunicarse directamente con nuestro asesor de ventas principal. Entrégale este enlace: https://wa.me/584248948664
