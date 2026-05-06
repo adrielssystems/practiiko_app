@@ -1,5 +1,5 @@
 import { ChatOpenAI } from "@langchain/openai";
-import { HumanMessage, SystemMessage } from "@langchain/core/messages";
+import { HumanMessage, SystemMessage, AIMessage } from "@langchain/core/messages";
 import { query } from "@/lib/db";
 
 let _model;
@@ -50,18 +50,15 @@ function detectIntent(message) {
 }
 
 /**
- * KEYWORD
+ * KEYWORDS (Búsqueda Multi-Término)
  */
-function extractKeyword(message) {
+function extractKeywords(message) {
   const m = normalize(message);
 
-  const code = m.match(/[a-z]\d{3}/);
-  if (code) return code[0];
-
-  if (m.includes("sofa")) return "sofa";
-  if (m.includes("colchon")) return "colchon";
-
-  return null;
+  const stopWords = ["hola", "precio", "cuanto", "cuesta", "vale", "quiero", "saber", "tienen", "buenas", "tardes", "dias", "noches", "favor", "gracias", "para", "como", "esta", "donde", "tiene", "busco", "necesito", "algun"];
+  const words = m.split(/[\s,?.!]+/).filter(w => w.length >= 3 && !stopWords.includes(w));
+  
+  return words.length > 0 ? words : null;
 }
 
 function detectLocation(message, history) {
@@ -77,7 +74,7 @@ function detectLocation(message, history) {
 /**
  * DB
  */
-async function getInventory(term, intent, location) {
+async function getInventory(terms, intent, location) {
   try {
     let rows = [];
     let categories = [];
@@ -96,22 +93,36 @@ async function getInventory(term, intent, location) {
 
     // 2. Lógica de búsqueda de productos
     if (intent === "CATALOG") {
-      const res = await query(baseQuery + " LIMIT 15");
+      const res = await query(baseQuery + " LIMIT 20");
       rows = res.rows;
-    }
+    } else if (terms && terms.length > 0) {
+      let conditions = [];
+      let params = [];
+      
+      // Búsqueda estricta: EL producto DEBE coincidir con todos los términos (ej. "sofa" AND "azul")
+      terms.forEach((term, index) => {
+        conditions.push(`(p.name ILIKE $${index + 1} OR p.code ILIKE $${index + 1} OR c.name ILIKE $${index + 1} OR p.description ILIKE $${index + 1})`);
+        params.push(`%${term}%`);
+      });
+      
+      const whereClause = conditions.join(" AND ");
 
-    if (term) {
       const res = await query(
-        baseQuery + ` AND (p.name ILIKE $1 OR p.code ILIKE $1 OR c.name ILIKE $1) LIMIT 15`,
-        [`%${term}%`]
+        baseQuery + ` AND ${whereClause} LIMIT 15`,
+        params
       );
       rows = res.rows;
 
+      // Si el cliente pide algo muy específico ("sofa azul gigante") y no hay, traemos variedad para que la IA le ofrezca alternativas
       if (rows.length === 0) {
-        const res2 = await query(baseQuery + " LIMIT 5");
+        const res2 = await query(baseQuery + " LIMIT 20");
         rows = res2.rows;
         isFallback = true;
       }
+    } else {
+      // Siempre enviar algo de inventario para que la IA no se quede ciega
+      const res2 = await query(baseQuery + " LIMIT 20");
+      rows = res2.rows;
     }
 
     console.log(`[DB DEBUG] Categorías: ${categories.join(", ")} | Productos: ${rows.length}`);
@@ -148,7 +159,7 @@ ${priceInfo} 💎`;
 /**
  * RESPUESTA FINAL (LLM con Deepseek)
  */
-async function buildResponse(message, customerName, inventory, location, history, source) {
+async function buildResponse(message, customerName, inventory, location, historyMessages, source) {
   const isMargarita = location === "MARGARITA";
 
   const prompt = `
@@ -162,27 +173,27 @@ REGLAS DE ATENCIÓN AL CLIENTE:
    - SI EL CLIENTE NO ESTÁ EN MARGARITA O ES DE OTRO ESTADO: **PROHIBIDO** dar precios. Debes decirle amablemente que para compras con envíos nacionales y para acordar el precio del producto, debe comunicarse directamente con nuestro asesor de ventas principal. Entrégale este enlace: https://wa.me/584248948664
    - SI NO SABES LA CIUDAD Y PIDE PRECIO: Antes de dar cualquier precio o disponibilidad, pregunta amablemente desde qué ciudad nos escribe.
 4. CIUDAD ACTUAL: (Ubicación detectada: ${location}). NO le preguntes su ciudad si ya dice MARGARITA u OUTSIDE.
-5. NO INVENTARIO: Si buscas un producto y no está en la lista de abajo, dile amablemente: "Actualmente no tenemos ese modelo exacto en tienda, pero ¿le interesaría conocer nuestros Sofá Cama y Colchones disponibles?".
-6. CATÁLOGO: Si piden ver todos los modelos, invítalos cordialmente a ver nuestro catálogo: www.bit.ly/CatalogoPractiiko
-    - No debes ofrecer imagenes de los productos y si el cliente te pide una imagen, dile amablemente que se comunique con nuestro asesor de ventas principal. Entrégale este enlace: https://wa.me/584248948664
+5. NO INVENTARIO Y PERSUASIÓN (ACTITUD DE VENDEDOR): 
+   - Si el cliente busca un color o modelo específico y no lo ves en el inventario, dile amablemente: "Disculpe, de ese color/modelo exacto no tenemos en este momento, pero lo tenemos disponible en [Menciona los colores que sí tenemos]".
+   - Si el cliente insiste en que solo quiere el color agotado, PERSUÁDELO. Argumenta elegantemente cómo los colores que sí tenemos (como tonos neutros o modernos) pueden combinar perfectamente con sus espacios, aportar elegancia y darle un toque de lujo. Haz que se enamore de lo que sí hay.
+6. CATÁLOGO Y FOTOS: Si piden ver todos los modelos, invítalos cordialmente a ver nuestro catálogo: www.bit.ly/CatalogoPractiiko
+    - No debes ofrecer imágenes de los productos. Si el cliente te pide una imagen, dile amablemente que un asesor de ventas principal se la facilitará (Si estás en Instagram, dale este enlace: https://wa.me/584248948664. Si ya estás en WhatsApp, dile que el asesor humano se la enviará en breve).
 7. CASHEA: Aceptamos Cashea (sobre Precio BCV). Inicial desde 20% y hasta 12 cuotas dependiendo del nivel en la app. (Mencionar solo si preguntan por métodos de pago o cuotas).
-    - Cualquier otra negociacion on propuesta del cliente debe ser manejada por el asesor de ventas principal.
+    - Cualquier otra negociación o propuesta del cliente debe ser manejada por el asesor de ventas principal.
 8. HORARIOS Y TIENDA: Local A-14, CC Terranova Plaza, Porlamar, Isla de Margarita. Lun-Vie: 8:30 AM-4:30 PM. Sáb: 9:00 AM-1:00 PM. (Da esta info solo si el cliente la solicita).
 9. CAMPAÑAS: Si el cliente escribe solo una palabra (ej: "mama", "promocion", "poltrona" = "puf"), saluda amablemente, asume que viene de una publicidad y entrégale el catálogo: www.bit.ly/CatalogoPractiiko
 10. PRECISIÓN TÉCNICA: Aclara amablemente la diferencia si el cliente pide "Sofá" y nosotros ofrecemos "Sofá Cama" (que son más versátiles).
 11. TAMAÑOS: Menciona amablemente si es Individual, Matrimonial, Queen, etc., para que el cliente esté seguro.
-12. DESCONOCIMIENTO: Si preguntan algo que no sabes, sé honesto y amable: "No manejo esa información en este momento, pero nuestro asesor especializado te ayudará con gusto por WhatsApp: https://wa.me/584248948664". No inventes precios ni productos.
-13. OBJETIVO EN INSTAGRAM: Si estás hablando por Instagram (${source}), tu misión es brindar atención inicial amable y redirigir al cliente a WhatsApp (https://wa.me/584248948664) para concretar y asegurar su compra.
+12. DESCONOCIMIENTO: Si preguntan algo que no sabes, sé honesto y amable. No inventes precios ni productos. Dile que consultarás con un asesor humano (si estás en Instagram envíalo al WhatsApp, si estás en WhatsApp dile que el humano se pondrá en contacto pronto).
+13. OBJETIVO SEGÚN EL CANAL (${source}): 
+    - SI ESTÁS EN INSTAGRAM: Tu misión es brindar atención inicial amable, usar la persuasión de ventas y luego redirigir al cliente a WhatsApp (https://wa.me/584248948664) para que el asesor humano cierre la negociación.
+    - SI ESTÁS EN WHATSAPP: Tu misión es asesorar a fondo, aplicar todas las tácticas de persuasión y facilitar la compra directa o la visita a tienda. Aquí no derivas a otro número, tú eres la cara de las ventas.
 14. DESPEDIDA: Siempre que te despidas o el cliente agradezca, cierra de forma elegante con: "Es lujo, es simple, es Practiiko 💎".
 
 INVENTARIO (Usa solo lo necesario, los precios están ocultos si no está en Margarita):
 ${inventory.text}
 
-HISTORIAL DE LA CONVERSACIÓN:
-${history}
-
 ORIGEN DEL MENSAJE: ${source}
-MENSAJE ACTUAL DEL CLIENTE: ${message}
 
 CIERRE:
 Nunca olvides mantener la educación, la amabilidad y el enfoque en la satisfacción del cliente.
@@ -192,10 +203,13 @@ Nunca olvides mantener la educación, la amabilidad y el enfoque en la satisfacc
     const model = getModel();
     if (!model) throw new Error("Model not initialized (missing API Key)");
 
-    const response = await model.invoke([
+    const finalMessages = [
       new SystemMessage(prompt),
+      ...historyMessages,
       new HumanMessage(message)
-    ]);
+    ];
+
+    const response = await model.invoke(finalMessages);
     return response.content;
   } catch (error) {
     console.error("DEBUG - DeepSeek Error:", error.message);
@@ -231,17 +245,17 @@ export async function processChatMessage(message, sessionId, source = 'dm', comm
       [sessionId]
     );
 
-    const historyArray = historyRes.rows.reverse().map(r => {
+    const historyMessages = historyRes.rows.reverse().map(r => {
       const msg = typeof r.message === 'string' ? JSON.parse(r.message) : r.message;
-      return `${msg.role === 'user' ? 'Cliente' : 'Agente'}: ${msg.content}`;
+      return msg.role === 'user' ? new HumanMessage(msg.content) : new AIMessage(msg.content);
     });
 
-    const history = historyArray.join("\n");
+    // Detectar ubicación usando el historial como texto para la función de detección
+    const textHistory = historyMessages.map(m => m.content).join(" ");
+    const location = detectLocation(message, textHistory);
 
-    const location = detectLocation(message, history);
-
-    const term = extractKeyword(message);
-    const inventory = await getInventory(term, currentIntent, location);
+    const terms = extractKeywords(message);
+    const inventory = await getInventory(terms, currentIntent, location);
 
     // Si no hay inventario y no es un saludo, damos respuesta de fallback
     if (!inventory.found && intent !== "GREETING" && intent !== "OTHER") {
@@ -255,7 +269,7 @@ export async function processChatMessage(message, sessionId, source = 'dm', comm
       return noProdMsg;
     }
 
-    const response = await buildResponse(message, customerName, inventory, location, history, source);
+    const response = await buildResponse(message, customerName, inventory, location, historyMessages, source);
 
     // guardar
     if (source === 'whatsapp') {
