@@ -85,7 +85,7 @@ async function getInventory(terms, intent, location) {
     categories = catRes.rows.map(c => c.name);
 
     const baseQuery = `
-      SELECT p.name, p.code, p.price_bcv, p.price_cash, p.description, c.name as categoria
+      SELECT p.name, p.code, p.pseudonimo, p.price_bcv, p.price_cash, p.description, c.name as categoria
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
       WHERE p.status = 'active'
@@ -136,7 +136,7 @@ async function getInventory(terms, intent, location) {
         priceInfo = `- Precio: [OCULTO] Dile al cliente que debe contactar al asesor de ventas en WhatsApp para acordar precio y envío.\n- Envío: Nacional (Cobro Destino), acordar en WhatsApp.`;
       }
 
-      return `💎 PRODUCTO: ${p.name}
+      return `💎 PRODUCTO: ${p.name} ${p.pseudonimo ? `(${p.pseudonimo})` : ""}
 - Código: ${p.code}
 - Categoría: ${p.categoria}
 - Descripción: ${p.description || "N/A"}

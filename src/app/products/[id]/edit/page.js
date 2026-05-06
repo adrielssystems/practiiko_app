@@ -51,6 +51,7 @@ export default async function EditProductPage({ params }) {
         const stock = parseInt(formData.get("stock") || 0);
         const category_id = formData.get("category_id");
         const status = formData.get("status");
+        const pseudonimo = formData.get("pseudonimo") || null;
         
         // Datos de medios
         const images = JSON.parse(formData.get("images_json") || "[]");
@@ -78,15 +79,16 @@ export default async function EditProductPage({ params }) {
                 SET name = $1, code = $2, description = $3, price_bcv = $4, price_cash = $5, 
                     stock = $6, category_id = $7, status = $8, video_url = $9,
                     tags = $10, features = $11, pricing_matrix = $12, 
-                    is_featured = $13, is_promotion = $14, price_valid_until = $15
-                WHERE id = $16
+                    is_featured = $13, is_promotion = $14, price_valid_until = $15,
+                    pseudonimo = $16
+                WHERE id = $17
                 RETURNING id
             `, [
                 name, code, description, price_bcv, price_cash, 
                 stockNum, catIdNum, status, video_url,
                 tags, features, pricing_matrix,
                 is_featured, is_promotion, price_valid_until,
-                id
+                pseudonimo, id
             ]);
 
             if (updateRes.rowCount === 0) {

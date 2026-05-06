@@ -85,7 +85,14 @@ export default async function ProductsPage() {
                         </div>
                         <div style={{ overflow: 'hidden' }}>
                           <div style={{ fontWeight: 700, color: 'var(--foreground)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.name}</div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 700 }}>{product.code}</div>
+                          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 700 }}>{product.code}</span>
+                            {product.pseudonimo && (
+                              <span style={{ fontSize: '0.75rem', color: 'var(--secondary)', fontWeight: 800, background: 'rgba(242, 135, 5, 0.1)', padding: '1px 6px', borderRadius: '4px' }}>
+                                {product.pseudonimo}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </td>

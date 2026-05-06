@@ -30,6 +30,7 @@ export default async function NewProductPage() {
         const stock = parseInt(formData.get("stock") || 0);
         const category_id = formData.get("category_id");
         const status = formData.get("status");
+        const pseudonimo = formData.get("pseudonimo") || null;
         
         // Datos de medios
         const images = JSON.parse(formData.get("images_json") || "[]");
@@ -57,15 +58,16 @@ export default async function NewProductPage() {
                     name, code, description, price_bcv, price_cash, 
                     stock, category_id, status, video_url,
                     tags, features, pricing_matrix, 
-                    is_featured, is_promotion, price_valid_until
+                    is_featured, is_promotion, price_valid_until, pseudonimo
                 )
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
                 RETURNING id
             `, [
                 name, code, description, price_bcv, price_cash, 
                 stockNum, catIdNum, status, video_url,
                 tags, features, pricing_matrix,
-                is_featured, is_promotion, price_valid_until
+                is_featured, is_promotion, price_valid_until,
+                pseudonimo
             ]);
 
             const productId = productRes.rows[0].id;

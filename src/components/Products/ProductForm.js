@@ -40,6 +40,7 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
     status: initialData.status || "active",
     is_featured: initialData.is_featured || false,
     is_promotion: initialData.is_promotion || false,
+    pseudonimo: initialData.pseudonimo || "",
     price_valid_until: initialData.price_valid_until ? new Date(initialData.price_valid_until).toISOString().split('T')[0] : ""
   });
 
@@ -164,7 +165,7 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
           <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0 }}>Información Básica</h2>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
           <div className="form-group">
             <label className="label">Nombre del Producto</label>
             <input 
@@ -172,6 +173,15 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
               value={formValues.name} placeholder="Ej: Sofá Modular Premium" 
               onChange={handleInputChange}
               style={{ borderRadius: '12px' }}
+            />
+          </div>
+          <div className="form-group">
+            <label className="label">Pseudónimo (Alias para IA)</label>
+            <input 
+              name="pseudonimo" type="text" className="input-field" 
+              value={formValues.pseudonimo} placeholder="Ej: Nube Modular" 
+              onChange={handleInputChange}
+              style={{ borderRadius: '12px', borderColor: 'var(--primary)' }}
             />
           </div>
           <div className="form-group">
