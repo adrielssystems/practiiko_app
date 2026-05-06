@@ -38,12 +38,12 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
     category_name: "",
     description: initialData.description || "",
     status: initialData.status || "active",
-    is_featured: initialData.is_featured || false,
     is_promotion: initialData.is_promotion || false,
     pseudonimo: initialData.pseudonimo || "",
     price_valid_until: initialData.price_valid_until ? new Date(initialData.price_valid_until).toISOString().split('T')[0] : ""
   });
 
+  const [isFlipped, setIsFlipped] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   // Actualizar el nombre de la categoría para el preview
@@ -420,81 +420,92 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', fontWeight: 900, fontSize: '0.85rem' }}>
             <Eye size={18} />
-            <span>VISTA PREVIA EN VIVO</span>
+            <span>VISTA PREVIA EN VIVO (Toca para girar)</span>
           </div>
-          {formValues.is_featured && (
-            <span style={{ background: 'var(--secondary)', color: 'white', padding: '0.3rem 0.8rem', borderRadius: '20px', fontSize: '0.65rem', fontWeight: 900 }}>DESTACADO</span>
-          )}
         </div>
 
-        <div className="card" style={{ 
-          padding: 0, 
-          overflow: 'hidden', 
-          background: 'white', 
-          borderRadius: '32px', 
-          boxShadow: '0 30px 60px rgba(0,0,0,0.1)',
-          border: '1px solid rgba(0,0,0,0.05)',
-          transition: 'all 0.3s'
-        }}>
-          {/* Media Preview */}
-          <div style={{ width: '100%', height: '300px', background: '#f1f5f9', position: 'relative' }}>
-            {media.images.length > 0 ? (
-              <img 
-                src={media.localPreviews[media.images[0]] || media.images[0]} 
-                alt="Main" 
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-              />
-            ) : (
-              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Package size={64} color="#cbd5e1" strokeWidth={1} />
-              </div>
-            )}
+        <div 
+          className={`flip-card-container ${isFlipped ? 'is-flipped' : ''}`}
+          onClick={() => setIsFlipped(!isFlipped)}
+        >
+          <div className="flip-card-inner">
             
-            {/* Tags overlay */}
-            <div style={{ position: 'absolute', top: '1.25rem', left: '1.25rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-              <span style={{ background: 'white', padding: '0.4rem 1rem', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 900, color: 'var(--primary)', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
-                {formValues.category_name || "Muebles"}
-              </span>
-              {tags.slice(0, 2).map(tag => (
-                <span key={tag} style={{ background: 'var(--secondary)', color: 'white', padding: '0.4rem 1rem', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 900, boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
-                  {tag}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <div style={{ padding: '2rem' }}>
-            <div style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 800, marginBottom: '0.5rem', letterSpacing: '0.1em' }}>{formValues.code || "SKU-000"}</div>
-            <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', lineHeight: '1.1' }}>{formValues.name || "Nombre del Producto"}</h3>
-            
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem', marginBottom: '1.5rem' }}>
-              <span style={{ fontSize: '1.75rem', fontWeight: 900, color: 'var(--primary)' }}>${getPreviewPrice().toLocaleString()}</span>
-              {pricingMatrix.length > 0 && <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>Desde</span>}
-            </div>
-
-            {/* Matrix Summary in Preview */}
-            {pricingMatrix.length > 0 && (
-              <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '16px', marginBottom: '1.5rem', border: '1px solid #e2e8f0' }}>
-                <p style={{ fontSize: '0.65rem', fontWeight: 800, color: '#94a3b8', marginBottom: '0.75rem', textTransform: 'uppercase' }}>Opciones disponibles:</p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  {pricingMatrix.slice(0, 3).map((m, i) => (
-                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', fontWeight: 700 }}>
-                      <span style={{ color: '#475569' }}>{m.variant}</span>
-                      <span style={{ color: 'var(--primary)' }}>${m.price.toLocaleString()}</span>
-                    </div>
+            {/* FRONT SIDE */}
+            <div className="flip-card-front card" style={{ padding: 0, overflow: 'hidden' }}>
+              {/* Media Preview */}
+              <div style={{ width: '100%', height: '300px', background: '#f1f5f9', position: 'relative' }}>
+                {media.images.length > 0 ? (
+                  <img 
+                    src={media.localPreviews[media.images[0]] || media.images[0]} 
+                    alt="Main" 
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                  />
+                ) : (
+                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Package size={64} color="#cbd5e1" strokeWidth={1} />
+                  </div>
+                )}
+                
+                {/* Tags overlay */}
+                <div style={{ position: 'absolute', top: '1.25rem', left: '1.25rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <span style={{ background: 'white', padding: '0.4rem 1rem', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 900, color: 'var(--primary)', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
+                    {formValues.category_name || "Muebles"}
+                  </span>
+                  {tags.slice(0, 2).map(tag => (
+                    <span key={tag} style={{ background: 'var(--secondary)', color: 'white', padding: '0.4rem 1rem', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 900, boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
+                      {tag}
+                    </span>
                   ))}
-                  {pricingMatrix.length > 3 && <span style={{ fontSize: '0.7rem', color: '#94a3b8', textAlign: 'center' }}>+ {pricingMatrix.length - 3} variantes más</span>}
                 </div>
               </div>
-            )}
 
-            <p style={{ fontSize: '0.85rem', color: '#64748b', lineHeight: '1.6', margin: '0 0 2rem 0', display: '-webkit-box', WebkitLineClamp: '2', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-              {formValues.description || "Sin descripción disponible."}
-            </p>
+              <div style={{ padding: '2rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                   <div style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 800, letterSpacing: '0.1em' }}>{formValues.code || "SKU-000"}</div>
+                   {formValues.pseudonimo && <div style={{ fontSize: '0.65rem', color: 'var(--secondary)', fontWeight: 900, textTransform: 'uppercase' }}>{formValues.pseudonimo}</div>}
+                </div>
+                <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', lineHeight: '1.1' }}>{formValues.name || "Nombre del Producto"}</h3>
+                
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                  <span style={{ fontSize: '1.75rem', fontWeight: 900, color: 'var(--primary)' }}>${getPreviewPrice().toLocaleString()}</span>
+                  {pricingMatrix.length > 0 && <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>Desde</span>}
+                </div>
 
-            <button disabled style={{ width: '100%', padding: '1.25rem', borderRadius: '18px', background: '#0f172a', color: 'white', fontWeight: 900, border: 'none', cursor: 'not-allowed' }}>
-              RESERVAR POR WHATSAPP
-            </button>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pt: '1rem', borderTop: '1px solid #f1f5f9' }}>
+                   <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 700 }}>Ver Características</span>
+                   <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>sync_alt</span>
+                   </div>
+                </div>
+              </div>
+            </div>
+
+            {/* BACK SIDE */}
+            <div className="flip-card-back" style={{ background: 'var(--primary)', color: 'white', borderRadius: '32px', padding: '2.5rem', display: 'flex', flexDirection: 'column' }}>
+               <div style={{ marginBottom: '2rem' }}>
+                 <p style={{ fontSize: '0.7rem', fontWeight: 800, opacity: 0.6, letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Especificaciones</p>
+                 <h3 style={{ fontSize: '1.75rem', fontWeight: 800, margin: 0, lineHeight: 1.1 }}>{formValues.name}</h3>
+               </div>
+
+               <div style={{ flex: 1 }}>
+                 <p style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--secondary)', textTransform: 'uppercase', marginBottom: '1rem' }}>Lo que lo hace especial:</p>
+                 <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: '1rem' }}>
+                   {(featuresInput.split(",").length > 1 ? featuresInput.split(",") : ["Calidad Premium", "Diseño Ergonómico", "Materiales Duraderos"]).slice(0, 5).map((f, i) => (
+                     <li key={i} style={{ display: 'flex', alignItems: 'start', gap: '0.75rem', fontSize: '0.9rem', fontWeight: 500 }}>
+                       <span style={{ color: 'var(--secondary)', fontSize: '1.2rem' }}>✓</span>
+                       {f.trim()}
+                     </li>
+                   ))}
+                 </ul>
+               </div>
+
+               <div style={{ marginTop: 'auto', textAlign: 'center' }}>
+                  <div style={{ padding: '1rem', borderRadius: '16px', background: 'rgba(255,255,255,0.1)', fontSize: '0.75rem', fontWeight: 700 }}>
+                    Toca para volver al frente
+                  </div>
+               </div>
+            </div>
+
           </div>
         </div>
         
@@ -513,6 +524,43 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(10px); }
           to { opacity: 1; transform: translateY(0); }
+        }
+
+        .flip-card-container {
+          width: 100%;
+          height: 520px;
+          perspective: 1500px;
+          cursor: pointer;
+        }
+
+        .flip-card-inner {
+          position: relative;
+          width: 100%;
+          height: 100%;
+          text-align: left;
+          transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+          transform-style: preserve-3d;
+          box-shadow: 0 30px 60px rgba(0,0,0,0.1);
+          border-radius: 32px;
+        }
+
+        .flip-card-container.is-flipped .flip-card-inner {
+          transform: rotateY(180deg);
+        }
+
+        .flip-card-front, .flip-card-back {
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          -webkit-backface-visibility: hidden;
+          backface-visibility: hidden;
+          border-radius: 32px;
+          overflow: hidden;
+        }
+
+        .flip-card-back {
+          transform: rotateY(180deg);
+          box-shadow: inset 0 0 100px rgba(0,0,0,0.1);
         }
       `}</style>
     </div>
