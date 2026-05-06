@@ -83,50 +83,49 @@ export default async function OverviewPage() {
     background: 'white',
     border: '1px solid #f1f5f9',
     boxShadow: '0 4px 20px rgba(0,0,0,0.04)',
-    borderRadius: '24px',
-    padding: '1.75rem',
+    borderRadius: '20px',
+    padding: '1.25rem',
     transition: 'all 0.3s ease'
   };
 
   return (
-    <div style={{ padding: '0 1rem' }}>
+    <div style={{ padding: '0 0.5rem' }}>
       <AutoRefresh interval={10000} />
       
       {/* HEADER SECTION */}
-      <header style={{ marginBottom: '2.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+      <header style={{ marginBottom: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', color: 'var(--primary)', marginBottom: '0.4rem' }}>
-            <Zap size={18} fill="currentColor" />
-            <span style={{ fontWeight: 800, letterSpacing: '0.1em', fontSize: '0.75rem', textTransform: 'uppercase' }}>Sistema Operativo</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', marginBottom: '0.2rem' }}>
+            <Zap size={14} fill="currentColor" />
+            <span style={{ fontWeight: 800, letterSpacing: '0.1em', fontSize: '0.65rem', textTransform: 'uppercase' }}>Sistema Operativo</span>
           </div>
-          <h1 style={{ fontSize: '2.5rem', fontWeight: 900, letterSpacing: '-0.03em', margin: 0, color: '#0f172a' }}>Overview</h1>
-          <p style={{ color: '#64748b', fontSize: '1.1rem', marginTop: '0.25rem' }}>Gestión inteligente de ventas y atención al cliente.</p>
+          <h1 style={{ fontSize: '1.8rem', fontWeight: 900, letterSpacing: '-0.03em', margin: 0, color: '#0f172a' }}>Overview</h1>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <GlobalBotBreaker initialEnabled={data.globalEnabled} />
           
           <div style={{ 
             background: 'white', 
-            padding: '0.75rem 1.25rem', 
-            borderRadius: '16px', 
+            padding: '0.5rem 1rem', 
+            borderRadius: '12px', 
             boxShadow: '0 4px 15px rgba(0,0,0,0.03)',
             border: '1px solid #f1f5f9',
             display: 'flex',
             alignItems: 'center',
-            gap: '1rem'
+            gap: '0.75rem'
           }}>
             <div style={{ textAlign: 'right' }}>
-              <p style={{ margin: 0, fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>Webhook</p>
-              <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 800, color: data.status === 'ACTIVO' ? '#10b981' : '#f59e0b' }}>
+              <p style={{ margin: 0, fontSize: '0.6rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>Webhook</p>
+              <p style={{ margin: 0, fontSize: '0.8rem', fontWeight: 800, color: data.status === 'ACTIVO' ? '#10b981' : '#f59e0b' }}>
                 {data.status}
               </p>
             </div>
             <div style={{ 
-              width: '10px', 
-              height: '10px', 
+              width: '8px', 
+              height: '8px', 
               borderRadius: '50%', 
               background: data.status === 'ACTIVO' ? '#10b981' : '#f59e0b',
-              boxShadow: `0 0 12px ${data.status === 'ACTIVO' ? '#10b981' : '#f59e0b'}`
+              boxShadow: `0 0 10px ${data.status === 'ACTIVO' ? '#10b981' : '#f59e0b'}`
             }}></div>
           </div>
         </div>
@@ -135,191 +134,183 @@ export default async function OverviewPage() {
       {/* METRICS GRID */}
       <div style={{ 
         display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', 
-        gap: '1.5rem',
-        marginBottom: '2.5rem'
+        gridTemplateColumns: 'repeat(4, 1fr)', 
+        gap: '1rem',
+        marginBottom: '1.5rem'
       }}>
         {/* Metric 1: Products */}
         <div style={cardStyle}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
-            <div style={{ padding: '0.75rem', background: '#e0f2fe', color: '#0369a1', borderRadius: '14px' }}>
-              <Package size={24} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+            <div style={{ padding: '0.5rem', background: '#e0f2fe', color: '#0369a1', borderRadius: '10px' }}>
+              <Package size={20} />
             </div>
           </div>
-          <h3 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#64748b', marginBottom: '0.25rem', textTransform: 'uppercase' }}>Catálogo Activo</h3>
-          <p style={{ fontSize: '2.25rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>{data.products}</p>
-          <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.5rem' }}>Productos listos para la venta</p>
+          <h3 style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b', marginBottom: '0.1rem', textTransform: 'uppercase' }}>Catálogo</h3>
+          <p style={{ fontSize: '1.75rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>{data.products}</p>
+          <p style={{ fontSize: '0.65rem', color: '#94a3b8', marginTop: '0.25rem' }}>Listos para venta</p>
         </div>
 
         {/* Metric 2: Instagram */}
         <div style={cardStyle}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
-            <div style={{ padding: '0.75rem', background: '#fdf2f8', color: '#be185d', borderRadius: '14px' }}>
-              <MessageCircle size={24} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+            <div style={{ padding: '0.5rem', background: '#fdf2f8', color: '#be185d', borderRadius: '10px' }}>
+              <MessageCircle size={20} />
             </div>
-            <span style={{ fontSize: '0.65rem', fontWeight: 800, background: '#fdf2f8', color: '#be185d', padding: '4px 10px', borderRadius: '20px' }}>IG FEED</span>
+            <span style={{ fontSize: '0.55rem', fontWeight: 800, background: '#fdf2f8', color: '#be185d', padding: '2px 8px', borderRadius: '20px' }}>IG FEED</span>
           </div>
-          <h3 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#64748b', marginBottom: '0.25rem', textTransform: 'uppercase' }}>Interacciones IG</h3>
-          <p style={{ fontSize: '2.25rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>{data.igMessages.toLocaleString()}</p>
-          <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.5rem' }}>Mensajes y comentarios</p>
+          <h3 style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b', marginBottom: '0.1rem', textTransform: 'uppercase' }}>Interacciones</h3>
+          <p style={{ fontSize: '1.75rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>{data.igMessages.toLocaleString()}</p>
+          <p style={{ fontSize: '0.65rem', color: '#94a3b8', marginTop: '0.25rem' }}>Mensajes y comentarios</p>
         </div>
 
         {/* Metric 3: WhatsApp */}
         <div style={cardStyle}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
-            <div style={{ padding: '0.75rem', background: '#f0fdf4', color: '#15803d', borderRadius: '14px' }}>
-              <Smartphone size={24} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+            <div style={{ padding: '0.5rem', background: '#f0fdf4', color: '#15803d', borderRadius: '10px' }}>
+              <Smartphone size={20} />
             </div>
-            <span style={{ fontSize: '0.65rem', fontWeight: 800, background: '#f0fdf4', color: '#15803d', padding: '4px 10px', borderRadius: '20px' }}>WHATSAPP</span>
+            <span style={{ fontSize: '0.55rem', fontWeight: 800, background: '#f0fdf4', color: '#15803d', padding: '2px 8px', borderRadius: '20px' }}>WHA</span>
           </div>
-          <h3 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#64748b', marginBottom: '0.25rem', textTransform: 'uppercase' }}>Chats WhatsApp</h3>
-          <p style={{ fontSize: '2.25rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>{data.waMessages.toLocaleString()}</p>
-          <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.5rem' }}>Conversaciones cerradas</p>
+          <h3 style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b', marginBottom: '0.1rem', textTransform: 'uppercase' }}>WhatsApp</h3>
+          <p style={{ fontSize: '1.75rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>{data.waMessages.toLocaleString()}</p>
+          <p style={{ fontSize: '0.65rem', color: '#94a3b8', marginTop: '0.25rem' }}>Conversaciones</p>
         </div>
 
         {/* Metric 4: Customers */}
         <div style={cardStyle}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
-            <div style={{ padding: '0.75rem', background: '#fff7ed', color: '#c2410c', borderRadius: '14px' }}>
-              <TrendingUp size={24} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+            <div style={{ padding: '0.5rem', background: '#fff7ed', color: '#c2410c', borderRadius: '10px' }}>
+              <TrendingUp size={20} />
             </div>
           </div>
-          <h3 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#64748b', marginBottom: '0.25rem', textTransform: 'uppercase' }}>Audiencia Total</h3>
-          <p style={{ fontSize: '2.25rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>{data.totalCustomers}</p>
-          <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.5rem' }}>Clientes registrados</p>
+          <h3 style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b', marginBottom: '0.1rem', textTransform: 'uppercase' }}>Audiencia</h3>
+          <p style={{ fontSize: '1.75rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>{data.totalCustomers}</p>
+          <p style={{ fontSize: '0.65rem', color: '#94a3b8', marginTop: '0.25rem' }}>Registrados</p>
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '2rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: '1.25rem' }}>
         {/* LEFT COLUMN: ACTIVITY FEED */}
         <section>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Activity size={20} color="var(--primary)" /> Última Actividad
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+            <h2 style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Activity size={18} color="var(--primary)" /> Última Actividad
             </h2>
-            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b' }}>Sincronizado ahora</div>
           </div>
 
-          <div style={{ display: 'grid', gap: '1rem' }}>
+          <div style={{ display: 'grid', gap: '0.75rem' }}>
             {/* WhatsApp Activity */}
-            <div style={{ ...cardStyle, borderRadius: '20px', padding: '1.5rem' }}>
-              <h4 style={{ fontSize: '0.8rem', fontWeight: 800, color: '#128C7E', textTransform: 'uppercase', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <MessageSquare size={16} /> Recientes WhatsApp
+            <div style={{ ...cardStyle, borderRadius: '16px', padding: '1rem' }}>
+              <h4 style={{ fontSize: '0.7rem', fontWeight: 800, color: '#128C7E', textTransform: 'uppercase', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <MessageSquare size={14} /> Recientes WhatsApp
               </h4>
               {data.recentWa.length > 0 ? (
-                <div style={{ display: 'grid', gap: '0.75rem' }}>
+                <div style={{ display: 'grid', gap: '0.5rem' }}>
                   {data.recentWa.map((msg, i) => (
-                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: '#f8fafc', borderRadius: '12px', border: '1px solid #f1f5f9' }}>
+                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.75rem', background: '#f8fafc', borderRadius: '10px', border: '1px solid #f1f5f9' }}>
                       <div style={{ overflow: 'hidden' }}>
-                        <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 700, color: '#334155' }}>{msg.session_id}</p>
-                        <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{msg.content}</p>
+                        <p style={{ margin: 0, fontSize: '0.75rem', fontWeight: 700, color: '#334155' }}>{msg.session_id}</p>
+                        <p style={{ margin: 0, fontSize: '0.7rem', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{msg.content}</p>
                       </div>
-                      <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 600 }}>{msg.time}</span>
+                      <span style={{ fontSize: '0.6rem', color: '#94a3b8', fontWeight: 600 }}>{msg.time}</span>
                     </div>
                   ))}
                 </div>
-              ) : <p style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Sin actividad reciente.</p>}
-              <Link href="/whatsapp" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#128C7E', fontSize: '0.75rem', fontWeight: 800, marginTop: '1.25rem', textDecoration: 'none' }}>
-                GESTIONAR WHATSAPP <ChevronRight size={14} />
-              </Link>
+              ) : <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Sin actividad.</p>}
             </div>
 
             {/* Instagram Activity */}
-            <div style={{ ...cardStyle, borderRadius: '20px', padding: '1.5rem' }}>
-              <h4 style={{ fontSize: '0.8rem', fontWeight: 800, color: '#be185d', textTransform: 'uppercase', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <MessageCircle size={16} /> Recientes Instagram
+            <div style={{ ...cardStyle, borderRadius: '16px', padding: '1rem' }}>
+              <h4 style={{ fontSize: '0.7rem', fontWeight: 800, color: '#be185d', textTransform: 'uppercase', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <MessageCircle size={14} /> Recientes Instagram
               </h4>
               {data.recentIg.length > 0 ? (
-                <div style={{ display: 'grid', gap: '0.75rem' }}>
+                <div style={{ display: 'grid', gap: '0.5rem' }}>
                   {data.recentIg.map((msg, i) => (
-                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: '#f8fafc', borderRadius: '12px', border: '1px solid #f1f5f9' }}>
+                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.75rem', background: '#f8fafc', borderRadius: '10px', border: '1px solid #f1f5f9' }}>
                       <div style={{ overflow: 'hidden' }}>
-                        <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 700, color: '#334155' }}>{msg.session_id}</p>
-                        <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{msg.content}</p>
+                        <p style={{ margin: 0, fontSize: '0.75rem', fontWeight: 700, color: '#334155' }}>{msg.session_id}</p>
+                        <p style={{ margin: 0, fontSize: '0.7rem', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{msg.content}</p>
                       </div>
-                      <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 600 }}>{msg.time}</span>
+                      <span style={{ fontSize: '0.6rem', color: '#94a3b8', fontWeight: 600 }}>{msg.time}</span>
                     </div>
                   ))}
                 </div>
-              ) : <p style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Sin actividad reciente.</p>}
-              <Link href="/instagram" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#be185d', fontSize: '0.75rem', fontWeight: 800, marginTop: '1.25rem', textDecoration: 'none' }}>
-                GESTIONAR INSTAGRAM <ChevronRight size={14} />
-              </Link>
+              ) : <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Sin actividad.</p>}
             </div>
           </div>
         </section>
 
         {/* RIGHT COLUMN: QUICK ACTIONS & HEALTH */}
-        <section style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <section style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div style={{ ...cardStyle, background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', color: 'white', border: 'none' }}>
-            <h3 style={{ fontSize: '1rem', fontWeight: 800, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Plus size={20} color="#38bdf8" /> Acciones Rápidas
+            <h3 style={{ fontSize: '0.85rem', fontWeight: 800, marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <Plus size={16} color="#38bdf8" /> Acciones Rápidas
             </h3>
-            <div style={{ display: 'grid', gap: '0.75rem' }}>
+            <div style={{ display: 'grid', gap: '0.5rem' }}>
               <Link href="/products" style={{ 
                 background: '#38bdf8', 
                 color: '#0f172a', 
-                padding: '0.85rem', 
-                borderRadius: '12px', 
+                padding: '0.65rem', 
+                borderRadius: '10px', 
                 fontWeight: 800, 
-                fontSize: '0.85rem', 
+                fontSize: '0.75rem', 
                 textAlign: 'center',
                 textDecoration: 'none',
-                boxShadow: '0 4px 15px rgba(56, 189, 248, 0.3)',
-                transition: 'transform 0.2s'
+                boxShadow: '0 4px 10px rgba(56, 189, 248, 0.2)'
               }}>
-                Añadir Nuevo Producto
+                Nuevo Producto
               </Link>
-              <Link href="/whatsapp" style={{ 
-                background: 'rgba(255,255,255,0.1)', 
-                color: 'white', 
-                padding: '0.85rem', 
-                borderRadius: '12px', 
-                fontWeight: 700, 
-                fontSize: '0.85rem', 
-                textAlign: 'center',
-                textDecoration: 'none',
-                border: '1px solid rgba(255,255,255,0.2)'
-              }}>
-                Ir a WhatsApp
-              </Link>
-              <Link href="/instagram" style={{ 
-                background: 'rgba(255,255,255,0.1)', 
-                color: 'white', 
-                padding: '0.85rem', 
-                borderRadius: '12px', 
-                fontWeight: 700, 
-                fontSize: '0.85rem', 
-                textAlign: 'center',
-                textDecoration: 'none',
-                border: '1px solid rgba(255,255,255,0.2)'
-              }}>
-                Ir a Instagram
-              </Link>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                <Link href="/whatsapp" style={{ 
+                  background: 'rgba(255,255,255,0.1)', 
+                  color: 'white', 
+                  padding: '0.65rem', 
+                  borderRadius: '10px', 
+                  fontWeight: 700, 
+                  fontSize: '0.7rem', 
+                  textAlign: 'center',
+                  textDecoration: 'none',
+                  border: '1px solid rgba(255,255,255,0.1)'
+                }}>
+                  WhatsApp
+                </Link>
+                <Link href="/instagram" style={{ 
+                  background: 'rgba(255,255,255,0.1)', 
+                  color: 'white', 
+                  padding: '0.65rem', 
+                  borderRadius: '10px', 
+                  fontWeight: 700, 
+                  fontSize: '0.7rem', 
+                  textAlign: 'center',
+                  textDecoration: 'none',
+                  border: '1px solid rgba(255,255,255,0.1)'
+                }}>
+                  Instagram
+                </Link>
+              </div>
             </div>
           </div>
 
-          <div style={{ ...cardStyle, borderRadius: '20px', border: '1px solid #e2e8f0' }}>
-            <h3 style={{ fontSize: '0.9rem', fontWeight: 800, color: '#0f172a', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <ShieldCheck size={18} color="#10b981" /> Seguridad y Sistema
+          <div style={{ ...cardStyle, borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+            <h3 style={{ fontSize: '0.75rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <ShieldCheck size={16} color="#10b981" /> Sistema
             </h3>
-            <div style={{ fontSize: '0.8rem', color: '#64748b', display: 'grid', gap: '0.6rem' }}>
+            <div style={{ fontSize: '0.7rem', color: '#64748b', display: 'grid', gap: '0.4rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span>Base de Datos</span>
-                <span style={{ color: '#10b981', fontWeight: 700 }}>Conectada</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>Encriptación</span>
-                <span style={{ color: '#10b981', fontWeight: 700 }}>Activa (Bcrypt)</span>
+                <span style={{ color: '#10b981', fontWeight: 700 }}>OK</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span>Webhooks</span>
-                <span style={{ color: data.status === 'ACTIVO' ? '#10b981' : '#f59e0b', fontWeight: 700 }}>Sincronizados</span>
+                <span style={{ color: data.status === 'ACTIVO' ? '#10b981' : '#f59e0b', fontWeight: 700 }}>OK</span>
               </div>
             </div>
           </div>
         </section>
       </div>
     </div>
+  );
+}
   );
 }
