@@ -159,7 +159,7 @@ ${priceInfo} 💎`;
 /**
  * RESPUESTA FINAL (LLM con Deepseek)
  */
-async function buildResponse(message, customerName, inventory, location, historyMessages, source) {
+async function buildResponse(message, customerName, inventory, location, historyMessages, source, dynamicKnowledge = "") {
   const isMargarita = location === "MARGARITA";
 
   const prompt = `
@@ -189,6 +189,9 @@ REGLAS DE ATENCIÓN AL CLIENTE:
     - INSTAGRAM: Brindar atención inicial y redirigir a WhatsApp (https://wa.me/584248948664).
     - WHATSAPP: Asesorar a fondo y facilitar la compra directa o visita a tienda.
 14. DESPEDIDA: Cierra siempre de forma elegante con: "Es lujo, es simple, es Practiiko 💎".
+
+CONOCIMIENTO ADICIONAL (REGLAS DINÁMICAS):
+${dynamicKnowledge}
 
 INVENTARIO (Usa solo lo necesario, los precios están ocultos si no está en Margarita):
 ${inventory.text}
@@ -257,6 +260,17 @@ export async function processChatMessage(message, sessionId, source = 'dm', comm
     const terms = extractKeywords(message);
     const inventory = await getInventory(terms, currentIntent, location);
 
+    // 1. EXTRAER CONOCIMIENTO DINÁMICO DE LA BD
+    let dynamicKnowledge = "";
+    try {
+      const settingsRes = await query("SELECT value FROM app_settings WHERE key = 'ai_knowledge'");
+      if (settingsRes.rows.length > 0) {
+        dynamicKnowledge = settingsRes.rows[0].value;
+      }
+    } catch (e) {
+      console.warn("No se pudo cargar ai_knowledge de la BD:", e.message);
+    }
+
     // Si no hay inventario y no es un saludo, damos respuesta de fallback
     if (!inventory.found && intent !== "GREETING" && intent !== "OTHER") {
       const noProdMsg = `No encontré ese modelo exacto 💎`;
@@ -269,7 +283,7 @@ export async function processChatMessage(message, sessionId, source = 'dm', comm
       return noProdMsg;
     }
 
-    const response = await buildResponse(message, customerName, inventory, location, historyMessages, source);
+    const response = await buildResponse(message, customerName, inventory, location, historyMessages, source, dynamicKnowledge);
 
     // guardar
     if (source === 'whatsapp') {

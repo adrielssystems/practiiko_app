@@ -4,7 +4,7 @@ async function setupSettings() {
   try {
     // 1. Crear tabla de configuraciones si no existe
     await query(`
-      CREATE TABLE IF NOT EXISTS tiiko_settings (
+      CREATE TABLE IF NOT EXISTS app_settings (
         key TEXT PRIMARY KEY,
         value TEXT,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -31,11 +31,24 @@ IDENTIDAD Y MARCA:
 - Tasa BCV: Siempre usa la tasa oficial del Banco Central de Venezuela.
 `;
 
+    const defaultKnowledge = `
+REGLAS ADICIONALES (MEMORIA DINÁMICA):
+- Las garantías de los muebles son de 6 meses por defectos de fábrica.
+- Los envíos nacionales se realizan mediante TEALCA (Cobro a destino).
+- Para ventas al mayor o corporativas, redirigir siempre al WhatsApp principal.
+`;
+
     await query(`
-      INSERT INTO tiiko_settings (key, value)
+      INSERT INTO app_settings (key, value)
       VALUES ('ai_prompt', $1)
       ON CONFLICT (key) DO NOTHING
     `, [defaultPrompt.trim()]);
+
+    await query(`
+      INSERT INTO app_settings (key, value)
+      VALUES ('ai_knowledge', $1)
+      ON CONFLICT (key) DO NOTHING
+    `, [defaultKnowledge.trim()]);
 
     console.log("Tabla de ajustes configurada y prompt inicial guardado.");
   } catch (e) {
