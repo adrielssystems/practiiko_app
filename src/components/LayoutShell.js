@@ -11,7 +11,8 @@ import {
   Users,
   MessageCircle,
   MessageSquare,
-  User
+  User,
+  Zap
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 
