@@ -188,11 +188,11 @@ async function replyToInstagramComment(commentId, text) {
   try {
     const response = await fetch(url, { 
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        message: text,
-        access_token: PAGE_ACCESS_TOKEN
-      })
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${PAGE_ACCESS_TOKEN}`
+      },
+      body: JSON.stringify({ message: text })
     });
     const data = await response.json();
     if (data.error) {
@@ -231,12 +231,15 @@ async function sendInstagramMessage(recipientId, text) {
     return;
   }
 
-  const url = `https://graph.facebook.com/v21.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`;
+  const url = `https://graph.facebook.com/v21.0/me/messages`;
 
   try {
     const response = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${PAGE_ACCESS_TOKEN}`
+      },
       body: JSON.stringify({
         recipient: { id: recipientId },
         message: { text: text },
@@ -257,23 +260,22 @@ async function sendInstagramPrivateReply(commentId, text) {
   const PAGE_ACCESS_TOKEN = process.env.INSTAGRAM_PAGE_ACCESS_TOKEN;
   if (!PAGE_ACCESS_TOKEN) return;
 
+  console.log(`[DEBUG] Intentando respuesta privada con token de longitud: ${PAGE_ACCESS_TOKEN.length}`);
+
   const url = `https://graph.facebook.com/v21.0/${commentId}/private_replies`;
 
   try {
     const response = await fetch(url, { 
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        message: text,
-        access_token: PAGE_ACCESS_TOKEN
-      })
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${PAGE_ACCESS_TOKEN}`
+      },
+      body: JSON.stringify({ message: text })
     });
     const data = await response.json();
     if (data.error) {
       console.error("[ERROR PRIVATE REPLY]:", data.error);
-      
-      // Si falla la respuesta privada, al menos el comentario público ya se hizo.
-      // Aquí podrías añadir lógica extra si fuera necesario.
     } else {
       console.log(`[INSTAGRAM] Respuesta privada enviada al comentario ${commentId}`);
     }

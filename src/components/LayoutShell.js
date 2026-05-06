@@ -29,7 +29,7 @@ export default function LayoutShell({ children }) {
     { name: 'Productos', href: '/products', icon: Package },
     { name: 'Instagram', href: '/instagram', icon: MessageCircle },
     { name: 'WhatsApp', href: '/whatsapp', icon: MessageSquare },
-    // { name: 'Usuarios', href: '/users', icon: User, adminOnly: true },
+    { name: 'Cerebro IA', href: '/settings/ai', icon: Zap },
   ];
 
   return (

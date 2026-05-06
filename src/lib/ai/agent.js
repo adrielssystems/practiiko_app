@@ -285,15 +285,15 @@ export async function processChatMessage(message, sessionId, source = 'dm', comm
     const terms = extractKeywords(message);
     const inventory = await getInventory(terms, currentIntent, location);
 
-    // 1. EXTRAER CONOCIMIENTO DINÁMICO DE LA BD
+    // 1. EXTRAER CONOCIMIENTO DINÁMICO DE LA BD (Cerebro IA)
     let dynamicKnowledge = "";
     try {
-      const settingsRes = await query("SELECT value FROM app_settings WHERE key = 'ai_knowledge'");
+      const settingsRes = await query("SELECT value FROM app_settings WHERE key = 'ai_custom_instructions'");
       if (settingsRes.rows.length > 0) {
         dynamicKnowledge = settingsRes.rows[0].value;
       }
     } catch (e) {
-      console.warn("No se pudo cargar ai_knowledge de la BD:", e.message);
+      console.warn("No se pudo cargar ai_custom_instructions de la BD:", e.message);
     }
 
     // Si no hay inventario y no es un saludo, damos respuesta de fallback
