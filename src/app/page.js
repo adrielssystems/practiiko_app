@@ -305,6 +305,7 @@ export default async function OverviewPage() {
                 <span>Webhooks</span>
                 <span style={{ color: data.status === 'ACTIVO' ? '#10b981' : '#f59e0b', fontWeight: 700 }}>OK</span>
               </div>
+            </div>
           </div>
         </section>
       </div>
