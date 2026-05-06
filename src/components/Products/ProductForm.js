@@ -445,34 +445,22 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
                     <Package size={64} color="#cbd5e1" strokeWidth={1} />
                   </div>
                 )}
-                
-                {/* Tags overlay */}
-                <div style={{ position: 'absolute', top: '1.25rem', left: '1.25rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                  <span style={{ background: 'white', padding: '0.4rem 1rem', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 900, color: 'var(--primary)', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
-                    {formValues.category_name || "Muebles"}
-                  </span>
-                  {tags.slice(0, 2).map(tag => (
-                    <span key={tag} style={{ background: 'var(--secondary)', color: 'white', padding: '0.4rem 1rem', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 900, boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
-                      {tag}
-                    </span>
-                  ))}
-                </div>
               </div>
 
               <div style={{ padding: '2rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                   <div style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 800, letterSpacing: '0.1em' }}>{formValues.code || "SKU-000"}</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                   <div style={{ fontSize: '0.7rem', color: 'var(--primary)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{formValues.category_name || "Muebles"}</div>
                    {formValues.pseudonimo && <div style={{ fontSize: '0.65rem', color: 'var(--secondary)', fontWeight: 900, textTransform: 'uppercase' }}>{formValues.pseudonimo}</div>}
                 </div>
                 <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', lineHeight: '1.1' }}>{formValues.name || "Nombre del Producto"}</h3>
                 
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem', marginBottom: '1rem' }}>
                   <span style={{ fontSize: '1.75rem', fontWeight: 900, color: 'var(--primary)' }}>${getPreviewPrice().toLocaleString()}</span>
                   {pricingMatrix.length > 0 && <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>Desde</span>}
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pt: '1rem', borderTop: '1px solid #f1f5f9' }}>
-                   <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 700 }}>Ver Características</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '1rem', marginTop: '1rem', borderTop: '1px solid #f1f5f9' }}>
+                   <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ver Características</span>
                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>sync_alt</span>
                    </div>
