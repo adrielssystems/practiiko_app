@@ -214,9 +214,7 @@ REGLAS DE ATENCIÓN AL CLIENTE:
     - INSTAGRAM: Brindar atención inicial y redirigir a WhatsApp (https://wa.me/584248948664).
     - WHATSAPP: Asesorar a fondo y facilitar la compra directa o visita a tienda.
 14. DESPEDIDA: Cierra siempre de forma elegante con: "Es lujo, es simple, es Practiiko 💎".
-
-CONOCIMIENTO ADICIONAL (REGLAS DINÁMICAS):
-${dynamicKnowledge}
+${dynamicKnowledge ? `15. REGLAS DINÁMICAS Y PROMOCIONES VIGENTES:\n${dynamicKnowledge}` : ""}
 
 INVENTARIO (Usa solo lo necesario, los precios están ocultos si no está en Margarita):
 ${inventory.text}
