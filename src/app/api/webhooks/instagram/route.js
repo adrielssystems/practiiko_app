@@ -180,7 +180,7 @@ export async function POST(req) {
 
 // Función para responder a un comentario de Instagram
 async function replyToInstagramComment(commentId, text) {
-  const PAGE_ACCESS_TOKEN = process.env.INSTAGRAM_PAGE_ACCESS_TOKEN;
+  const PAGE_ACCESS_TOKEN = process.env.INSTAGRAM_PAGE_ACCESS_TOKEN?.trim();
   if (!PAGE_ACCESS_TOKEN) return;
 
   const url = `https://graph.facebook.com/v21.0/${commentId}/replies`;
@@ -204,7 +204,7 @@ async function replyToInstagramComment(commentId, text) {
 }
 
 async function getInstagramUserInfo(userId) {
-  const PAGE_ACCESS_TOKEN = process.env.INSTAGRAM_PAGE_ACCESS_TOKEN;
+  const PAGE_ACCESS_TOKEN = process.env.INSTAGRAM_PAGE_ACCESS_TOKEN?.trim();
   if (!PAGE_ACCESS_TOKEN) return null;
 
   try {
@@ -224,7 +224,7 @@ async function getInstagramUserInfo(userId) {
 
 // Función para enviar mensajes vía API de Instagram (Graph API)
 async function sendInstagramMessage(recipientId, text) {
-  const PAGE_ACCESS_TOKEN = process.env.INSTAGRAM_PAGE_ACCESS_TOKEN;
+  const PAGE_ACCESS_TOKEN = process.env.INSTAGRAM_PAGE_ACCESS_TOKEN?.trim();
 
   if (!PAGE_ACCESS_TOKEN) {
     console.error("Falta INSTAGRAM_PAGE_ACCESS_TOKEN en las variables de entorno.");
@@ -257,7 +257,7 @@ async function sendInstagramMessage(recipientId, text) {
 
 // Función para enviar respuesta privada a un comentario (DM automático)
 async function sendInstagramPrivateReply(commentId, text) {
-  const PAGE_ACCESS_TOKEN = process.env.INSTAGRAM_PAGE_ACCESS_TOKEN;
+  const PAGE_ACCESS_TOKEN = process.env.INSTAGRAM_PAGE_ACCESS_TOKEN?.trim();
   if (!PAGE_ACCESS_TOKEN) return;
 
   console.log(`[DEBUG] Intentando respuesta privada con token de longitud: ${PAGE_ACCESS_TOKEN.length}`);
