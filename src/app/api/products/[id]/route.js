@@ -95,7 +95,10 @@ export async function DELETE(request, { params }) {
 
     const { id } = await params;
 
-    // Deleting product
+    // 1. Eliminar imágenes relacionadas primero (para evitar errores de clave foránea)
+    await query("DELETE FROM product_images WHERE product_id = $1", [id]);
+
+    // 2. Eliminar el producto
     await query("DELETE FROM products WHERE id = $1", [id]);
 
     return NextResponse.json({ success: true });

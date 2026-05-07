@@ -1,16 +1,27 @@
 import { query } from "@/lib/db";
 export const dynamic = "force-dynamic";
 import Link from "next/link";
-import { Plus, Search, Filter, MoreHorizontal, Edit, Trash2, Package } from "lucide-react";
+import { Plus, Search, Filter, MoreHorizontal, Edit, Package } from "lucide-react";
+import DeleteProductButton from "@/components/Products/DeleteProductButton";
 
-async function getProducts() {
+async function getProducts(searchQuery) {
   try {
-    const res = await query(`
-      SELECT p.*, c.name as category_name 
+    let sql = `
+      SELECT p.*, c.name as category_name,
+             (SELECT url FROM product_images WHERE product_id = p.id ORDER BY is_main DESC, sort_order ASC LIMIT 1) as main_image
       FROM products p 
-      LEFT JOIN categories c ON p.category_id = c.id 
-      ORDER BY p.created_at DESC
-    `);
+      LEFT JOIN categories c ON p.category_id = c.id
+    `;
+    
+    const params = [];
+    if (searchQuery) {
+      sql += ` WHERE p.name ILIKE $1 OR p.code ILIKE $1 OR p.description ILIKE $1 `;
+      params.push(`%${searchQuery}%`);
+    }
+    
+    sql += ` ORDER BY p.created_at DESC `;
+    
+    const res = await query(sql, params);
     return res.rows;
   } catch (e) {
     console.error("Error fetching products:", e);
@@ -18,8 +29,10 @@ async function getProducts() {
   }
 }
 
-export default async function ProductsPage() {
-  const products = await getProducts();
+export default async function ProductsPage({ searchParams }) {
+  const params = await searchParams;
+  const search = params.search || "";
+  const products = await getProducts(search);
 
   return (
     <div>
@@ -35,21 +48,23 @@ export default async function ProductsPage() {
       </header>
 
       <div className="card glass" style={{ marginBottom: '2rem', padding: '1rem' }}>
-        <div style={{ display: 'flex', gap: '1rem' }}>
+        <form action="/products" method="GET" style={{ display: 'flex', gap: '1rem' }}>
           <div style={{ position: 'relative', flex: 1 }}>
             <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--muted-foreground)' }} />
             <input 
               type="text" 
+              name="search"
+              defaultValue={search}
               placeholder="Buscar por nombre o código..." 
               className="input-field" 
               style={{ paddingLeft: '3rem' }}
             />
           </div>
-          <button className="card" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', background: 'var(--accent)', border: '1px solid var(--border)', cursor: 'pointer' }}>
-            <Filter size={18} />
-            <span>Filtros</span>
+          <button type="submit" className="card" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', background: 'var(--accent)', border: '1px solid var(--border)', cursor: 'pointer' }}>
+            <Search size={18} />
+            <span>Buscar</span>
           </button>
-        </div>
+        </form>
       </div>
 
       <div className="card glass" style={{ padding: 0, overflow: 'hidden' }}>
@@ -70,7 +85,7 @@ export default async function ProductsPage() {
               {products.length === 0 ? (
                 <tr>
                   <td colSpan="7" style={{ padding: '4rem', textAlign: 'center', color: 'var(--muted-foreground)' }}>
-                    No se encontraron productos. Comienza creando uno nuevo.
+                    No se encontraron productos. {search ? 'Prueba con otra búsqueda.' : 'Comienza creando uno nuevo.'}
                   </td>
                 </tr>
               ) : (
@@ -79,7 +94,18 @@ export default async function ProductsPage() {
                     <td style={{ padding: '1.25rem 1.5rem' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <div style={{ width: '48px', height: '48px', background: 'var(--muted)', borderRadius: '0.5rem', overflow: 'hidden', border: '1px solid var(--border)', flexShrink: 0 }}>
-                          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted-foreground)' }}>
+                          {product.main_image ? (
+                            <img 
+                              src={product.main_image} 
+                              alt={product.name} 
+                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                e.target.nextSibling.style.display = 'flex';
+                              }}
+                            />
+                          ) : null}
+                          <div style={{ width: '100%', height: '100%', display: product.main_image ? 'none' : 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted-foreground)' }}>
                             <Package size={20} />
                           </div>
                         </div>
@@ -122,9 +148,7 @@ export default async function ProductsPage() {
                         <Link href={`/products/${product.id}/edit`} className="nav-link" style={{ padding: '0.5rem' }}>
                           <Edit size={18} />
                         </Link>
-                        <button className="nav-link" style={{ padding: '0.5rem', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--destructive)' }}>
-                          <Trash2 size={18} />
-                        </button>
+                        <DeleteProductButton productId={product.id} productName={product.name} />
                       </div>
                     </td>
                   </tr>
