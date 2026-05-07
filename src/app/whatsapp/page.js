@@ -5,30 +5,41 @@ import { MessageSquare, Clock, User, ChevronRight, Settings, Activity, Trash2, S
 import DeleteChatButton from "@/components/Common/DeleteChatButton";
 import AutoRefresh from "@/components/Common/AutoRefresh";
 import BotPauseToggle from "@/components/Common/BotPauseToggle";
+import WhatsAppFilters from "@/components/Common/WhatsAppFilters";
 
-async function getConversations() {
+async function getConversations(q, alertOnly) {
   try {
-    const res = await query(`
+    let queryText = `
       SELECT 
-        session_id, 
-        MAX(created_at) as last_message,
-        to_char(MAX(created_at) AT TIME ZONE 'UTC' AT TIME ZONE 'America/Caracas', 'DD/MM/YYYY, HH12:MI AM') as last_message_fmt,
+        wm.session_id, 
+        MAX(wm.created_at) as last_message,
+        to_char(MAX(wm.created_at) AT TIME ZONE 'UTC' AT TIME ZONE 'America/Caracas', 'DD/MM/YYYY, HH12:MI AM') as last_message_fmt,
         COUNT(*) as total_messages,
-        (SELECT full_name FROM whatsapp_customers WHERE id = session_id LIMIT 1) as push_name,
-        (SELECT ai_enabled FROM whatsapp_customers WHERE id = session_id LIMIT 1) as ai_enabled,
-        (SELECT requires_human FROM whatsapp_customers WHERE id = session_id LIMIT 1) as requires_human,
-        (
-          SELECT (message::json->>'content')
-          FROM whatsapp_messages wm2
-          WHERE wm2.session_id = whatsapp_messages.session_id
-          ORDER BY wm2.created_at DESC
-          LIMIT 1
-        ) as last_text
-      FROM whatsapp_messages
-      GROUP BY session_id
+        wc.full_name as push_name,
+        wc.ai_enabled,
+        wc.requires_human
+      FROM whatsapp_messages wm
+      LEFT JOIN whatsapp_customers wc ON wm.session_id = wc.id
+      WHERE 1=1
+    `;
+    let queryParams = [];
+
+    if (q) {
+      queryParams.push(`%${q}%`);
+      queryText += ` AND wm.session_id LIKE $${queryParams.length}`;
+    }
+
+    if (alertOnly) {
+      queryText += ` AND wc.requires_human = true`;
+    }
+
+    queryText += `
+      GROUP BY wm.session_id, wc.full_name, wc.ai_enabled, wc.requires_human
       ORDER BY last_message DESC
       LIMIT 50
-    `);
+    `;
+
+    const res = await query(queryText, queryParams);
     return res.rows;
   } catch (e) {
     console.error(e);
@@ -36,17 +47,18 @@ async function getConversations() {
   }
 }
 
-export default async function WhatsAppPage() {
+export default async function WhatsAppPage({ searchParams }) {
   try {
     await query("ALTER TABLE whatsapp_customers ADD COLUMN IF NOT EXISTS requires_human BOOLEAN DEFAULT FALSE;");
   } catch(e) {}
 
-  const conversations = await getConversations();
+  const params = await searchParams;
+  const conversations = await getConversations(params?.q, params?.alert === 'true');
 
   return (
     <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
       <AutoRefresh interval={5000} />
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem' }}>
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
         <div>
           <h1 style={{ fontSize: '2.25rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <Smartphone size={36} color="#25D366" /> Monitoreo WhatsApp
@@ -56,6 +68,8 @@ export default async function WhatsAppPage() {
           </p>
         </div>
       </header>
+
+      <WhatsAppFilters />
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '1.5rem' }}>
         {conversations.length === 0 ? (
