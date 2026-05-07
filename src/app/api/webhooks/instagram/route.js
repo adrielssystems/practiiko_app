@@ -163,7 +163,7 @@ export async function POST(req) {
                 replyToInstagramComment(commentId, "¡Hola! Te enviamos el detalle al DM (revisa tu bandeja de mensajes) 💎");
 
                 // 2. Respuesta privada con el detalle de la IA
-                sendInstagramPrivateReply(commentId, aiResponse);
+                sendInstagramPrivateReply(commentId, aiResponse, pageId);
               }).catch(e => console.error("[ERROR ASYNC COMMENT]:", e));
             }
           }
@@ -256,13 +256,13 @@ async function sendInstagramMessage(recipientId, text) {
 }
 
 // Función para enviar respuesta privada a un comentario (DM automático)
-async function sendInstagramPrivateReply(commentId, text) {
+async function sendInstagramPrivateReply(commentId, text, igId = "me") {
   const PAGE_ACCESS_TOKEN = process.env.INSTAGRAM_PAGE_ACCESS_TOKEN?.trim();
   if (!PAGE_ACCESS_TOKEN) return;
 
-  console.log(`[DEBUG] Intentando respuesta privada con token de longitud: ${PAGE_ACCESS_TOKEN.length}`);
+  console.log(`[DEBUG] Intentando respuesta privada via /${igId}/messages con token IGAA`);
 
-  const url = `https://graph.instagram.com/v21.0/${commentId}/private_replies`;
+  const url = `https://graph.instagram.com/v21.0/${igId}/messages`;
 
   try {
     const response = await fetch(url, { 
@@ -271,7 +271,10 @@ async function sendInstagramPrivateReply(commentId, text) {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${PAGE_ACCESS_TOKEN}`
       },
-      body: JSON.stringify({ message: text })
+      body: JSON.stringify({ 
+        recipient: { comment_id: commentId },
+        message: { text: text }
+      })
     });
     const data = await response.json();
     if (data.error) {
