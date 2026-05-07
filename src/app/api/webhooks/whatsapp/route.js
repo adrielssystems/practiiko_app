@@ -89,7 +89,7 @@ export async function POST(req) {
       const isGlobalEnabled = globalRes.rows.length > 0 ? globalRes.rows[0].value === 'true' : true;
       
       // 🌟 WHITELIST DE PRUEBAS: Añade aquí los números que siempre deben funcionar
-      const TEST_NUMBERS = ['584140108030', '584248068515']; // Números de prueba (Hector y adicional)
+      const TEST_NUMBERS = []; // Lista de prueba vacía
       const isTester = TEST_NUMBERS.includes(senderNumber);
 
       if (!isGlobalEnabled && !isTester) {
