@@ -183,7 +183,7 @@ async function replyToInstagramComment(commentId, text) {
   const PAGE_ACCESS_TOKEN = process.env.INSTAGRAM_PAGE_ACCESS_TOKEN?.trim();
   if (!PAGE_ACCESS_TOKEN) return;
 
-  const url = `https://graph.facebook.com/v21.0/${commentId}/replies`;
+  const url = `https://graph.instagram.com/v21.0/${commentId}/replies`;
 
   try {
     const response = await fetch(url, { 
@@ -231,7 +231,7 @@ async function sendInstagramMessage(recipientId, text) {
     return;
   }
 
-  const url = `https://graph.facebook.com/v21.0/me/messages`;
+  const url = `https://graph.instagram.com/v21.0/me/messages`;
 
   try {
     const response = await fetch(url, {
@@ -262,7 +262,7 @@ async function sendInstagramPrivateReply(commentId, text) {
 
   console.log(`[DEBUG] Intentando respuesta privada con token de longitud: ${PAGE_ACCESS_TOKEN.length}`);
 
-  const url = `https://graph.facebook.com/v21.0/${commentId}/private_replies`;
+  const url = `https://graph.instagram.com/v21.0/${commentId}/private_replies`;
 
   try {
     const response = await fetch(url, { 
