@@ -43,6 +43,7 @@ function detectIntent(message) {
   if (m.includes("margarita") || m.includes("porlamar") || m.includes("pampatar")) return "LOCATION_UPDATE";
   if (m.includes("precio") || m.includes("cuanto")) return "PRICE_INFO";
   if (m.includes("catalogo") || m.includes("ver todo")) return "CATALOG";
+  if (m.includes("humano") || m.includes("asesor") || m.includes("persona") || m.includes("alguien") || m.includes("tienda fisica") || m.includes("agente")) return "HUMAN_REQUEST";
   if (m.includes("sofa") || m.includes("colchon") || m.match(/[a-z]\d{3}/)) return "PRODUCT_QUERY";
   if (m.includes("hola") || m.includes("buen")) return "GREETING";
 
@@ -267,6 +268,45 @@ export async function processChatMessage(message, sessionId, source = 'dm', comm
 
     // historial (últimos 6 mensajes para contexto completo)
     const table = source === 'whatsapp' ? 'whatsapp_messages' : 'instagram_messages';
+
+    // Manejo de HUMAN_REQUEST
+    if (currentIntent === "HUMAN_REQUEST") {
+      const response = "Entendido 💎. En este momento estoy notificando a nuestro equipo. Un asesor humano revisará nuestra conversación y te responderá por aquí a la brevedad posible.";
+
+      if (source === 'whatsapp') {
+        // Notificar a Gregorio
+        const adminPhone = "584248068515";
+        const notifyText = `🚨 *Alerta Practiiko Bot* 🚨\nEl cliente ${customerName} (+${sessionId}) ha solicitado asistencia humana urgente.\n\n👇 Responde aquí:\nhttps://wa.me/${sessionId}`;
+        
+        const EVO_URL = process.env.EVOLUTION_API_URL;
+        const EVO_KEY = process.env.EVOLUTION_API_KEY;
+        const EVO_INSTANCE = process.env.EVOLUTION_INSTANCE || "Practiiko";
+
+        if (EVO_URL) {
+          try {
+            await fetch(`${EVO_URL}/message/sendText/${EVO_INSTANCE}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'apikey': EVO_KEY },
+              body: JSON.stringify({ number: adminPhone, text: notifyText })
+            });
+          } catch(e) {
+            console.error("Error notificando a Gregorio:", e);
+          }
+        }
+
+        // Marcar requires_human y apagar bot
+        try {
+          await query("UPDATE whatsapp_customers SET ai_enabled = false, requires_human = true WHERE id = $1", [sessionId]);
+        } catch(e) {
+          console.error("Error actualizando requires_human:", e);
+        }
+
+        await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [sessionId, JSON.stringify({ role: 'assistant', content: response })]);
+      } else {
+        await query(`INSERT INTO instagram_messages (session_id, message, source, comment_id) VALUES ($1, $2, $3, $4)`, [sessionId, JSON.stringify({ role: 'assistant', content: response }), source, commentId]);
+      }
+      return response;
+    }
 
     const historyRes = await query(
       `SELECT message FROM ${table} WHERE session_id = $1 ORDER BY created_at DESC LIMIT 6`,

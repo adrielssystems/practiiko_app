@@ -5,6 +5,7 @@ import { ChevronLeft, User, Smartphone, Clock } from "lucide-react";
 import AutoRefresh from "@/components/Common/AutoRefresh";
 import BotPauseToggle from "@/components/Common/BotPauseToggle";
 import ManualReplyInput from "@/components/Common/ManualReplyInput";
+import ResolveHumanButton from "@/components/Common/ResolveHumanButton";
 
 async function getChatMessages(id) {
   try {
@@ -21,7 +22,7 @@ async function getChatMessages(id) {
 
 async function getCustomerInfo(id) {
   try {
-    const res = await query("SELECT full_name, ai_enabled FROM whatsapp_customers WHERE id = $1", [id]);
+    const res = await query("SELECT full_name, ai_enabled, requires_human FROM whatsapp_customers WHERE id = $1", [id]);
     return res.rows[0];
   } catch (e) {
     return null;
@@ -53,12 +54,20 @@ export default async function WhatsAppChatPage({ params }) {
           <User size={24} />
         </div>
         <div style={{ flex: 1 }}>
-          <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700 }}>
+          <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             {customer?.full_name || `+${id}`}
+            {customer?.requires_human && (
+              <span style={{ fontSize: '0.7rem', background: '#ef4444', color: 'white', padding: '2px 8px', borderRadius: '10px', textTransform: 'uppercase' }}>
+                Requiere Asesor
+              </span>
+            )}
           </h2>
           <span style={{ fontSize: '0.75rem', color: '#25D366', fontWeight: 600 }}>WhatsApp Business</span>
         </div>
-        <BotPauseToggle id={id} platform="whatsapp" initialStatus={customer?.ai_enabled ?? true} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          {customer?.requires_human && <ResolveHumanButton id={id} />}
+          <BotPauseToggle id={id} platform="whatsapp" initialStatus={customer?.ai_enabled ?? true} />
+        </div>
       </header>
 
       <div style={{ 

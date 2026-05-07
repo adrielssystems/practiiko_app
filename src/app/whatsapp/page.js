@@ -16,6 +16,7 @@ async function getConversations() {
         COUNT(*) as total_messages,
         (SELECT full_name FROM whatsapp_customers WHERE id = session_id LIMIT 1) as push_name,
         (SELECT ai_enabled FROM whatsapp_customers WHERE id = session_id LIMIT 1) as ai_enabled,
+        (SELECT requires_human FROM whatsapp_customers WHERE id = session_id LIMIT 1) as requires_human,
         (
           SELECT (message::json->>'content')
           FROM whatsapp_messages wm2
@@ -36,6 +37,10 @@ async function getConversations() {
 }
 
 export default async function WhatsAppPage() {
+  try {
+    await query("ALTER TABLE whatsapp_customers ADD COLUMN IF NOT EXISTS requires_human BOOLEAN DEFAULT FALSE;");
+  } catch(e) {}
+
   const conversations = await getConversations();
 
   return (
@@ -72,6 +77,28 @@ export default async function WhatsAppPage() {
                 border: '1px solid #f0f0f0',
                 position: 'relative'
               }}>
+                {conv.requires_human && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '-10px',
+                    right: '20px',
+                    background: '#ef4444',
+                    color: 'white',
+                    padding: '4px 12px',
+                    borderRadius: '20px',
+                    fontSize: '0.7rem',
+                    fontWeight: 800,
+                    letterSpacing: '0.5px',
+                    boxShadow: '0 4px 12px rgba(239, 68, 68, 0.4)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    zIndex: 20,
+                    animation: 'pulseRed 2s infinite'
+                  }}>
+                    🚨 REQUIERE ASESOR
+                  </div>
+                )}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '1rem', alignItems: 'flex-start' }}>
                   <Link href={`/whatsapp/${conv.session_id}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', gap: '1rem', overflow: 'hidden' }}>
                     <div style={{ 
@@ -152,6 +179,14 @@ export default async function WhatsAppPage() {
           ))
         )}
       </div>
+
+      <style>{`
+        @keyframes pulseRed {
+          0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+          70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+          100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+      `}</style>
     </div>
   );
 }
