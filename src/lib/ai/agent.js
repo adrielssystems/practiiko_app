@@ -43,7 +43,6 @@ function detectIntent(message) {
   if (m.includes("margarita") || m.includes("porlamar") || m.includes("pampatar")) return "LOCATION_UPDATE";
   if (m.includes("precio") || m.includes("cuanto")) return "PRICE_INFO";
   if (m.includes("catalogo") || m.includes("ver todo")) return "CATALOG";
-  if (m.includes("humano") || m.includes("asesor") || m.includes("persona") || m.includes("alguien") || m.includes("tienda fisica") || m.includes("agente")) return "HUMAN_REQUEST";
   if (m.includes("sofa") || m.includes("colchon") || m.match(/[a-z]\d{3}/)) return "PRODUCT_QUERY";
   if (m.includes("hola") || m.includes("buen")) return "GREETING";
 
@@ -58,7 +57,7 @@ function extractKeywords(message) {
 
   const stopWords = ["hola", "precio", "cuanto", "cuesta", "vale", "quiero", "saber", "tienen", "buenas", "tardes", "dias", "noches", "favor", "gracias", "para", "como", "esta", "donde", "tiene", "busco", "necesito", "algun"];
   const words = m.split(/[\s,?.!]+/).filter(w => w.length >= 3 && !stopWords.includes(w));
-  
+
   return words.length > 0 ? words : null;
 }
 
@@ -99,13 +98,13 @@ async function getInventory(terms, intent, location) {
     } else if (terms && terms.length > 0) {
       let conditions = [];
       let params = [];
-      
+
       // Búsqueda estricta: EL producto DEBE coincidir con todos los términos (ej. "sofa" AND "azul")
       terms.forEach((term, index) => {
         conditions.push(`(p.name ILIKE $${index + 1} OR p.code ILIKE $${index + 1} OR c.name ILIKE $${index + 1} OR p.description ILIKE $${index + 1})`);
         params.push(`%${term}%`);
       });
-      
+
       const whereClause = conditions.join(" AND ");
 
       const res = await query(
