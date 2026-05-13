@@ -214,7 +214,7 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
         </div>
 
         <div className="form-group" style={{ marginBottom: '2rem' }}>
-          <label className="label">Etiquetas (Ej: Best Seller, Nuevo, Oferta)</label>
+          <label className="label">Etiquetas (Ej: Nuevo, Oferta)</label>
           <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem' }}>
             <input 
               type="text" className="input-field" 
@@ -230,8 +230,8 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
             {tags.map(tag => (
               <span key={tag} style={{ 
-                background: tag === 'Best Seller' ? 'rgba(242, 135, 5, 0.1)' : 'rgba(4, 119, 191, 0.05)', 
-                color: tag === 'Best Seller' ? 'var(--secondary)' : 'var(--primary)', 
+                background: 'rgba(4, 119, 191, 0.05)', 
+                color: 'var(--primary)', 
                 padding: '0.4rem 0.8rem', 
                 borderRadius: '10px', 
                 fontSize: '0.75rem', 
@@ -239,7 +239,7 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.4rem',
-                border: `1px solid ${tag === 'Best Seller' ? 'rgba(242, 135, 5, 0.2)' : 'rgba(4, 119, 191, 0.1)'}`
+                border: '1px solid rgba(4, 119, 191, 0.1)'
               }}>
                 {tag}
                 <X size={14} style={{ cursor: 'pointer' }} onClick={() => removeTag(tag)} />
@@ -497,15 +497,7 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
           </div>
         </div>
         
-        <div style={{ marginTop: '1.5rem', padding: '1.25rem', borderRadius: '20px', background: 'rgba(242, 135, 5, 0.05)', border: '1px solid rgba(242, 135, 5, 0.1)', display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 10px rgba(0,0,0,0.05)' }}>
-            <Tag size={20} color="var(--secondary)" />
-          </div>
-          <div>
-            <p style={{ fontSize: '0.8rem', color: '#92400e', margin: 0, fontWeight: 800 }}>Etiqueta "Best Seller"</p>
-            <p style={{ fontSize: '0.7rem', color: '#b45309', margin: '2px 0 0 0', fontWeight: 500 }}>Aparecerá automáticamente en la Colección Destacada.</p>
-          </div>
-        </div>
+
       </div>
       
       <style jsx>{`
