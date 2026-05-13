@@ -59,6 +59,17 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
+    
+    // Validación de exclusividad para estados especiales
+    const exclusiveFlags = ["is_new", "is_promotion", "is_clearance"];
+    if (type === "checkbox" && checked && exclusiveFlags.includes(name)) {
+      const activeExclusive = exclusiveFlags.filter(f => f !== name && formValues[f]);
+      if (activeExclusive.length > 0) {
+        addToast("Solo puedes seleccionar un estado principal (Nuevo, Promoción o Liquidación) a la vez.", "error");
+        return; // No procesar el cambio
+      }
+    }
+
     const val = type === "checkbox" ? checked : value;
     setFormValues(prev => ({ ...prev, [name]: val }));
 
@@ -449,67 +460,142 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
         >
           <div className="flip-card-inner">
             
-            {/* FRONT SIDE */}
-            <div className="flip-card-front card" style={{ padding: 0, overflow: 'hidden' }}>
-              {/* Media Preview */}
-              <div style={{ width: '100%', height: '300px', background: '#f1f5f9', position: 'relative' }}>
+            {/* FRONT SIDE (ESTILO MARCA) */}
+            <div className="flip-card-front" style={{ 
+              background: '#F28705', 
+              borderRadius: '40px', 
+              padding: '1.5rem', 
+              display: 'flex', 
+              flexDirection: 'column',
+              border: '1px solid rgba(255,255,255,0.1)',
+              overflow: 'hidden'
+            }}>
+              {/* Media Preview Container */}
+              <div style={{ 
+                width: '100%', 
+                aspectRatio: '4/5', 
+                background: 'white', 
+                borderRadius: '32px', 
+                position: 'relative',
+                marginBottom: '1.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.05)',
+                overflow: 'hidden'
+              }}>
+                {/* Badges Preview */}
+                <div style={{ position: 'absolute', top: '12px', left: '12px', zIndex: 10, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {formValues.is_new && (
+                    <span style={{ background: '#0477BF', color: 'white', fontSize: '8px', fontWeight: 900, padding: '4px 10px', borderRadius: '100px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Nuevo</span>
+                  )}
+                  {formValues.is_promotion && (
+                    <span style={{ background: '#ef4444', color: 'white', fontSize: '8px', fontWeight: 900, padding: '4px 10px', borderRadius: '100px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Promoción</span>
+                  )}
+                  {formValues.is_clearance && (
+                    <span style={{ background: '#1e293b', color: 'white', fontSize: '8px', fontWeight: 900, padding: '4px 10px', borderRadius: '100px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Liquidación</span>
+                  )}
+                </div>
+
                 {media.images.length > 0 ? (
                   <img 
                     src={media.localPreviews[media.images[0]] || media.images[0]} 
                     alt="Main" 
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                    style={{ width: '85%', height: '85%', objectFit: 'contain' }} 
                   />
                 ) : (
-                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Package size={64} color="#cbd5e1" strokeWidth={1} />
+                  <div style={{ opacity: 0.2 }}>
+                    <Package size={64} color="#000" strokeWidth={1} />
                   </div>
                 )}
               </div>
 
-              <div style={{ padding: '2rem' }}>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '0 0.5rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
-                   <div style={{ fontSize: '0.7rem', color: 'var(--primary)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{formValues.category_name || "Muebles"}</div>
-                   {formValues.pseudonimo && <div style={{ fontSize: '0.65rem', color: 'var(--secondary)', fontWeight: 900, textTransform: 'uppercase' }}>{formValues.pseudonimo}</div>}
+                   <div style={{ fontSize: '9px', color: 'white', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.2em' }}>{formValues.category_name || "Muebles"}</div>
                 </div>
-                <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', lineHeight: '1.1' }}>{formValues.name || "Nombre del Producto"}</h3>
+                <h3 style={{ 
+                  margin: '0 0 1rem 0', 
+                  fontSize: '1.25rem', 
+                  fontWeight: 800, 
+                  color: 'white', 
+                  lineHeight: '1.2',
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden'
+                }}>
+                  {formValues.name || "Nombre del Producto"}
+                </h3>
                 
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem', marginBottom: '1rem' }}>
-                  <span style={{ fontSize: '1.75rem', fontWeight: 900, color: 'var(--primary)' }}>${getPreviewPrice().toLocaleString()}</span>
-                  {pricingMatrix.length > 0 && <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>Desde</span>}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto', marginBottom: '1rem' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span style={{ fontSize: '1.5rem', fontWeight: 900, color: 'white', lineHeight: 1 }}>
+                      ${getPreviewPrice().toLocaleString()}
+                    </span>
+                    <span style={{ fontSize: '8px', color: 'rgba(255,255,255,0.7)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Ref.</span>
+                  </div>
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '1rem', marginTop: '1rem', borderTop: '1px solid #f1f5f9' }}>
-                   <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ver Características</span>
-                   <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>sync_alt</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.2)' }}>
+                   <span style={{ fontSize: '9px', color: 'rgba(255,255,255,0.7)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Ver Características</span>
+                   <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>sync_alt</span>
                    </div>
                 </div>
               </div>
             </div>
 
-            {/* BACK SIDE */}
-            <div className="flip-card-back" style={{ background: 'var(--primary)', color: 'white', borderRadius: '32px', padding: '2.5rem', display: 'flex', flexDirection: 'column' }}>
-               <div style={{ marginBottom: '2rem' }}>
-                 <p style={{ fontSize: '0.7rem', fontWeight: 800, opacity: 0.6, letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Especificaciones</p>
-                 <h3 style={{ fontSize: '1.75rem', fontWeight: 800, margin: 0, lineHeight: 1.1 }}>{formValues.name}</h3>
+            {/* BACK SIDE (ESTILO MARCA) */}
+            <div className="flip-card-back" style={{ 
+              background: '#0477BF', 
+              color: 'white', 
+              borderRadius: '40px', 
+              padding: '2.5rem', 
+              display: 'flex', 
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              textAlign: 'center'
+            }}>
+               <div style={{ marginBottom: '1.5rem' }}>
+                 <div style={{ 
+                   width: '50px', 
+                   height: '50px', 
+                   background: 'rgba(255,255,255,0.2)', 
+                   borderRadius: '50%', 
+                   display: 'flex', 
+                   alignItems: 'center', 
+                   justifyContent: 'center',
+                   marginBottom: '1rem',
+                   margin: '0 auto'
+                 }}>
+                   <Box size={24} />
+                 </div>
+                 <p style={{ fontSize: '9px', fontWeight: 900, opacity: 0.6, letterSpacing: '0.3em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Más información</p>
+                 <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, lineHeight: 1.2 }}>{formValues.name}</h3>
                </div>
 
-               <div style={{ flex: 1 }}>
-                 <p style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--secondary)', textTransform: 'uppercase', marginBottom: '1rem' }}>Lo que lo hace especial:</p>
-                 <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: '1rem' }}>
-                   {(featuresInput.split(",").length > 1 ? featuresInput.split(",") : ["Calidad Premium", "Diseño Ergonómico", "Materiales Duraderos"]).slice(0, 5).map((f, i) => (
-                     <li key={i} style={{ display: 'flex', alignItems: 'start', gap: '0.75rem', fontSize: '0.9rem', fontWeight: 500 }}>
-                       <span style={{ color: 'var(--secondary)', fontSize: '1.2rem' }}>✓</span>
-                       {f.trim()}
-                     </li>
-                   ))}
-                 </ul>
+               <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+                 <p style={{ fontSize: '0.85rem', fontWeight: 500, lineHeight: 1.6, opacity: 0.9 }}>
+                   {formValues.description || "Esta pieza exclusiva de Practiiko combina ergonomía de vanguardia con un diseño minimalista pensado para espacios modernos."}
+                 </p>
                </div>
 
-               <div style={{ marginTop: 'auto', textAlign: 'center' }}>
-                  <div style={{ padding: '1rem', borderRadius: '16px', background: 'rgba(255,255,255,0.1)', fontSize: '0.75rem', fontWeight: 700 }}>
-                    Toca para volver al frente
+               <div style={{ marginTop: '2rem', width: '100%' }}>
+                  <div style={{ 
+                    padding: '0.75rem', 
+                    borderRadius: '100px', 
+                    background: '#F28705', 
+                    fontSize: '10px', 
+                    fontWeight: 900,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.1em',
+                    boxShadow: '0 10px 20px rgba(242, 135, 5, 0.2)'
+                  }}>
+                    Comprar Ahora
                   </div>
+                  <p style={{ fontSize: '8px', opacity: 0.4, marginTop: '1rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.2em' }}>Toca para volver</p>
                </div>
             </div>
 
