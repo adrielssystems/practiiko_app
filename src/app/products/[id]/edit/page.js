@@ -65,6 +65,8 @@ export default async function EditProductPage({ params }) {
         // Manejar checkbox: puede venir como 'on' (nativo) o 'true' (manual)
         const is_featured = formData.get("is_featured") === "on" || String(formData.get("is_featured")) === "true";
         const is_promotion = formData.get("is_promotion") === "on" || String(formData.get("is_promotion")) === "true";
+        const is_new = formData.get("is_new") === "on" || String(formData.get("is_new")) === "true";
+        const is_clearance = formData.get("is_clearance") === "on" || String(formData.get("is_clearance")) === "true";
         const price_valid_until = formData.get("price_valid_until") || null;
 
         try {
@@ -80,15 +82,15 @@ export default async function EditProductPage({ params }) {
                     stock = $6, category_id = $7, status = $8, video_url = $9,
                     tags = $10, features = $11, pricing_matrix = $12, 
                     is_featured = $13, is_promotion = $14, price_valid_until = $15,
-                    pseudonimo = $16
-                WHERE id = $17
+                    pseudonimo = $16, is_new = $17, is_clearance = $18
+                WHERE id = $19
                 RETURNING id
             `, [
                 name, code, description, price_bcv, price_cash, 
                 stockNum, catIdNum, status, video_url,
                 tags, features, pricing_matrix,
                 is_featured, is_promotion, price_valid_until,
-                pseudonimo, id
+                pseudonimo, is_new, is_clearance, id
             ]);
 
             if (updateRes.rowCount === 0) {

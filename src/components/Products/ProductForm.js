@@ -38,7 +38,10 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
     category_name: "",
     description: initialData.description || "",
     status: initialData.status || "active",
+    is_featured: initialData.is_featured || false,
     is_promotion: initialData.is_promotion || false,
+    is_new: initialData.is_new || false,
+    is_clearance: initialData.is_clearance || false,
     pseudonimo: initialData.pseudonimo || "",
     price_valid_until: initialData.price_valid_until ? new Date(initialData.price_valid_until).toISOString().split('T')[0] : ""
   });
@@ -378,7 +381,15 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
               checked={formValues.is_featured} onChange={handleInputChange}
               style={{ width: '18px', height: '18px' }}
             />
-            Producto Destacado
+            Lo más Vendido
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem', color: '#0477BF' }}>
+            <input 
+              name="is_new" type="checkbox" 
+              checked={formValues.is_new} onChange={handleInputChange}
+              style={{ width: '18px', height: '18px' }}
+            />
+            Nuevo
           </label>
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem', color: '#ef4444' }}>
             <input 
@@ -387,6 +398,14 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
               style={{ width: '18px', height: '18px' }}
             />
             En Promoción
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem', color: '#6b7280' }}>
+            <input 
+              name="is_clearance" type="checkbox" 
+              checked={formValues.is_clearance} onChange={handleInputChange}
+              style={{ width: '18px', height: '18px' }}
+            />
+            Liquidación
           </label>
         </div>
 
