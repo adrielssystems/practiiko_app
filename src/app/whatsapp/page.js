@@ -56,14 +56,17 @@ export default async function WhatsAppPage({ searchParams }) {
   const conversations = await getConversations(params?.q, params?.alert === 'true');
 
   return (
-    <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
+    <div>
       <AutoRefresh interval={5000} />
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+      <header style={{ marginBottom: '2.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
-          <h1 style={{ fontSize: '2.25rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <Smartphone size={36} color="#25D366" /> Monitoreo WhatsApp
-          </h1>
-          <p style={{ color: 'var(--muted-foreground)', marginTop: '0.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
+            <div style={{ background: 'linear-gradient(45deg, #25D366 0%, #128C7E 100%)', padding: '0.5rem', borderRadius: '12px', display: 'flex' }}>
+              <Smartphone color="white" size={24} />
+            </div>
+            <h1 style={{ fontSize: '2.25rem', fontWeight: 800, letterSpacing: '-0.025em' }}>Monitoreo WhatsApp</h1>
+          </div>
+          <p style={{ color: 'var(--muted-foreground)', fontSize: '1.1rem' }}>
             Supervisa las conversaciones de Evolution API en tiempo real.
           </p>
         </div>
@@ -71,7 +74,7 @@ export default async function WhatsAppPage({ searchParams }) {
 
       <WhatsAppFilters />
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '1.5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
         {conversations.length === 0 ? (
           <div className="card glass" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem' }}>
             <Smartphone size={48} style={{ margin: '0 auto 1rem', opacity: 0.2 }} />
