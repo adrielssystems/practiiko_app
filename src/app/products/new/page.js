@@ -44,6 +44,8 @@ export default async function NewProductPage() {
         // Manejar checkbox: puede venir como 'on' (nativo) o 'true' (manual)
         const is_featured = formData.get("is_featured") === "on" || String(formData.get("is_featured")) === "true";
         const is_promotion = formData.get("is_promotion") === "on" || String(formData.get("is_promotion")) === "true";
+        const is_new = formData.get("is_new") === "on" || String(formData.get("is_new")) === "true";
+        const is_clearance = formData.get("is_clearance") === "on" || String(formData.get("is_clearance")) === "true";
         const price_valid_until = formData.get("price_valid_until") || null;
 
         try {
@@ -58,16 +60,17 @@ export default async function NewProductPage() {
                     name, code, description, price_bcv, price_cash, 
                     stock, category_id, status, video_url,
                     tags, features, pricing_matrix, 
-                    is_featured, is_promotion, price_valid_until, pseudonimo
+                    is_featured, is_promotion, price_valid_until, pseudonimo,
+                    is_new, is_clearance
                 )
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
                 RETURNING id
             `, [
                 name, code, description, price_bcv, price_cash, 
                 stockNum, catIdNum, status, video_url,
                 tags, features, pricing_matrix,
                 is_featured, is_promotion, price_valid_until,
-                pseudonimo
+                pseudonimo, is_new, is_clearance
             ]);
 
             const productId = productRes.rows[0].id;
