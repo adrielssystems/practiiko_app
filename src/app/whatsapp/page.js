@@ -82,7 +82,7 @@ export default async function WhatsAppPage({ searchParams }) {
           </div>
         ) : (
           conversations.map((conv) => (
-            <div key={conv.session_id} className="card glass conversation-card" style={{ 
+            <div key={conv.session_id} className={`card glass conversation-card ${conv.requires_human ? 'flash-alert' : ''}`} style={{ 
                 padding: '1.5rem', 
                 borderRadius: '20px',
                 display: 'flex',
@@ -90,9 +90,10 @@ export default async function WhatsAppPage({ searchParams }) {
                 gap: '1rem',
                 transition: 'all 0.3s ease',
                 background: 'white',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
-                border: '1px solid #f0f0f0',
-                position: 'relative'
+                boxShadow: conv.requires_human ? '0 0 20px rgba(239, 68, 68, 0.2)' : '0 4px 20px rgba(0,0,0,0.05)',
+                border: conv.requires_human ? '2px solid #ef4444' : '1px solid #f0f0f0',
+                position: 'relative',
+                animation: conv.requires_human ? 'pulseBorderRed 2s infinite' : 'none'
               }}>
                 {conv.requires_human && (
                   <div style={{
@@ -202,6 +203,11 @@ export default async function WhatsAppPage({ searchParams }) {
           0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
           70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
           100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        @keyframes pulseBorderRed {
+          0% { border-color: #ef4444; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+          50% { border-color: #fca5a5; box-shadow: 0 0 20px 5px rgba(239, 68, 68, 0.2); }
+          100% { border-color: #ef4444; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
         }
       `}</style>
     </div>

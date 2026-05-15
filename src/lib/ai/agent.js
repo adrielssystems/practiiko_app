@@ -40,6 +40,13 @@ function detectIntent(message) {
   const m = normalize(message);
 
   if (["gracias", "ok", "dale", "perfecto", "entendido"].some(w => m.includes(w))) return "OTHER";
+  
+  // Solicitud Humana
+  if (m.includes("asesor") || m.includes("humano") || m.includes("persona") || m.includes("atenderme") || m.includes("hablar con alguien")) return "HUMAN_REQUEST";
+  
+  // Intención de Compra
+  if (m.includes("comprar") || m.includes("pagar") || m.includes("transferencia") || m.includes("pago") || m.includes("deposito") || m.includes("cuenta") || m.includes("quiero el") || m.includes("llevar el")) return "BUY_REQUEST";
+
   if (m.includes("margarita") || m.includes("porlamar") || m.includes("pampatar")) return "LOCATION_UPDATE";
   if (m.includes("precio") || m.includes("cuanto")) return "PRICE_INFO";
   if (m.includes("catalogo") || m.includes("ver todo")) return "CATALOG";
@@ -266,14 +273,21 @@ export async function processChatMessage(message, sessionId, source = 'dm', comm
     // historial (últimos 6 mensajes para contexto completo)
     const table = source === 'whatsapp' ? 'whatsapp_messages' : 'instagram_messages';
 
-    // Manejo de HUMAN_REQUEST
-    if (currentIntent === "HUMAN_REQUEST") {
-      const response = "Entendido 💎. En este momento estoy notificando a nuestro equipo. Un asesor humano revisará nuestra conversación y te responderá por aquí a la brevedad posible.";
+    // Manejo de HUMAN_REQUEST y BUY_REQUEST (ALERTA CRÍTICA)
+    if (currentIntent === "HUMAN_REQUEST" || currentIntent === "BUY_REQUEST") {
+      let response = "Entendido 💎. En este momento estoy notificando a nuestro equipo. Un asesor humano revisará nuestra conversación y te responderá por aquí a la brevedad posible.";
+      
+      if (currentIntent === "BUY_REQUEST") {
+        response = "¡Excelente elección! 💎 Estoy notificando a un asesor para que te ayude a concretar tu compra de inmediato. Un momento, por favor.";
+      }
 
       if (source === 'whatsapp') {
-        // Notificar a Gregorio
+        // Notificar a Canales de Alerta
         const adminPhone = "584248068515";
-        const notifyText = `🚨 *Alerta Practiiko Bot* 🚨\nEl cliente ${customerName} (+${sessionId}) ha solicitado asistencia humana urgente.\n\n👇 Responde aquí:\nhttps://wa.me/${sessionId}`;
+        const groupId = process.env.NOTIFICATIONS_GROUP_ID; // Variable configurable
+        const motivo = currentIntent === "BUY_REQUEST" ? "🔥 INTENCIÓN DE COMPRA" : "🚨 SOLICITUD HUMANA";
+        
+        const notifyText = `${motivo}\n\n*Cliente:* ${customerName} (+${sessionId})\n*Mensaje:* "${message}"\n\n👇 Responde aquí:\nhttps://wa.me/${sessionId}`;
         
         const EVO_URL = process.env.EVOLUTION_API_URL;
         const EVO_KEY = process.env.EVOLUTION_API_KEY;
@@ -281,17 +295,27 @@ export async function processChatMessage(message, sessionId, source = 'dm', comm
 
         if (EVO_URL) {
           try {
+            // 1. Notificar al Admin Principal (Gregorio)
             await fetch(`${EVO_URL}/message/sendText/${EVO_INSTANCE}`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'apikey': EVO_KEY },
               body: JSON.stringify({ number: adminPhone, text: notifyText })
             });
+
+            // 2. Notificar al Grupo (si está configurado)
+            if (groupId) {
+              await fetch(`${EVO_URL}/message/sendText/${EVO_INSTANCE}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'apikey': EVO_KEY },
+                body: JSON.stringify({ number: groupId, text: notifyText })
+              });
+            }
           } catch(e) {
-            console.error("Error notificando a Gregorio:", e);
+            console.error("Error en flujo de notificaciones:", e);
           }
         }
 
-        // Marcar requires_human y apagar bot
+        // Marcar requires_human y apagar bot para este cliente
         try {
           await query("UPDATE whatsapp_customers SET ai_enabled = false, requires_human = true WHERE id = $1", [sessionId]);
         } catch(e) {
@@ -300,6 +324,7 @@ export async function processChatMessage(message, sessionId, source = 'dm', comm
 
         await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [sessionId, JSON.stringify({ role: 'assistant', content: response })]);
       } else {
+        // Instagram (solo loguear en DB por ahora)
         await query(`INSERT INTO instagram_messages (session_id, message, source, comment_id) VALUES ($1, $2, $3, $4)`, [sessionId, JSON.stringify({ role: 'assistant', content: response }), source, commentId]);
       }
       return response;
