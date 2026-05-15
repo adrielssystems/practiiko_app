@@ -36,8 +36,8 @@ export default function LayoutShell({ children }) {
   return (
     <div className="dashboard-layout">
       <aside className="sidebar">
-          <div className="sidebar-logo" style={{ marginTop: '-1.5rem', marginBottom: '1.5rem' }}>
-            <img src="/logo.png" alt="Practiiko" style={{ height: '120px', width: 'auto', objectFit: 'contain' }} />
+          <div className="sidebar-logo" style={{ padding: '1rem 0' }}>
+            <img src="/logo.webp" alt="Practiiko" style={{ height: '40px', width: 'auto', objectFit: 'contain' }} />
           </div>
         
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
