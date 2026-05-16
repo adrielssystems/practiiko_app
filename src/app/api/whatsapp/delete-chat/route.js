@@ -16,8 +16,8 @@ export async function DELETE(req) {
     // Borrar mensajes de WhatsApp
     await query("DELETE FROM whatsapp_messages WHERE session_id = $1", [sessionId]);
     
-    // También borrar el registro de cliente si se desea limpiar el board completamente
-    // await query("DELETE FROM whatsapp_customers WHERE id = $1", [sessionId]);
+    // Resetear el estado del bot para el cliente (Clean Slate)
+    await query("UPDATE whatsapp_customers SET ai_enabled = true, requires_human = false WHERE id = $1", [sessionId]);
 
     return NextResponse.json({ success: true });
   } catch (error) {
