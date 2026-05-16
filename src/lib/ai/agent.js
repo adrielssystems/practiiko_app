@@ -39,13 +39,14 @@ function normalize(text) {
 function detectIntent(message) {
   const m = normalize(message);
 
-  if (["gracias", "ok", "dale", "perfecto", "entendido"].some(w => m.includes(w))) return "OTHER";
-  
-  // Solicitud Humana
+  // Solicitud Humana (PRIORITARIA — evaluar antes que cortesía)
   if (m.includes("asesor") || m.includes("humano") || m.includes("persona") || m.includes("atenderme") || m.includes("hablar con alguien")) return "HUMAN_REQUEST";
-  
-  // Intención de Compra y Pagos Especiales (Redirigen a Humano)
+
+  // Intención de Compra y Pagos Especiales (PRIORITARIA)
   if (m.includes("comprar") || m.includes("pagar") || m.includes("transferencia") || m.includes("pago") || m.includes("deposito") || m.includes("cuenta") || m.includes("quiero el") || m.includes("llevar el") || m.includes("zelle") || m.includes("paypal") || m.includes("cripto") || m.includes("usdt") || m.includes("bitcoin") || m.includes("metodos de pago")) return "BUY_REQUEST";
+
+  // Cortesía simple (evaluar DESPUÉS de compra/humano para no cortocircuitar)
+  if (["gracias", "ok", "dale", "perfecto", "entendido"].some(w => m.includes(w))) return "OTHER";
 
   if (m.includes("margarita") || m.includes("porlamar") || m.includes("pampatar")) return "LOCATION_UPDATE";
   if (m.includes("precio") || m.includes("cuanto")) return "PRICE_INFO";
@@ -188,7 +189,7 @@ ${priceInfo} 💎`;
 /**
  * RESPUESTA FINAL (LLM con Deepseek)
  */
-async function buildResponse(message, customerName, inventory, location, historyMessages, source, dynamicKnowledge = "") {
+async function buildResponse(message, customerName, inventory, location, historyMessages, source, dynamicKnowledge = "", isFallback = false) {
   const isMargarita = location === "MARGARITA";
 
   const prompt = `
@@ -228,6 +229,7 @@ ${dynamicKnowledge ? `15. REGLAS DINÁMICAS Y PROMOCIONES VIGENTES:\n${dynamicKn
 
 INVENTARIO (Usa solo lo necesario, los precios están ocultos si no está en Margarita):
 ${inventory.text}
+${isFallback ? "\n⚠️ NOTA INTERNA: No se encontró el producto exacto solicitado. Los resultados son alternativas del catálogo. Informa al cliente amablemente que no disponemos de lo que busca exactamente y ofrécele las alternativas listadas." : ""}
 
 ORIGEN DEL MENSAJE: ${source}
 
@@ -250,7 +252,7 @@ Nunca olvides mantener la educación, la amabilidad y el enfoque en la satisfacc
   } catch (error) {
     console.error("DEBUG - DeepSeek Error:", error.message);
     // Fallback manual si falla la API (Muy importante para no dejar al cliente mudo)
-    const locationText = isMargarita ? "\n🚚 Envío gratis en Margarita." : "\n📦 Envíos nacionales: 0424-8948664.";
+    const locationText = isMargarita ? "\n🚚 Envío gratis en Margarita." : "\n📦 Para envíos nacionales, contáctanos directamente."
     const list = inventory.text || "Visita nuestro catálogo para ver modelos y precios.";
     return `¡Hola ${customerName}! 👋 (Mód. Estático) 💎\n\n${list}\n${locationText}\n\n📸 Ver más: https://www.practiiko.com/catalogo`;
   }
@@ -260,97 +262,92 @@ Nunca olvides mantener la educación, la amabilidad y el enfoque en la satisfacc
  * MAIN
  */
 export async function processChatMessage(message, sessionId, source = 'dm', commentId = null, customerName = 'Cliente') {
+  // Declarada una sola vez en el scope principal (#3)
+  const table = source === 'whatsapp' ? 'whatsapp_messages' : 'instagram_messages';
+
   try {
     const intent = detectIntent(message);
 
-    // RESPUESTAS RÁPIDAS
-    // GESTIÓN DE INTENCIONES ESPECIALES (No cortocircuitamos, dejamos que Deepseek les de forma)
+    // GESTIÓN DE INTENCIONES
     let currentIntent = intent;
     if (intent === "LOCATION_UPDATE") currentIntent = "CATALOG";
+    if (intent === "GREETING" || intent === "OTHER") currentIntent = "CATALOG";
 
-    // Si es un saludo o no hay intención clara, forzamos catálogo para que Deepseek tenga algo que mostrar
-    if (intent === "GREETING" || intent === "OTHER") {
-      currentIntent = "CATALOG";
-    }
+    // --- CARGAR HISTORIAL PRIMERO para que detectLocation tenga contexto completo (#5) ---
+    const historyRes = await query(
+      `SELECT message FROM ${table} WHERE session_id = $1 ORDER BY created_at DESC LIMIT 6`,
+      [sessionId]
+    );
+    const historyMessages = historyRes.rows.reverse().map(r => {
+      const msg = typeof r.message === 'string' ? JSON.parse(r.message) : r.message;
+      return msg.role === 'user' ? new HumanMessage(msg.content) : new AIMessage(msg.content);
+    });
 
-    // historial (últimos 6 mensajes para contexto completo)
-    const table = source === 'whatsapp' ? 'whatsapp_messages' : 'instagram_messages';
+    // Detectar ubicación con historial completo disponible
+    const textHistory = historyMessages.map(m => m.content).join(" ");
+    const location = detectLocation(message, textHistory);
 
     // Manejo de HUMAN_REQUEST y BUY_REQUEST (ALERTA CRÍTICA)
     if (currentIntent === "HUMAN_REQUEST" || currentIntent === "BUY_REQUEST") {
       let response = "Entendido 💎. En este momento estoy notificando a nuestro equipo. Un asesor humano revisará nuestra conversación y te responderá por aquí a la brevedad posible.";
-      
       if (currentIntent === "BUY_REQUEST") {
         response = "¡Excelente elección! 💎 Estoy notificando a un asesor para que te ayude a concretar tu compra de inmediato. Un momento, por favor.";
       }
 
-      if (source === 'whatsapp') {
-        // Notificar a Canales de Alerta
-        const adminPhone = "584248068515";
-        const groupId = process.env.NOTIFICATIONS_GROUP_ID; // Variable configurable
-        const motivo = currentIntent === "BUY_REQUEST" ? "🔥 INTENCIÓN DE COMPRA" : "🚨 SOLICITUD HUMANA";
-        
-        const notifyText = `${motivo}\n\n*Cliente:* ${customerName} (+${sessionId})\n*Mensaje:* "${message}"\n\n👇 Responde aquí:\nhttps://wa.me/${sessionId}`;
-        
-        const EVO_URL = process.env.EVOLUTION_API_URL;
-        const EVO_KEY = process.env.EVOLUTION_API_KEY;
-        const EVO_INSTANCE = process.env.EVOLUTION_INSTANCE || "Practiiko";
+      const motivo = currentIntent === "BUY_REQUEST" ? "🔥 INTENCIÓN DE COMPRA" : "🚨 SOLICITUD HUMANA";
+      const notifyText = `${motivo}\n\n*Canal:* ${source.toUpperCase()}\n*Cliente:* ${customerName} (+${sessionId})\n*Ubicación detectada:* ${location}\n*Mensaje:* "${message}"\n\n👇 Responde aquí:\nhttps://wa.me/${sessionId}`;
 
-        if (EVO_URL) {
-          try {
-            // 1. Notificar al Admin Principal (Gregorio)
+      const EVO_URL = process.env.EVOLUTION_API_URL;
+      const EVO_KEY = process.env.EVOLUTION_API_KEY;
+      const EVO_INSTANCE = process.env.EVOLUTION_INSTANCE || "Practiiko";
+      const adminPhone = "584248068515";
+      const groupId = process.env.NOTIFICATIONS_GROUP_ID;
+
+      // Notificar al admin y grupo (aplica para WHATSAPP e INSTAGRAM) (#2)
+      if (EVO_URL) {
+        try {
+          await fetch(`${EVO_URL}/message/sendText/${EVO_INSTANCE}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'apikey': EVO_KEY },
+            body: JSON.stringify({ number: adminPhone, text: notifyText })
+          });
+          if (groupId) {
             await fetch(`${EVO_URL}/message/sendText/${EVO_INSTANCE}`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'apikey': EVO_KEY },
-              body: JSON.stringify({ number: adminPhone, text: notifyText })
+              body: JSON.stringify({ number: groupId, text: notifyText })
             });
-
-            // 2. Notificar al Grupo (si está configurado)
-            if (groupId) {
-              await fetch(`${EVO_URL}/message/sendText/${EVO_INSTANCE}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'apikey': EVO_KEY },
-                body: JSON.stringify({ number: groupId, text: notifyText })
-              });
-            }
-          } catch(e) {
-            console.error("Error en flujo de notificaciones:", e);
           }
+        } catch(e) {
+          console.error("Error en flujo de notificaciones:", e);
         }
+      }
 
+      // Guardar mensaje del usuario ANTES de la respuesta (#7)
+      const userPayload = JSON.stringify({ role: 'user', content: message });
+      const botPayload = JSON.stringify({ role: 'assistant', content: response });
+
+      if (source === 'whatsapp') {
         // Marcar requires_human y apagar bot para este cliente
         try {
           await query("UPDATE whatsapp_customers SET ai_enabled = false, requires_human = true WHERE id = $1", [sessionId]);
         } catch(e) {
           console.error("Error actualizando requires_human:", e);
         }
-
-        await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [sessionId, JSON.stringify({ role: 'assistant', content: response })]);
+        await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [sessionId, userPayload]);
+        await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [sessionId, botPayload]);
       } else {
-        // Instagram (solo loguear en DB por ahora)
-        await query(`INSERT INTO instagram_messages (session_id, message, source, comment_id) VALUES ($1, $2, $3, $4)`, [sessionId, JSON.stringify({ role: 'assistant', content: response }), source, commentId]);
+        // Instagram: notificar al admin por WhatsApp + guardar en DB (#2)
+        await query(`INSERT INTO instagram_messages (session_id, message, source, comment_id) VALUES ($1, $2, $3, $4)`, [sessionId, userPayload, source, commentId]);
+        await query(`INSERT INTO instagram_messages (session_id, message, source, comment_id) VALUES ($1, $2, $3, $4)`, [sessionId, botPayload, source, commentId]);
       }
       return response;
     }
 
-    const historyRes = await query(
-      `SELECT message FROM ${table} WHERE session_id = $1 ORDER BY created_at DESC LIMIT 6`,
-      [sessionId]
-    );
-
-    const historyMessages = historyRes.rows.reverse().map(r => {
-      const msg = typeof r.message === 'string' ? JSON.parse(r.message) : r.message;
-      return msg.role === 'user' ? new HumanMessage(msg.content) : new AIMessage(msg.content);
-    });
-
-    // Detectar ubicación usando el historial como texto para la función de detección
-    const textHistory = historyMessages.map(m => m.content).join(" ");
-    const location = detectLocation(message, textHistory);
-
     const terms = extractKeywords(message);
     const inventory = await getInventory(terms, currentIntent, location);
 
-    // 1. EXTRAER CONOCIMIENTO DINÁMICO DE LA BD (Cerebro IA)
+    // EXTRAER CONOCIMIENTO DINÁMICO DE LA BD (Cerebro IA)
     let dynamicKnowledge = "";
     try {
       const settingsRes = await query("SELECT value FROM app_settings WHERE key = 'ai_custom_instructions'");
@@ -364,7 +361,6 @@ export async function processChatMessage(message, sessionId, source = 'dm', comm
     // Si no hay inventario y no es un saludo, damos respuesta de fallback
     if (!inventory.found && intent !== "GREETING" && intent !== "OTHER") {
       const noProdMsg = `No encontré ese modelo exacto 💎`;
-
       if (source === 'whatsapp') {
         await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [sessionId, JSON.stringify({ role: 'assistant', content: noProdMsg })]);
       } else {
@@ -373,9 +369,10 @@ export async function processChatMessage(message, sessionId, source = 'dm', comm
       return noProdMsg;
     }
 
-    const response = await buildResponse(message, customerName, inventory, location, historyMessages, source, dynamicKnowledge);
+    // Pasar isFallback para que DeepSeek sepa si los resultados son exactos o alternativos (#6)
+    const response = await buildResponse(message, customerName, inventory, location, historyMessages, source, dynamicKnowledge, inventory.isFallback);
 
-    // guardar
+    // Guardar respuesta del bot
     if (source === 'whatsapp') {
       await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`,
         [sessionId, JSON.stringify({ role: 'assistant', content: response })]);
@@ -390,9 +387,8 @@ export async function processChatMessage(message, sessionId, source = 'dm', comm
     console.error("CRITICAL AGENT ERROR:", error);
     const errorMsg = "Error consultando inventario 💎";
 
-    // Intentar guardar el error en la DB para que el admin lo vea
+    // Guardar error en DB usando `table` del scope principal (sin redeclarar) (#3)
     try {
-      const table = source === 'whatsapp' ? 'whatsapp_messages' : 'instagram_messages';
       if (source === 'whatsapp') {
         await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [sessionId, JSON.stringify({ role: 'assistant', content: errorMsg })]);
       } else {
