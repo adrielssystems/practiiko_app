@@ -44,8 +44,8 @@ function detectIntent(message) {
   // Solicitud Humana
   if (m.includes("asesor") || m.includes("humano") || m.includes("persona") || m.includes("atenderme") || m.includes("hablar con alguien")) return "HUMAN_REQUEST";
   
-  // Intención de Compra
-  if (m.includes("comprar") || m.includes("pagar") || m.includes("transferencia") || m.includes("pago") || m.includes("deposito") || m.includes("cuenta") || m.includes("quiero el") || m.includes("llevar el")) return "BUY_REQUEST";
+  // Intención de Compra y Pagos Especiales (Redirigen a Humano)
+  if (m.includes("comprar") || m.includes("pagar") || m.includes("transferencia") || m.includes("pago") || m.includes("deposito") || m.includes("cuenta") || m.includes("quiero el") || m.includes("llevar el") || m.includes("zelle") || m.includes("paypal") || m.includes("cripto") || m.includes("usdt") || m.includes("bitcoin") || m.includes("metodos de pago")) return "BUY_REQUEST";
 
   if (m.includes("margarita") || m.includes("porlamar") || m.includes("pampatar")) return "LOCATION_UPDATE";
   if (m.includes("precio") || m.includes("cuanto")) return "PRICE_INFO";
@@ -72,7 +72,7 @@ function detectLocation(message, history) {
   const text = normalize(history + " " + message);
   if (text.includes("margarita") || text.includes("porlamar") || text.includes("pampatar") || text.includes("nueva esparta") || text.includes("juan griego") || text.includes("asuncion")) return "MARGARITA";
 
-  const outsideCities = ["caracas", "valencia", "maracaibo", "maracay", "barquisimeto", "lecheria", "puerto la cruz", "barcelona", "maturin", "cumana", "merida", "tachira", "zulia", "anzoategui", "aragua", "carabobo", "miranda", "lara"];
+  const outsideCities = ["caracas", "valencia", "maracaibo", "maracay", "barquisimeto", "lecheria", "puerto la cruz", "barcelona", "maturin", "cumana", "merida", "tachira", "zulia", "anzoategui", "aragua", "carabobo", "miranda", "lara", "extranjero", "brasil", "colombia", "usa", "miami", "panama", "españa", "chile", "peru", "ecuador", "argentina"];
   if (outsideCities.some(city => text.includes(city))) return "OUTSIDE";
 
   return "UNKNOWN";
@@ -202,7 +202,7 @@ REGLAS DE ATENCIÓN AL CLIENTE:
    - NUNCA menciones códigos técnicos (SKU) al cliente, a menos que él lo pida específicamente.
 3. UBICACIÓN Y PRECIOS (CRÍTICO):
    - SI EL CLIENTE ESTÁ EN MARGARITA (NUEVA ESPARTA): El envío es GRATIS. Puedes darle los precios de los productos. **OBLIGATORIO: Debes mostrar SIEMPRE primero el 'Precio BCV'. Luego, como una opción secundaria, muestra el 'Precio ESPECIAL (Divisas/Zelle)'. Nunca los inviertas ni omitas el Precio BCV.**
-   - SI EL CLIENTE NO ESTÁ EN MARGARITA O ES DE OTRO ESTADO: **PROHIBIDO** dar precios. Debes decirle amablemente que para compras con envíos nacionales y para acordar el precio del producto, debe comunicarse directamente con nuestro asesor de ventas principal. Entrégale este enlace: https://wa.me/584248948664
+   - SI EL CLIENTE NO ESTÁ EN MARGARITA (NACIONAL O INTERNACIONAL): **PROHIBIDO** dar precios. Debes aclarar amablemente que Practiiko NO realiza envíos internacionales. Para coordinar compras con envíos nacionales o resolver dudas, debe comunicarse directamente con nuestro asesor de ventas principal: https://wa.me/584248948664
    - SI NO SABES LA CIUDAD Y PIDE PRECIO: Antes de dar cualquier precio o disponibilidad, pregunta amablemente desde qué ciudad nos escribe.
 4. CIUDAD ACTUAL: (Ubicación detectada: ${location}). NO le preguntes su ciudad si ya dice MARGARITA u OUTSIDE.
 5. REGLA DE ORO SOBRE INVENTARIO (ANTI-ALUCINACIÓN):
@@ -212,7 +212,10 @@ REGLAS DE ATENCIÓN AL CLIENTE:
    - Si el cliente busca un color/modelo específico y no lo ves en el inventario, dile: "Disculpe, de ese color/modelo exacto no tenemos en este momento, pero lo tenemos disponible en [Menciona los colores que sí tenemos en el INVENTARIO]".
    - Si insiste en lo agotado, PERSUÁDELO elegantemente hacia lo que sí hay.
 7. CATÁLOGO Y FOTOS: Si piden ver todos los modelos, invítalos cordialmente a ver nuestro catálogo: www.bit.ly/CatalogoPractiiko. No ofrezcas fotos directamente, diles que un asesor humano se las enviará en breve.
-8. CASHEA: Aceptamos Cashea (sobre Precio BCV). Inicial desde 20% y hasta 12 cuotas dependiendo del nivel. (Mencionar solo si preguntan por métodos de pago).
+8. MÉTODOS DE PAGO Y COMPRA:
+   - Aceptamos Cashea (sobre Precio BCV). Inicial desde 20% y hasta 12 cuotas.
+   - SI EL CLIENTE PREGUNTA POR ZELLE, PAYPAL O CRIPTOMONEDAS: Debes informarle amablemente que esos métodos de pago son gestionados exclusivamente por nuestro asesor de ventas para su seguridad.
+   - SI EL CLIENTE MUESTRA UNA INTENCIÓN REAL DE COMPRA (ej: "lo quiero", "quiero comprar", "dame los datos para pagar"): Debes indicarle que un asesor humano tomará el control de la conversación en un momento para finalizar el proceso.
 9. HORARIOS Y TIENDA: Local A-14, CC Terranova Plaza, Porlamar, Isla de Margarita. Lun-Vie: 8:30 AM-4:30 PM. Sáb: 9:00 AM-1:00 PM.
 10. CAMPAÑAS: Si el cliente escribe solo una palabra (ej: "mama", "promocion"), asume que viene de una publicidad y entrégale el catálogo.
 11. PRECISIÓN TÉCNICA Y TAMAÑOS: Aclara si es Individual, Matrimonial, Sofá Cama, etc., basándote ÚNICAMENTE en la descripción del INVENTARIO.
