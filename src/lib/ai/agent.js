@@ -95,7 +95,7 @@ async function getInventory(terms, intent, location) {
       SELECT p.name, p.code, p.pseudonimo, p.price_bcv, p.price_cash, p.description, c.name as categoria
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
-      WHERE p.status = 'active'
+      WHERE p.status = 'active' AND p.stock > 0
     `;
 
     // 2. Lógica de búsqueda de productos
