@@ -6,7 +6,7 @@ export async function POST(req) {
     const { id } = await req.json();
     if (!id) return NextResponse.json({ error: "Falta ID" }, { status: 400 });
 
-    await query("UPDATE whatsapp_customers SET requires_human = false WHERE id = $1", [id]);
+    await query("UPDATE whatsapp_customers SET requires_human = false, ai_enabled = true WHERE id = $1", [id]);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("[RESOLVE HUMAN ERROR]:", error);
