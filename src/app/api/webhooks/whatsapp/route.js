@@ -40,14 +40,12 @@ async function sendWhatsAppMessage(to, text) {
 
 async function getLocalImageAsBase64(imageUrl) {
   try {
-    // imageUrl is e.g. "/api/media/filename.webp" or "https://domain/api/media/filename.webp"
     const parts = imageUrl.split('/');
     const filename = parts[parts.length - 1];
     
     const filePath = path.join(process.cwd(), 'public', 'uploads', 'products', filename);
     const buffer = await fs.readFile(filePath);
     
-    // Convertir a JPEG garantizando compatibilidad absoluta con WhatsApp/Evolution API
     const jpegBuffer = await sharp(buffer)
       .jpeg({ quality: 85 })
       .toBuffer();
@@ -66,25 +64,40 @@ async function sendWhatsAppImage(to, imageUrl) {
   }
   try {
     let mediaPayload = imageUrl;
-    let mimetype = "image/jpeg"; // Usamos jpeg por defecto debido a la conversión
+    let mimetype = "image/jpeg";
+    let filename = "image.jpeg";
+    let isBase64 = false;
+    
+    const parts = imageUrl.split('/');
+    const originalFilename = parts[parts.length - 1];
     
     if (imageUrl.includes("/api/media/")) {
       const base64Data = await getLocalImageAsBase64(imageUrl);
       if (base64Data) {
         mediaPayload = base64Data;
+        filename = originalFilename.replace(/\.webp$/i, '.jpeg');
+        isBase64 = true;
       } else {
-        // Fallback si falla la conversión: detectar tipo por extensión
-        const parts = imageUrl.split('/');
-        const filename = parts[parts.length - 1];
-        if (filename.endsWith(".png")) mimetype = "image/png";
-        else if (filename.endsWith(".webp")) mimetype = "image/webp";
+        if (originalFilename.endsWith(".png")) mimetype = "image/png";
+        else if (originalFilename.endsWith(".webp")) mimetype = "image/webp";
+        filename = originalFilename;
+        // Fallback a URL pública usando auto.practiiko.com para evitar Loopback NAT
+        mediaPayload = `https://auto.practiiko.com/api/media/${originalFilename}`;
       }
     } else {
-      const parts = imageUrl.split('/');
-      const filename = parts[parts.length - 1];
-      if (filename.endsWith(".png")) mimetype = "image/png";
-      else if (filename.endsWith(".webp")) mimetype = "image/webp";
+      if (originalFilename.endsWith(".png")) mimetype = "image/png";
+      else if (originalFilename.endsWith(".webp")) mimetype = "image/webp";
+      filename = originalFilename;
     }
+
+    const payloadBody = {
+      number: to,
+      mediatype: "image",
+      media: mediaPayload,
+      fileName: filename, // Evolution API lo requiere para saber la extensión
+      mimetype: mimetype,
+      delay: 500
+    };
 
     const response = await fetch(`${EVO_URL}/message/sendMedia/${EVO_INSTANCE}`, {
       method: 'POST',
@@ -92,18 +105,27 @@ async function sendWhatsAppImage(to, imageUrl) {
         'Content-Type': 'application/json',
         'apikey': EVO_KEY
       },
-      body: JSON.stringify({
-        number: to,
-        mediatype: "image",
-        media: mediaPayload,
-        mimetype: mimetype,
-        delay: 500
-      })
+      body: JSON.stringify(payloadBody)
     });
+    
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error(`[EVOLUTION IMAGE SEND HTTP ERROR] ${response.status}:`, errText);
+      // Enviar mensaje de debug por WhatsApp al administrador o cliente
+      await sendWhatsAppMessage(to, `[SISTEMA-DEBUG] Falló envío de imagen. Error de Evolution API: HTTP ${response.status} - ${errText.substring(0, 100)}`);
+      return null;
+    }
+    
     const data = await response.json();
+    
+    if (data.status === "error" || data.error) {
+       await sendWhatsAppMessage(to, `[SISTEMA-DEBUG] Evolution devolvió error en JSON: ${JSON.stringify(data).substring(0, 100)}`);
+    }
+    
     return data;
   } catch (error) {
     console.error("[EVOLUTION IMAGE SEND ERROR]:", error);
+    await sendWhatsAppMessage(to, `[SISTEMA-DEBUG] Falló código interno al enviar imagen: ${error.message}`);
   }
 }
 
