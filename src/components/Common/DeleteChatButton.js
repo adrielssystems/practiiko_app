@@ -1,15 +1,22 @@
 'use client';
 
 import { Trash2, AlertTriangle } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/Toast";
 
 export default function DeleteChatButton({ sessionId, platform = 'instagram' }) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const router = useRouter();
   const { addToast } = useToast();
+
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
 
   const handleInitialClick = (e) => {
     e.preventDefault(); 
@@ -77,7 +84,7 @@ export default function DeleteChatButton({ sessionId, platform = 'instagram' }) 
         <Trash2 size={18} />
       </button>
 
-      {showConfirm && (
+      {showConfirm && mounted && createPortal(
         <div 
           onClick={cancelDelete}
           style={{
@@ -150,7 +157,8 @@ export default function DeleteChatButton({ sessionId, platform = 'instagram' }) 
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
