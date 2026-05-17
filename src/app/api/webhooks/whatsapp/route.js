@@ -38,67 +38,39 @@ async function sendWhatsAppMessage(to, text) {
   }
 }
 
-async function getLocalImageAsBase64(imageUrl) {
-  try {
-    const parts = imageUrl.split('/');
-    const filename = parts[parts.length - 1];
-    
-    const filePath = path.join(process.cwd(), 'public', 'uploads', 'products', filename);
-    const buffer = await fs.readFile(filePath);
-    
-    const jpegBuffer = await sharp(buffer)
-      .jpeg({ quality: 85 })
-      .toBuffer();
-    
-    // Evolution API's IsUrlOrBase64 validator expects RAW base64 without the data URI prefix!
-    return jpegBuffer.toString('base64');
-  } catch (error) {
-    console.error("[BASE64 CONVERSION ERROR]:", error);
-    return null;
-  }
-}
-
 async function sendWhatsAppImage(to, imageUrl) {
   if (!EVO_URL) {
     console.error("[EVOLUTION ERROR]: EVOLUTION_API_URL no está configurada en Easypanel.");
     return;
   }
   try {
-    let mediaPayload = imageUrl;
-    let mimetype = "image/jpeg";
-    let filename = "image.jpeg";
-    let isBase64 = false;
-    
     const parts = imageUrl.split('/');
     const originalFilename = parts[parts.length - 1];
     
+    let mediaPayload = imageUrl;
+    let filename = originalFilename;
+    let mimetype = "image/jpeg";
+
     if (imageUrl.includes("/api/media/")) {
-      const base64Data = await getLocalImageAsBase64(imageUrl);
-      if (base64Data) {
-        mediaPayload = base64Data;
-        filename = originalFilename.replace(/\.webp$/i, '.jpeg');
-        isBase64 = true;
-      } else {
-        if (originalFilename.endsWith(".png")) mimetype = "image/png";
-        else if (originalFilename.endsWith(".webp")) mimetype = "image/webp";
-        filename = originalFilename;
-        // Fallback a URL pública usando auto.practiiko.com para evitar Loopback NAT
-        mediaPayload = `https://auto.practiiko.com/api/media/${originalFilename}`;
-      }
+      // Forzar extensión .jpeg. Nuestro Media API la convertirá automáticamente "en el aire" si es un .webp original
+      const filenameJpg = originalFilename.replace(/\.webp$/i, '.jpeg');
+      mediaPayload = `https://auto.practiiko.com/api/media/${filenameJpg}`;
+      filename = filenameJpg;
     } else {
       if (originalFilename.endsWith(".png")) mimetype = "image/png";
       else if (originalFilename.endsWith(".webp")) mimetype = "image/webp";
-      filename = originalFilename;
     }
 
     const payloadBody = {
       number: to,
       mediatype: "image",
       media: mediaPayload,
-      fileName: filename, // Evolution API lo requiere para saber la extensión
+      fileName: filename,
       mimetype: mimetype,
       delay: 500
     };
+
+    console.log(`[WHATSAPP] Enviando imagen via URL pública dinámica a ${to}: ${mediaPayload}`);
 
     const response = await fetch(`${EVO_URL}/message/sendMedia/${EVO_INSTANCE}`, {
       method: 'POST',
