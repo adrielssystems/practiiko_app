@@ -94,7 +94,7 @@ async function getInventory(terms, intent, location) {
 
     const baseQuery = `
       SELECT p.name, p.code, p.pseudonimo, p.price_bcv, p.price_cash, p.description, c.name as categoria,
-             (SELECT url FROM product_images WHERE product_id = p.id AND is_main = true LIMIT 1) as image_url
+             (SELECT url FROM product_images WHERE product_id = p.id ORDER BY is_main DESC LIMIT 1) as image_url
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
       WHERE p.status = 'active' AND p.stock > 0
@@ -135,6 +135,7 @@ async function getInventory(terms, intent, location) {
     }
 
     console.log(`[DB DEBUG] Categorías: ${categories.join(", ")} | Productos: ${rows.length}`);
+    rows.forEach(r => console.log(`[DB DEBUG] Producto: ${r.name} | IMG: ${r.image_url}`));
 
     // 3. Formatear el texto para la IA (AGRUPADO POR PSEUDONIMO)
     const groups = {};
@@ -380,17 +381,17 @@ export async function processChatMessage(message, sessionId, source = 'dm', comm
     // Extraer URLs de imágenes si existen etiquetas [IMG: url]
     let imageUrls = [];
     let cleanResponse = rawResponse;
-    const imgMatches = [...rawResponse.matchAll(/\[IMG:\s*([^\]\s]+)\]/gi)];
+    const imgMatches = [...rawResponse.matchAll(/\[IMG:\s*([^\]]+?)\]/gi)];
     if (imgMatches.length > 0) {
       imageUrls = imgMatches.map(m => {
-        let url = m[1];
+        let url = m[1].trim();
         if (url.startsWith('/') && baseUrl) {
           url = `${baseUrl}${url}`;
         }
         return url;
       });
       // Remover todas las etiquetas de la respuesta
-      cleanResponse = rawResponse.replace(/\[IMG:\s*[^\]\s]+\]/gi, "").trim();
+      cleanResponse = rawResponse.replace(/\[IMG:\s*[^\]]+\]/gi, "").trim();
     }
 
     // Guardar respuesta del bot
