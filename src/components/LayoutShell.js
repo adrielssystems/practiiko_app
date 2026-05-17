@@ -65,26 +65,36 @@ export default function LayoutShell({ children }) {
             title={isCollapsed ? "Expandir menú" : "Colapsar menú"}
             style={{
               position: 'absolute',
-              right: '-12px',
-              top: '32px',
-              width: '24px',
-              height: '24px',
+              right: '-14px',
+              top: '40px',
+              width: '28px',
+              height: '28px',
               borderRadius: '50%',
               background: '#ffffff',
-              border: '1px solid var(--border)',
+              border: '1.5px solid var(--primary)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-              color: '#6c757d',
-              transition: 'all 0.2s ease',
+              boxShadow: '0 4px 10px rgba(4, 119, 191, 0.15)',
+              color: 'var(--primary)',
+              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
               zIndex: 100
             }}
-            onMouseOver={e => e.currentTarget.style.color = 'var(--primary)'}
-            onMouseOut={e => e.currentTarget.style.color = '#6c757d'}
+            onMouseOver={e => {
+              e.currentTarget.style.background = 'var(--primary)';
+              e.currentTarget.style.color = '#ffffff';
+              e.currentTarget.style.transform = 'scale(1.15)';
+              e.currentTarget.style.boxShadow = '0 6px 14px rgba(4, 119, 191, 0.25)';
+            }}
+            onMouseOut={e => {
+              e.currentTarget.style.background = '#ffffff';
+              e.currentTarget.style.color = 'var(--primary)';
+              e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.boxShadow = '0 4px 10px rgba(4, 119, 191, 0.15)';
+            }}
           >
-            {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+            {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
           </button>
         )}
 
