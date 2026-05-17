@@ -204,11 +204,12 @@ ${priceInfo} 💎`;
     return {
       found: rows.length > 0 || categories.length > 0,
       text: `${categoriesText}\n\n${productsText}`,
-      isFallback
+      isFallback,
+      rows
     };
   } catch (e) {
     console.error("[DB ERROR]:", e);
-    return { found: false, text: "", isFallback: false };
+    return { found: false, text: "", isFallback: false, rows: [] };
   }
 }
 
@@ -425,6 +426,44 @@ export async function processChatMessage(message, sessionId, source = 'dm', comm
       });
       // Remover todas las etiquetas de la respuesta
       cleanResponse = rawResponse.replace(/URL_FOTO:\s*[^\s]+/gi, "").trim();
+    }
+
+    // Fallback proactivo: Si la IA no colocó las etiquetas URL_FOTO, pero el cliente pidió fotos/imágenes, las extraemos directamente del inventario.
+    if (imageUrls.length === 0 && inventory.found && inventory.rows) {
+      const normalizeMsg = normalize(message);
+      const pideFotos = normalizeMsg.includes("foto") || 
+                       normalizeMsg.includes("imagen") || 
+                       normalizeMsg.includes("imagenes") || 
+                       normalizeMsg.includes("ver") || 
+                       normalizeMsg.includes("mostra") || 
+                       normalizeMsg.includes("muestr");
+                       
+      if (pideFotos) {
+        const KNOWN_COLORS = [
+          "gris claro", "gris medio", "gris", "rosado", "verde oliva", 
+          "verde", "arena", "blanco", "beige", "azul", "negro", "crema", "naranja"
+        ];
+        const mentionedColor = KNOWN_COLORS.find(c => normalizeMsg.includes(c));
+        
+        inventory.rows.forEach(r => {
+          if (r.image_url) {
+            let include = true;
+            if (mentionedColor) {
+              const prodNameLower = r.name.toLowerCase();
+              include = prodNameLower.includes(mentionedColor);
+            }
+            if (include) {
+              let url = r.image_url.trim();
+              if (url.startsWith('/') && baseUrl) {
+                url = `${baseUrl}${url}`;
+              }
+              if (!imageUrls.includes(url)) {
+                imageUrls.push(url);
+              }
+            }
+          }
+        });
+      }
     }
 
     // Guardar respuesta del bot
