@@ -156,8 +156,19 @@ async function getInventory(terms, intent, location) {
       const colorsAndUrls = g.variants
         .map(v => {
           let colorName = "";
-          if (v.pseudonimo) {
-            const nameLower = v.name.toLowerCase();
+          const KNOWN_COLORS = [
+            "gris claro", "gris medio", "gris", "rosado", "verde oliva", 
+            "verde", "arena", "blanco", "beige", "azul", "negro", "crema", "naranja"
+          ];
+          const nameLower = v.name.toLowerCase();
+          
+          const matchedColor = KNOWN_COLORS
+            .sort((a, b) => b.length - a.length)
+            .find(color => nameLower.endsWith(color) || nameLower.includes(" " + color + " "));
+            
+          if (matchedColor) {
+            colorName = matchedColor.toUpperCase();
+          } else if (v.pseudonimo) {
             const pseudonimoLower = v.pseudonimo.toLowerCase();
             if (nameLower.includes(pseudonimoLower)) {
               const idx = nameLower.indexOf(pseudonimoLower);
@@ -267,6 +278,7 @@ Nunca olvides mantener la educación, la amabilidad y el enfoque en la satisfacc
     const finalMessages = [
       new SystemMessage(prompt),
       ...historyMessages,
+      new SystemMessage("REGLA CRÍTICA DE RESPUESTA: Si el cliente ha pedido fotos, imágenes o ver el modelo, DEBES obligatoriamente escribir 'URL_FOTO: [URL]' para cada color del inventario que le nombres. NUNCA respondas con una línea en blanco debajo del nombre del color. El formato exacto debe ser:\n\n*Color NombreColor*:\nURL_FOTO: /api/media/..."),
       new HumanMessage(message)
     ];
 
@@ -376,6 +388,7 @@ export async function processChatMessage(message, sessionId, source = 'dm', comm
       const settingsRes = await query("SELECT value FROM app_settings WHERE key = 'ai_custom_instructions'");
       if (settingsRes.rows.length > 0) {
         dynamicKnowledge = settingsRes.rows[0].value;
+        console.log(`[DEBUG LLM KNOWLEDGE]\n${dynamicKnowledge}\n[DEBUG LLM KNOWLEDGE END]`);
       }
     } catch (e) {
       console.warn("No se pudo cargar ai_custom_instructions de la BD:", e.message);
@@ -395,6 +408,7 @@ export async function processChatMessage(message, sessionId, source = 'dm', comm
     // Pasar isFallback para que DeepSeek sepa si los resultados son exactos o alternativos (#6)
     const rawResponse = await buildResponse(message, customerName, inventory, location, historyMessages, source, dynamicKnowledge, inventory.isFallback);
 
+    console.log(`[DEBUG LLM INVENTORY]\n${inventory.text}\n[DEBUG LLM INVENTORY END]`);
     console.log(`[DEBUG LLM RAW]\n${rawResponse}\n[DEBUG LLM RAW END]`);
 
     // Extraer URLs de imágenes si existen etiquetas URL_FOTO: url
