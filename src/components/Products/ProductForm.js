@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { 
   Save, Eye, Package, Tag, CreditCard, ChevronLeft, 
   LayoutDashboard, Layers, Box, Plus, X, ArrowLeft 
@@ -40,6 +40,62 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
 
   const [isFlipped, setIsFlipped] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const previewVideoRef = useRef(null);
+
+  // Unificar imágenes y video en una sola lista para el preview del carrusel
+  const mediaList = [];
+  if (media.images.length > 0) {
+    media.images.forEach(img => {
+      mediaList.push({ type: "image", url: media.localPreviews[img] || img });
+    });
+  }
+  if (media.video) {
+    mediaList.push({ type: "video", url: media.localPreviews[media.video] || media.video });
+  }
+  if (mediaList.length === 0) {
+    mediaList.push({ type: "image", url: "/hero-sofa.png" });
+  }
+
+  // Reiniciar index cuando cambian las imágenes o el video
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [media.images, media.video]);
+
+  // Autoplay del video al seleccionarse, y pausa al salirse
+  useEffect(() => {
+    if (mediaList[activeIndex]?.type === "video") {
+      if (previewVideoRef.current) {
+        previewVideoRef.current.currentTime = 0;
+        previewVideoRef.current.play().catch(err => console.log("Preview video auto-play blocked/failed:", err));
+      }
+    } else {
+      if (previewVideoRef.current) {
+        previewVideoRef.current.pause();
+      }
+    }
+  }, [activeIndex, mediaList]);
+
+  const handleNext = (e) => {
+    e.stopPropagation(); // Evitar que la tarjeta gire
+    setActiveIndex(prev => (prev + 1) % mediaList.length);
+  };
+
+  const handlePrev = (e) => {
+    e.stopPropagation(); // Evitar que la tarjeta gire
+    setActiveIndex(prev => (prev - 1 + mediaList.length) % mediaList.length);
+  };
+
+  const handleDotClick = (e, index) => {
+    e.stopPropagation(); // Evitar que la tarjeta gire
+    setActiveIndex(index);
+  };
+
+  const handleFlip = (e) => {
+    // Si es un botón del carrusel o controles de la tarjeta, no girar
+    if (e.target.closest('button')) return;
+    setIsFlipped(!isFlipped);
+  };
 
   // Actualizar el nombre de la categoría para el preview
   useEffect(() => {
@@ -321,7 +377,7 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
 
         <div 
           className={`flip-card-container ${isFlipped ? 'is-flipped' : ''}`}
-          onClick={() => setIsFlipped(!isFlipped)}
+          onClick={handleFlip}
         >
           <div className="flip-card-inner">
             
@@ -336,21 +392,24 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
               overflow: 'hidden'
             }}>
               {/* Media Preview Container */}
-              <div style={{ 
-                width: '100%', 
-                aspectRatio: '4/5', 
-                background: 'white', 
-                borderRadius: '32px', 
-                position: 'relative',
-                marginBottom: '1.5rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.05)',
-                overflow: 'hidden'
-              }}>
+              <div 
+                className="group-media-preview"
+                style={{ 
+                  width: '100%', 
+                  aspectRatio: '4/5', 
+                  background: 'white', 
+                  borderRadius: '32px', 
+                  position: 'relative',
+                  marginBottom: '1.5rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.05)',
+                  overflow: 'hidden'
+                }}
+              >
                 {/* Badges Preview */}
-                <div style={{ position: 'absolute', top: '12px', left: '12px', zIndex: 10, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div style={{ position: 'absolute', top: '12px', left: '12px', zIndex: 20, display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   {formValues.is_new && (
                     <span style={{ background: '#0477BF', color: 'white', fontSize: '8px', fontWeight: 900, padding: '4px 10px', borderRadius: '100px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Nuevo</span>
                   )}
@@ -362,15 +421,141 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
                   )}
                 </div>
 
-                {media.images.length > 0 ? (
-                  <img 
-                    src={media.localPreviews[media.images[0]] || media.images[0]} 
-                    alt="Main" 
-                    style={{ width: '85%', height: '85%', objectFit: 'contain' }} 
-                  />
-                ) : (
-                  <div style={{ opacity: 0.2 }}>
-                    <Package size={64} color="#000" strokeWidth={1} />
+                {/* Renderizado de Media (Imágenes / Video) */}
+                <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+                  {mediaList.map((item, idx) => (
+                    <div 
+                      key={idx} 
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        transition: 'opacity 0.5s',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        opacity: idx === activeIndex ? 1 : 0,
+                        zIndex: idx === activeIndex ? 10 : 0,
+                        pointerEvents: idx === activeIndex ? 'auto' : 'none'
+                      }}
+                    >
+                      {item.type === 'video' ? (
+                        <video 
+                          ref={previewVideoRef}
+                          src={item.url}
+                          muted 
+                          playsInline
+                          loop
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '32px' }}
+                        />
+                      ) : (
+                        <img 
+                          alt={`${formValues.name} - ${idx + 1}`}
+                          style={{ width: '85%', height: '85%', objectFit: 'contain', padding: '1rem' }} 
+                          src={item.url}
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Flechas de Navegación del Carrusel */}
+                {mediaList.length > 1 && (
+                  <>
+                    <button 
+                      type="button"
+                      onClick={handlePrev}
+                      className="carousel-btn-preview"
+                      style={{
+                        position: 'absolute',
+                        left: '12px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        background: 'rgba(0,0,0,0.4)',
+                        color: 'white',
+                        border: 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 30,
+                        cursor: 'pointer',
+                        transition: 'background 0.3s'
+                      }}
+                      title="Anterior"
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>chevron_left</span>
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={handleNext}
+                      className="carousel-btn-preview"
+                      style={{
+                        position: 'absolute',
+                        right: '12px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        background: 'rgba(0,0,0,0.4)',
+                        color: 'white',
+                        border: 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 30,
+                        cursor: 'pointer',
+                        transition: 'background 0.3s'
+                      }}
+                      title="Siguiente"
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>chevron_right</span>
+                    </button>
+                  </>
+                )}
+
+                {/* Puntos de Navegación del Carrusel (Dots) */}
+                {mediaList.length > 1 && (
+                  <div style={{
+                    position: 'absolute',
+                    bottom: '12px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    display: 'flex',
+                    gap: '6px',
+                    zIndex: 30,
+                    background: 'rgba(0,0,0,0.35)',
+                    padding: '4px 10px',
+                    borderRadius: '100px',
+                    backdropFilter: 'blur(4px)'
+                  }}>
+                    {mediaList.map((item, idx) => (
+                      <button 
+                        key={idx}
+                        type="button"
+                        onClick={(e) => handleDotClick(e, idx)}
+                        style={{
+                          height: '6px',
+                          borderRadius: '100px',
+                          border: 'none',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          position: 'relative',
+                          transition: 'all 0.3s',
+                          width: idx === activeIndex ? '16px' : '6px',
+                          background: idx === activeIndex ? '#F28705' : 'rgba(255,255,255,0.6)'
+                        }}
+                        title={item.type === 'video' ? 'Ver Video' : `Ver Imagen ${idx + 1}`}
+                      >
+                        {item.type === 'video' && idx === activeIndex && (
+                          <span style={{ position: 'absolute', fontSize: '6px', fontWeight: 900, color: 'white' }}>▶</span>
+                        )}
+                      </button>
+                    ))}
                   </div>
                 )}
               </div>
@@ -466,8 +651,6 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
 
           </div>
         </div>
-        
-
       </div>
       
       <style jsx>{`
@@ -512,8 +695,21 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
           transform: rotateY(180deg);
           box-shadow: inset 0 0 100px rgba(0,0,0,0.1);
         }
+
+        .carousel-btn-preview {
+          opacity: 0;
+          transition: all 0.3s ease !important;
+        }
+
+        .group-media-preview:hover .carousel-btn-preview {
+          opacity: 1;
+        }
+
+        .carousel-btn-preview:hover {
+          background: rgba(0, 0, 0, 0.7) !important;
+          scale: 1.1;
+        }
       `}</style>
     </div>
   );
 }
-
