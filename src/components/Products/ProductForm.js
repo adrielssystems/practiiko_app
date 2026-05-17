@@ -20,14 +20,6 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
     localPreviews: {}
   });
   
-  // Estados para nuevos campos
-  const [tags, setTags] = useState(initialData.tags || []);
-  const [tagInput, setTagInput] = useState("");
-  const [featuresInput, setFeaturesInput] = useState(
-    Array.isArray(initialData.features) ? initialData.features.join(", ") : ""
-  );
-  const [pricingMatrix, setPricingMatrix] = useState(initialData.pricing_matrix || []);
-  
   // Estado para la previsualización en tiempo real
   const [formValues, setFormValues] = useState({
     name: initialData.name || "",
@@ -83,34 +75,6 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
     setMedia(newMedia);
   }, []);
 
-  // Helpers para Tags
-  const addTag = () => {
-    if (!tagInput.trim()) return;
-    if (!tags.includes(tagInput.trim())) {
-      setTags([...tags, tagInput.trim()]);
-    }
-    setTagInput("");
-  };
-
-  const removeTag = (tagToRemove) => {
-    setTags(tags.filter(t => t !== tagToRemove));
-  };
-
-  // Helpers para Matrix
-  const addMatrixRow = () => {
-    setPricingMatrix([...pricingMatrix, { variant: "", price: 0 }]);
-  };
-
-  const updateMatrixRow = (index, field, value) => {
-    const newMatrix = [...pricingMatrix];
-    newMatrix[index][field] = field === 'price' ? parseFloat(value) : value;
-    setPricingMatrix(newMatrix);
-  };
-
-  const removeMatrixRow = (index) => {
-    setPricingMatrix(pricingMatrix.filter((_, i) => i !== index));
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -143,10 +107,6 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
   // Cálculo del precio de previsualización (el menor de la matriz o el base)
   const getPreviewPrice = () => {
     const basePrice = parseFloat(formValues.price_bcv) || 0;
-    if (pricingMatrix.length > 0) {
-      const matrixPrices = pricingMatrix.map(m => m.price).filter(p => p > 0);
-      if (matrixPrices.length > 0) return Math.min(...matrixPrices);
-    }
     return basePrice;
   };
 
@@ -169,9 +129,9 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
         
         {/* CAMPOS OCULTOS PARA DATOS COMPLEJOS (JSON) */}
         <input type="hidden" name="images_json" value={JSON.stringify(media.images)} />
-        <input type="hidden" name="tags_json" value={JSON.stringify(tags)} />
-        <input type="hidden" name="features_json" value={JSON.stringify(featuresInput.split(",").map(f => f.trim()).filter(f => f))} />
-        <input type="hidden" name="pricing_matrix_json" value={JSON.stringify(pricingMatrix)} />
+        <input type="hidden" name="tags_json" value="[]" />
+        <input type="hidden" name="features_json" value="[]" />
+        <input type="hidden" name="pricing_matrix_json" value="[]" />
 
         {/* SECCIÓN 1: BÁSICO */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
@@ -221,58 +181,7 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
           ></textarea>
         </div>
 
-        {/* SECCIÓN 2: TAGS Y FEATURES */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
-          <Tag size={20} color="var(--primary)" />
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0 }}>Etiquetas y Atributos</h2>
-        </div>
-
-        <div className="form-group" style={{ marginBottom: '2rem' }}>
-          <label className="label">Etiquetas (Ej: Nuevo, Oferta)</label>
-          <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem' }}>
-            <input 
-              type="text" className="input-field" 
-              value={tagInput} onChange={(e) => setTagInput(e.target.value)}
-              placeholder="Escribe y presiona Enter..."
-              onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-              style={{ borderRadius: '12px' }}
-            />
-            <button type="button" onClick={addTag} className="btn-primary" style={{ padding: '0 1.5rem', borderRadius: '12px' }}>
-              <Plus size={18} />
-            </button>
-          </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-            {tags.map(tag => (
-              <span key={tag} style={{ 
-                background: 'rgba(4, 119, 191, 0.05)', 
-                color: 'var(--primary)', 
-                padding: '0.4rem 0.8rem', 
-                borderRadius: '10px', 
-                fontSize: '0.75rem', 
-                fontWeight: 800,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-                border: '1px solid rgba(4, 119, 191, 0.1)'
-              }}>
-                {tag}
-                <X size={14} style={{ cursor: 'pointer' }} onClick={() => removeTag(tag)} />
-              </span>
-            ))}
-          </div>
-        </div>
-
-        <div className="form-group" style={{ marginBottom: '2rem' }}>
-          <label className="label">Características (separadas por coma)</label>
-          <input 
-            type="text" className="input-field" 
-            value={featuresInput} onChange={(e) => setFeaturesInput(e.target.value)}
-            placeholder="Ej: Madera de Roble, Tela Anti-manchas, 3 Plazas"
-            style={{ borderRadius: '12px' }}
-          />
-        </div>
-
-        {/* SECCIÓN 3: PRECIOS */}
+        {/* SECCIÓN 2: PRECIOS */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
           <CreditCard size={20} color="var(--primary)" />
           <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0 }}>Precios e Inventario</h2>
@@ -313,51 +222,7 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
           </div>
         </div>
 
-        {/* SECCIÓN 4: MATRIZ DE VARIANTES */}
-        <div style={{ marginBottom: '2.5rem', background: '#f8fafc', padding: '1.5rem', borderRadius: '20px', border: '1px solid #e2e8f0' }}>
-          <label className="label" style={{ fontWeight: 800, marginBottom: '1rem', display: 'block' }}>Variantes de Producto (Medidas / Telas)</label>
-          <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '1rem' }}>
-            <thead>
-              <tr style={{ textAlign: 'left', fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                <th style={{ padding: '0.5rem' }}>Variante (Nombre)</th>
-                <th style={{ padding: '0.5rem' }}>Precio ($)</th>
-                <th style={{ padding: '0.5rem', width: '40px' }}></th>
-              </tr>
-            </thead>
-            <tbody>
-              {pricingMatrix.map((row, idx) => (
-                <tr key={idx}>
-                  <td style={{ padding: '0.4rem' }}>
-                    <input 
-                      type="text" className="input-field" value={row.variant} 
-                      onChange={(e) => updateMatrixRow(idx, 'variant', e.target.value)}
-                      placeholder="Ej: King Size / Tela Velvet"
-                      style={{ fontSize: '0.85rem', borderRadius: '10px' }}
-                    />
-                  </td>
-                  <td style={{ padding: '0.4rem' }}>
-                    <input 
-                      type="number" className="input-field" value={row.price} 
-                      onChange={(e) => updateMatrixRow(idx, 'price', e.target.value)}
-                      placeholder="0.00"
-                      style={{ fontSize: '0.85rem', borderRadius: '10px' }}
-                    />
-                  </td>
-                  <td style={{ padding: '0.4rem' }}>
-                    <button type="button" onClick={() => removeMatrixRow(idx)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}>
-                      <X size={18} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <button type="button" onClick={addMatrixRow} className="btn-outline" style={{ width: '100%', justifyContent: 'center', gap: '0.5rem', borderStyle: 'dashed', borderRadius: '12px' }}>
-            <Plus size={16} /> Añadir Variante
-          </button>
-        </div>
-
-        {/* SECCIÓN 5: CATEGORIZACIÓN Y ESTADOS */}
+        {/* SECCIÓN 3: CATEGORIZACIÓN Y ESTADOS */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
           <div className="form-group">
             <label className="label">Categoría Principal</label>
