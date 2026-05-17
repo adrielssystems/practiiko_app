@@ -63,7 +63,11 @@ function detectIntent(message) {
 function extractKeywords(message) {
   const m = normalize(message);
 
-  const stopWords = ["hola", "precio", "cuanto", "cuesta", "vale", "quiero", "saber", "tienen", "buenas", "tardes", "dias", "noches", "favor", "gracias", "para", "como", "esta", "donde", "tiene", "busco", "necesito", "algun"];
+  const stopWords = [
+    "hola", "precio", "cuanto", "cuesta", "vale", "quiero", "saber", "tienen", "buenas", "tardes", "dias", "noches", 
+    "favor", "gracias", "para", "como", "esta", "donde", "tiene", "busco", "necesito", "algun",
+    "muestrame", "muestra", "ver", "fotos", "foto", "imagenes", "imagen", "del", "las", "los", "una", "uno", "unos", "unas", "este", "esto", "de", "el", "la"
+  ];
   const words = m.split(/[\s,?.!]+/).filter(w => w.length >= 3 && !stopWords.includes(w));
 
   return words.length > 0 ? words : null;
@@ -444,15 +448,35 @@ export async function processChatMessage(message, sessionId, source = 'dm', comm
           "verde", "arena", "blanco", "beige", "azul", "negro", "crema", "naranja"
         ];
         const mentionedColor = KNOWN_COLORS.find(c => normalizeMsg.includes(c));
+        const cleanTerms = terms ? terms.filter(t => t.length >= 3) : [];
         
         inventory.rows.forEach(r => {
           if (r.image_url) {
-            let include = true;
+            // 1. Coincidencia por color
+            let matchesColor = true;
             if (mentionedColor) {
               const prodNameLower = r.name.toLowerCase();
-              include = prodNameLower.includes(mentionedColor);
+              matchesColor = prodNameLower.includes(mentionedColor);
             }
-            if (include) {
+            
+            // 2. Coincidencia por término (modelo)
+            let matchesTerm = true;
+            if (cleanTerms.length > 0) {
+              const prodText = normalize(`${r.name} ${r.pseudonimo || ""} ${r.description || ""}`);
+              
+              // Comparar eliminando letras dobles para robustez ante erratas (caterpillar vs caterpilar)
+              const fuzzyMatch = (text, term) => {
+                const simplify = (s) => s.replace(/(.)\1+/g, '$1');
+                return simplify(text).includes(simplify(term));
+              };
+              
+              matchesTerm = cleanTerms.some(t => {
+                if (mentionedColor && t === mentionedColor) return false;
+                return fuzzyMatch(prodText, t);
+              });
+            }
+            
+            if (matchesColor && matchesTerm) {
               let url = r.image_url.trim();
               if (url.startsWith('/') && baseUrl) {
                 url = `${baseUrl}${url}`;
