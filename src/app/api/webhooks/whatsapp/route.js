@@ -133,8 +133,12 @@ export async function POST(req) {
       }
 
       const protocol = req.headers.get("x-forwarded-proto") || "https";
-      const host = req.headers.get("x-forwarded-host") || req.headers.get("host");
-      const baseUrl = `${protocol}://${host}`;
+      const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "auto.practiiko.com";
+      let baseUrl = `${protocol}://${host}`;
+      // Evitar que URLs locales o de red interna docker se usen para las fotos de Evolution API
+      if (baseUrl.includes("localhost") || baseUrl.includes("practiiko_app") || baseUrl.includes("127.0.0.1") || baseUrl.includes("::1")) {
+        baseUrl = "https://auto.practiiko.com";
+      }
 
       // 6. Procesar con IA y responder (en segundo plano)
       console.log(`[WHATSAPP] Procesando respuesta de IA para ${senderNumber}... (baseUrl: ${baseUrl})`);
@@ -142,10 +146,12 @@ export async function POST(req) {
         // Enviar a WhatsApp
         await sendWhatsAppMessage(senderNumber, aiResponse.text);
         
-        // Si hay una imagen, enviarla también
-        if (aiResponse.imageUrl) {
-          await sendWhatsAppImage(senderNumber, aiResponse.imageUrl);
-          console.log(`[WHATSAPP] Imagen de IA enviada a ${senderNumber}: ${aiResponse.imageUrl}`);
+        // Si hay imágenes, enviarlas todas
+        if (aiResponse.imageUrls && aiResponse.imageUrls.length > 0) {
+          for (const imgUrl of aiResponse.imageUrls) {
+            await sendWhatsAppImage(senderNumber, imgUrl);
+            console.log(`[WHATSAPP] Imagen de IA enviada a ${senderNumber}: ${imgUrl}`);
+          }
         }
         console.log(`[WHATSAPP] Respuesta de IA enviada a ${senderNumber}`);
       }).catch(e => console.error("[ERROR WHATSAPP AI]:", e));

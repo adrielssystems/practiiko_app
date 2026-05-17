@@ -346,7 +346,7 @@ export async function processChatMessage(message, sessionId, source = 'dm', comm
         await query(`INSERT INTO instagram_messages (session_id, message, source, comment_id) VALUES ($1, $2, $3, $4)`, [sessionId, userPayload, source, commentId]);
         await query(`INSERT INTO instagram_messages (session_id, message, source, comment_id) VALUES ($1, $2, $3, $4)`, [sessionId, botPayload, source, commentId]);
       }
-      return { text: response, imageUrl: null };
+      return { text: response, imageUrls: [] };
     }
 
     const terms = extractKeywords(message);
@@ -371,23 +371,25 @@ export async function processChatMessage(message, sessionId, source = 'dm', comm
       } else {
         await query(`INSERT INTO instagram_messages (session_id, message, source, comment_id) VALUES ($1, $2, $3, $4)`, [sessionId, JSON.stringify({ role: 'assistant', content: noProdMsg }), source, commentId]);
       }
-      return { text: noProdMsg, imageUrl: null };
+      return { text: noProdMsg, imageUrls: [] };
     }
 
     // Pasar isFallback para que DeepSeek sepa si los resultados son exactos o alternativos (#6)
     const rawResponse = await buildResponse(message, customerName, inventory, location, historyMessages, source, dynamicKnowledge, inventory.isFallback);
 
-    // Extraer URL de imagen si existe la etiqueta [IMG: url]
-    let imageUrl = null;
+    // Extraer URLs de imágenes si existen etiquetas [IMG: url]
+    let imageUrls = [];
     let cleanResponse = rawResponse;
-    const imgMatch = rawResponse.match(/\[IMG:\s*([^\]\s]+)\]/i);
-    if (imgMatch) {
-      imageUrl = imgMatch[1];
-      // Si la URL es relativa, le prependeamos el baseUrl para que la Evolution API e Instagram la puedan descargar
-      if (imageUrl.startsWith('/') && baseUrl) {
-        imageUrl = `${baseUrl}${imageUrl}`;
-      }
-      // Remover la etiqueta de la respuesta
+    const imgMatches = [...rawResponse.matchAll(/\[IMG:\s*([^\]\s]+)\]/gi)];
+    if (imgMatches.length > 0) {
+      imageUrls = imgMatches.map(m => {
+        let url = m[1];
+        if (url.startsWith('/') && baseUrl) {
+          url = `${baseUrl}${url}`;
+        }
+        return url;
+      });
+      // Remover todas las etiquetas de la respuesta
       cleanResponse = rawResponse.replace(/\[IMG:\s*[^\]\s]+\]/gi, "").trim();
     }
 
@@ -400,7 +402,7 @@ export async function processChatMessage(message, sessionId, source = 'dm', comm
         [sessionId, JSON.stringify({ role: 'assistant', content: cleanResponse }), source, commentId]);
     }
 
-    return { text: cleanResponse, imageUrl };
+    return { text: cleanResponse, imageUrls };
 
   } catch (error) {
     console.error("CRITICAL AGENT ERROR:", error);
@@ -417,6 +419,6 @@ export async function processChatMessage(message, sessionId, source = 'dm', comm
       console.error("Failed to log error to DB:", dbErr);
     }
 
-    return { text: errorMsg, imageUrl: null };
+    return { text: errorMsg, imageUrls: [] };
   }
 }

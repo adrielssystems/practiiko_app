@@ -25,8 +25,12 @@ export async function GET(req) {
 export async function POST(req) {
   try {
     const protocol = req.headers.get("x-forwarded-proto") || "https";
-    const host = req.headers.get("x-forwarded-host") || req.headers.get("host");
-    const baseUrl = `${protocol}://${host}`;
+    const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "auto.practiiko.com";
+    let baseUrl = `${protocol}://${host}`;
+    // Evitar que URLs locales o de red interna docker se usen para las fotos de Meta Graph API
+    if (baseUrl.includes("localhost") || baseUrl.includes("practiiko_app") || baseUrl.includes("127.0.0.1") || baseUrl.includes("::1")) {
+      baseUrl = "https://auto.practiiko.com";
+    }
 
     const body = await req.json();
 
@@ -101,8 +105,10 @@ export async function POST(req) {
               // 2. Procesar con IA si está habilitado
               processChatMessage(userMessage, senderId, 'dm', null, userInfo?.name || userInfo?.username || 'Cliente', baseUrl).then(async (aiResponse) => {
                 await sendInstagramMessage(senderId, aiResponse.text);
-                if (aiResponse.imageUrl) {
-                  await sendInstagramImage(senderId, aiResponse.imageUrl);
+                if (aiResponse.imageUrls && aiResponse.imageUrls.length > 0) {
+                  for (const imgUrl of aiResponse.imageUrls) {
+                    await sendInstagramImage(senderId, imgUrl);
+                  }
                 }
               }).catch(e => console.error("[ERROR ASYNC DM]:", e));
             }
@@ -171,8 +177,10 @@ export async function POST(req) {
 
                 // 2. Respuesta privada con el detalle de la IA
                 await sendInstagramPrivateReply(commentId, aiResponse.text, pageId);
-                if (aiResponse.imageUrl) {
-                  await sendInstagramImage(senderId, aiResponse.imageUrl);
+                if (aiResponse.imageUrls && aiResponse.imageUrls.length > 0) {
+                  for (const imgUrl of aiResponse.imageUrls) {
+                    await sendInstagramImage(senderId, imgUrl);
+                  }
                 }
               }).catch(e => console.error("[ERROR ASYNC COMMENT]:", e));
             }
