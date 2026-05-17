@@ -95,8 +95,11 @@ export async function POST(req) {
               }
 
               // 2. Procesar con IA si está habilitado
-              processChatMessage(userMessage, senderId, 'dm', null, userInfo?.name || userInfo?.username || 'Cliente').then(aiResponse => {
-                sendInstagramMessage(senderId, aiResponse);
+              processChatMessage(userMessage, senderId, 'dm', null, userInfo?.name || userInfo?.username || 'Cliente').then(async (aiResponse) => {
+                await sendInstagramMessage(senderId, aiResponse.text);
+                if (aiResponse.imageUrl) {
+                  await sendInstagramImage(senderId, aiResponse.imageUrl);
+                }
               }).catch(e => console.error("[ERROR ASYNC DM]:", e));
             }
           }
@@ -158,12 +161,15 @@ export async function POST(req) {
                 return NextResponse.json({ status: "bot_paused" });
               }
 
-              processChatMessage(userMessage, senderId, 'comment', commentId, username || 'Cliente').then(aiResponse => {
+              processChatMessage(userMessage, senderId, 'comment', commentId, username || 'Cliente').then(async (aiResponse) => {
                 // 1. Respuesta pública corta con guía de solicitudes
                 replyToInstagramComment(commentId, "¡Hola! Te enviamos el detalle al DM (revisa tu bandeja de mensajes) 💎");
 
                 // 2. Respuesta privada con el detalle de la IA
-                sendInstagramPrivateReply(commentId, aiResponse, pageId);
+                await sendInstagramPrivateReply(commentId, aiResponse.text, pageId);
+                if (aiResponse.imageUrl) {
+                  await sendInstagramImage(senderId, aiResponse.imageUrl);
+                }
               }).catch(e => console.error("[ERROR ASYNC COMMENT]:", e));
             }
           }
@@ -284,5 +290,41 @@ async function sendInstagramPrivateReply(commentId, text, igId = "me") {
     }
   } catch (e) {
     console.error("[EXCEPTION PRIVATE REPLY]:", e);
+  }
+}
+
+async function sendInstagramImage(recipientId, imageUrl) {
+  const PAGE_ACCESS_TOKEN = process.env.INSTAGRAM_PAGE_ACCESS_TOKEN?.trim();
+  if (!PAGE_ACCESS_TOKEN) {
+    console.error("Falta INSTAGRAM_PAGE_ACCESS_TOKEN en las variables de entorno.");
+    return;
+  }
+  const url = `https://graph.instagram.com/v21.0/me/messages`;
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${PAGE_ACCESS_TOKEN}`
+      },
+      body: JSON.stringify({
+        recipient: { id: recipientId },
+        message: {
+          attachment: {
+            type: "image",
+            payload: {
+              url: imageUrl,
+              is_reusable: true
+            }
+          }
+        },
+      }),
+    });
+    const data = await response.json();
+    if (data.error) {
+      console.error("[ERROR INSTAGRAM IMAGE API]:", data.error);
+    }
+  } catch (e) {
+    console.error("[ERROR SENDING INSTAGRAM IMAGE]:", e);
   }
 }

@@ -93,8 +93,7 @@ async function getInventory(terms, intent, location) {
     categories = catRes.rows.map(c => c.name);
 
     const baseQuery = `
-      SELECT p.name, p.code, p.pseudonimo, p.price_bcv, p.price_cash, p.description, c.name as categoria,
-             (SELECT url FROM product_images WHERE product_id = p.id AND is_main = true LIMIT 1) as image_url
+      SELECT p.name, p.code, p.pseudonimo, p.price_bcv, p.price_cash, p.description, c.name as categoria
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
       WHERE p.status = 'active' AND p.stock > 0
@@ -145,7 +144,6 @@ async function getInventory(terms, intent, location) {
           name: key,
           categoria: p.categoria,
           description: p.description,
-          imageUrl: p.image_url,
           variants: []
         };
       }
@@ -172,7 +170,6 @@ async function getInventory(terms, intent, location) {
 - Categoría: ${g.categoria}
 - Colores Disponibles: ${colors.length > 0 ? colors.join(", ") : "Consultar"}
 - Descripción: ${g.description || "N/A"}
-- URL Imagen: ${g.imageUrl || "No disponible"}
 ${priceInfo} 💎`;
     }).join("\n\n");
 
@@ -215,7 +212,7 @@ REGLAS DE ATENCIÓN AL CLIENTE:
 6. PERSUASIÓN Y VENTA: 
    - Si el cliente busca un color/modelo específico y no lo ves en el inventario, dile: "Disculpe, de ese color/modelo exacto no tenemos en este momento, pero lo tenemos disponible en [Menciona los colores que sí tenemos en el INVENTARIO]".
    - Si insiste en lo agotado, PERSUÁDELO elegantemente hacia lo que sí hay.
-7. CATÁLOGO Y FOTOS: Si piden ver todos los modelos, invítalos cordialmente a ver nuestro catálogo: https://www.practiiko.com/catalogo. Si el cliente pide explícitamente ver fotos, imágenes o capturas de un modelo específico de sofá o colchón, y este modelo cuenta con un 'URL Imagen' válido en la lista de INVENTARIO (distinto de 'No disponible'), puedes enviar la foto agregando esta etiqueta exacta al final de tu mensaje: [IMG: url_de_la_imagen] (ejemplo: [IMG: https://url_de_la_imagen]). **REGLA ESTRICTA**: SOLO incluye una imagen si el cliente solicita explícitamente "fotos", "imágenes", "ver el modelo" o similar. Si solo pregunta por precios, dimensiones o stock, NO le envíes fotos y responde normalmente con texto. NUNCA inventes enlaces de imágenes.
+7. CATÁLOGO Y FOTOS: Si piden ver todos los modelos, invítalos cordialmente a ver nuestro catálogo: https://www.practiiko.com/catalogo. No ofrezcas fotos directamente, diles que un asesor humano se las enviará en breve.
 8. MÉTODOS DE PAGO Y COMPRA:
    - Aceptamos Cashea (sobre Precio BCV). Inicial desde 20% y hasta 12 cuotas.
    - SI EL CLIENTE PREGUNTA POR ZELLE, PAYPAL O CRIPTOMONEDAS: Debes informarle amablemente que esos métodos de pago son gestionados exclusivamente por nuestro asesor de ventas para su seguridad.
@@ -346,7 +343,7 @@ export async function processChatMessage(message, sessionId, source = 'dm', comm
         await query(`INSERT INTO instagram_messages (session_id, message, source, comment_id) VALUES ($1, $2, $3, $4)`, [sessionId, userPayload, source, commentId]);
         await query(`INSERT INTO instagram_messages (session_id, message, source, comment_id) VALUES ($1, $2, $3, $4)`, [sessionId, botPayload, source, commentId]);
       }
-      return { text: response, imageUrl: null };
+      return response;
     }
 
     const terms = extractKeywords(message);
@@ -371,32 +368,22 @@ export async function processChatMessage(message, sessionId, source = 'dm', comm
       } else {
         await query(`INSERT INTO instagram_messages (session_id, message, source, comment_id) VALUES ($1, $2, $3, $4)`, [sessionId, JSON.stringify({ role: 'assistant', content: noProdMsg }), source, commentId]);
       }
-      return { text: noProdMsg, imageUrl: null };
+      return noProdMsg;
     }
 
     // Pasar isFallback para que DeepSeek sepa si los resultados son exactos o alternativos (#6)
-    const rawResponse = await buildResponse(message, customerName, inventory, location, historyMessages, source, dynamicKnowledge, inventory.isFallback);
-
-    // Extraer URL de imagen si existe la etiqueta [IMG: url]
-    let imageUrl = null;
-    let cleanResponse = rawResponse;
-    const imgMatch = rawResponse.match(/\[IMG:\s*(https?:\/\/[^\]\s]+)\]/i);
-    if (imgMatch) {
-      imageUrl = imgMatch[1];
-      // Remover la etiqueta de la respuesta
-      cleanResponse = rawResponse.replace(/\[IMG:\s*https?:\/\/[^\]\s]+\]/gi, "").trim();
-    }
+    const response = await buildResponse(message, customerName, inventory, location, historyMessages, source, dynamicKnowledge, inventory.isFallback);
 
     // Guardar respuesta del bot
     if (source === 'whatsapp') {
       await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`,
-        [sessionId, JSON.stringify({ role: 'assistant', content: cleanResponse })]);
+        [sessionId, JSON.stringify({ role: 'assistant', content: response })]);
     } else {
       await query(`INSERT INTO instagram_messages (session_id, message, source, comment_id) VALUES ($1, $2, $3, $4)`,
-        [sessionId, JSON.stringify({ role: 'assistant', content: cleanResponse }), source, commentId]);
+        [sessionId, JSON.stringify({ role: 'assistant', content: response }), source, commentId]);
     }
 
-    return { text: cleanResponse, imageUrl };
+    return response;
 
   } catch (error) {
     console.error("CRITICAL AGENT ERROR:", error);
@@ -413,6 +400,6 @@ export async function processChatMessage(message, sessionId, source = 'dm', comm
       console.error("Failed to log error to DB:", dbErr);
     }
 
-    return { text: errorMsg, imageUrl: null };
+    return errorMsg;
   }
 }

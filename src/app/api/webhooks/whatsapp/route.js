@@ -35,6 +35,32 @@ async function sendWhatsAppMessage(to, text) {
   }
 }
 
+async function sendWhatsAppImage(to, imageUrl) {
+  if (!EVO_URL) {
+    console.error("[EVOLUTION ERROR]: EVOLUTION_API_URL no está configurada en Easypanel.");
+    return;
+  }
+  try {
+    const response = await fetch(`${EVO_URL}/message/sendMedia/${EVO_INSTANCE}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': EVO_KEY
+      },
+      body: JSON.stringify({
+        number: to,
+        mediatype: "image",
+        media: imageUrl,
+        delay: 500
+      })
+    });
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("[EVOLUTION IMAGE SEND ERROR]:", error);
+  }
+}
+
 export async function POST(req) {
   try {
     const body = await req.json();
@@ -110,7 +136,13 @@ export async function POST(req) {
       console.log(`[WHATSAPP] Procesando respuesta de IA para ${senderNumber}...`);
       processChatMessage(userMessage, senderNumber, 'whatsapp', null, pushName).then(async (aiResponse) => {
         // Enviar a WhatsApp
-        await sendWhatsAppMessage(senderNumber, aiResponse);
+        await sendWhatsAppMessage(senderNumber, aiResponse.text);
+        
+        // Si hay una imagen, enviarla también
+        if (aiResponse.imageUrl) {
+          await sendWhatsAppImage(senderNumber, aiResponse.imageUrl);
+          console.log(`[WHATSAPP] Imagen de IA enviada a ${senderNumber}: ${aiResponse.imageUrl}`);
+        }
         console.log(`[WHATSAPP] Respuesta de IA enviada a ${senderNumber}`);
       }).catch(e => console.error("[ERROR WHATSAPP AI]:", e));
     }
