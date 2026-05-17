@@ -11,6 +11,10 @@ export function ToastProvider({ children }) {
   const addToast = (message, type = "success") => {
     const id = Math.random().toString(36).substr(2, 9);
     setToasts((prev) => [...prev, { id, message, type }]);
+    
+    setTimeout(() => {
+      removeToast(id);
+    }, 5000);
   };
 
   const removeToast = (id) => {

@@ -55,8 +55,9 @@ h1, h2, h3, h4, h5, h6 {
 
 .dashboard-layout {
   display: grid;
-  grid-template-columns: 260px 1fr;
+  grid-template-columns: var(--sidebar-width, 260px) 1fr;
   min-height: 100vh;
+  transition: grid-template-columns 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .sidebar {
@@ -69,6 +70,22 @@ h1, h2, h3, h4, h5, h6 {
   top: 0;
   height: 100vh;
   overflow-y: auto;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar.collapsed {
+  padding: 2rem 0.75rem;
+}
+
+@keyframes logoPulse {
+  0% { transform: scale(1); filter: drop-shadow(0 2px 4px rgba(4, 119, 191, 0.2)); }
+  50% { transform: scale(1.1); filter: drop-shadow(0 4px 12px rgba(4, 119, 191, 0.4)); }
+  100% { transform: scale(1); filter: drop-shadow(0 2px 4px rgba(4, 119, 191, 0.2)); }
+}
+
+.logo-gem {
+  animation: logoPulse 2.5s infinite ease-in-out;
+  display: inline-block;
 }
 
 .sidebar-logo {

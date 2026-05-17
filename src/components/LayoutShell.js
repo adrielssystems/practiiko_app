@@ -2,12 +2,14 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import { useState, useEffect } from "react";
 import { 
   LayoutDashboard, 
   Package, 
   Settings, 
   LogOut,
   ChevronRight,
+  ChevronLeft,
   Users,
   MessageCircle,
   MessageSquare,
@@ -20,6 +22,26 @@ export default function LayoutShell({ children }) {
   const pathname = usePathname();
   const { data: session } = useSession();
   const isLoginPage = pathname === "/login";
+
+  // Persistent sidebar collapse state
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    const saved = localStorage.getItem("sidebar-collapsed");
+    if (saved === "true") {
+      setIsCollapsed(true);
+    }
+  }, []);
+
+  const toggleSidebar = () => {
+    setIsCollapsed(prev => {
+      const next = !prev;
+      localStorage.setItem("sidebar-collapsed", String(next));
+      return next;
+    });
+  };
 
   if (isLoginPage) {
     return <>{children}</>;
@@ -34,11 +56,45 @@ export default function LayoutShell({ children }) {
   ];
 
   return (
-    <div className="dashboard-layout">
-      <aside className="sidebar">
-          <div className="sidebar-logo" style={{ padding: '1rem 0' }}>
+    <div className="dashboard-layout" style={{ '--sidebar-width': mounted && isCollapsed ? '80px' : '260px' }}>
+      <aside className={`sidebar ${mounted && isCollapsed ? 'collapsed' : ''}`}>
+        {/* Toggle arrow floating button */}
+        {mounted && (
+          <button 
+            onClick={toggleSidebar} 
+            title={isCollapsed ? "Expandir menú" : "Colapsar menú"}
+            style={{
+              position: 'absolute',
+              right: '-12px',
+              top: '32px',
+              width: '24px',
+              height: '24px',
+              borderRadius: '50%',
+              background: '#ffffff',
+              border: '1px solid var(--border)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+              color: '#6c757d',
+              transition: 'all 0.2s ease',
+              zIndex: 100
+            }}
+            onMouseOver={e => e.currentTarget.style.color = 'var(--primary)'}
+            onMouseOut={e => e.currentTarget.style.color = '#6c757d'}
+          >
+            {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+          </button>
+        )}
+
+        <div className="sidebar-logo" style={{ padding: '1rem 0', display: 'flex', justifyContent: isCollapsed ? 'center' : 'flex-start', alignItems: 'center', transition: 'all 0.3s' }}>
+          {mounted && isCollapsed ? (
+            <span className="logo-gem" style={{ fontSize: '1.75rem', filter: 'drop-shadow(0 2px 8px rgba(4, 119, 191, 0.2))', cursor: 'pointer' }} onClick={toggleSidebar}>💎</span>
+          ) : (
             <img src="/logo.webp" alt="Practiiko" style={{ height: '40px', width: 'auto', objectFit: 'contain' }} />
-          </div>
+          )}
+        </div>
         
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
           {navItems.map((item) => {
@@ -52,10 +108,11 @@ export default function LayoutShell({ children }) {
                 key={item.href} 
                 href={item.href} 
                 className={`nav-link ${isActive ? 'active' : ''}`}
+                style={{ justifyContent: isCollapsed ? 'center' : 'flex-start' }}
               >
-                <Icon size={20} />
-                <span>{item.name}</span>
-                {isActive && <ChevronRight size={16} style={{ marginLeft: 'auto' }} />}
+                <Icon size={20} style={{ flexShrink: 0 }} />
+                {!isCollapsed && <span>{item.name}</span>}
+                {isActive && !isCollapsed && <ChevronRight size={16} style={{ marginLeft: 'auto' }} />}
               </Link>
             );
           })}
@@ -65,10 +122,16 @@ export default function LayoutShell({ children }) {
           <button 
             onClick={() => signOut()}
             className="nav-link" 
-            style={{ width: '100%', border: 'none', background: 'transparent', cursor: 'pointer' }}
+            style={{ 
+              width: '100%', 
+              border: 'none', 
+              background: 'transparent', 
+              cursor: 'pointer',
+              justifyContent: isCollapsed ? 'center' : 'flex-start' 
+            }}
           >
-            <LogOut size={20} />
-            <span>Cerrar Sesión</span>
+            <LogOut size={20} style={{ flexShrink: 0 }} />
+            {!isCollapsed && <span>Cerrar Sesión</span>}
           </button>
         </div>
       </aside>
