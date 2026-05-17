@@ -50,7 +50,8 @@ async function getLocalImageAsBase64(imageUrl) {
       .jpeg({ quality: 85 })
       .toBuffer();
     
-    return `data:image/jpeg;base64,${jpegBuffer.toString('base64')}`;
+    // Evolution API's IsUrlOrBase64 validator expects RAW base64 without the data URI prefix!
+    return jpegBuffer.toString('base64');
   } catch (error) {
     console.error("[BASE64 CONVERSION ERROR]:", error);
     return null;
