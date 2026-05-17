@@ -311,6 +311,15 @@ async function sendInstagramImage(recipientId, imageUrl) {
     console.error("Falta INSTAGRAM_PAGE_ACCESS_TOKEN en las variables de entorno.");
     return;
   }
+
+  // Meta/Instagram DM no soporta formato .webp (Error 100 / Subcode 2534080).
+  // La API de medios de Practiiko (/api/media/*) convierte dinámicamente WebP a JPEG al vuelo
+  // si se solicita la extensión .jpeg de una imagen que físicamente es .webp en el servidor.
+  let formattedUrl = imageUrl;
+  if (formattedUrl && formattedUrl.endsWith(".webp")) {
+    formattedUrl = formattedUrl.replace(/\.webp$/i, ".jpeg");
+  }
+
   const url = `https://graph.instagram.com/v21.0/me/messages`;
   try {
     const response = await fetch(url, {
@@ -325,7 +334,7 @@ async function sendInstagramImage(recipientId, imageUrl) {
           attachment: {
             type: "image",
             payload: {
-              url: imageUrl,
+              url: formattedUrl,
               is_reusable: true
             }
           }
