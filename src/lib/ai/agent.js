@@ -266,7 +266,7 @@ Nunca olvides mantener la educación, la amabilidad y el enfoque en la satisfacc
 /**
  * MAIN
  */
-export async function processChatMessage(message, sessionId, source = 'dm', commentId = null, customerName = 'Cliente') {
+export async function processChatMessage(message, sessionId, source = 'dm', commentId = null, customerName = 'Cliente', baseUrl = '') {
   // Declarada una sola vez en el scope principal (#3)
   const table = source === 'whatsapp' ? 'whatsapp_messages' : 'instagram_messages';
 
@@ -380,11 +380,15 @@ export async function processChatMessage(message, sessionId, source = 'dm', comm
     // Extraer URL de imagen si existe la etiqueta [IMG: url]
     let imageUrl = null;
     let cleanResponse = rawResponse;
-    const imgMatch = rawResponse.match(/\[IMG:\s*(https?:\/\/[^\]\s]+)\]/i);
+    const imgMatch = rawResponse.match(/\[IMG:\s*([^\]\s]+)\]/i);
     if (imgMatch) {
       imageUrl = imgMatch[1];
+      // Si la URL es relativa, le prependeamos el baseUrl para que la Evolution API e Instagram la puedan descargar
+      if (imageUrl.startsWith('/') && baseUrl) {
+        imageUrl = `${baseUrl}${imageUrl}`;
+      }
       // Remover la etiqueta de la respuesta
-      cleanResponse = rawResponse.replace(/\[IMG:\s*https?:\/\/[^\]\s]+\]/gi, "").trim();
+      cleanResponse = rawResponse.replace(/\[IMG:\s*[^\]\s]+\]/gi, "").trim();
     }
 
     // Guardar respuesta del bot

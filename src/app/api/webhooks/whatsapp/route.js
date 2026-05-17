@@ -132,9 +132,13 @@ export async function POST(req) {
         return NextResponse.json({ status: "bot_paused" });
       }
 
+      const protocol = req.headers.get("x-forwarded-proto") || "https";
+      const host = req.headers.get("x-forwarded-host") || req.headers.get("host");
+      const baseUrl = `${protocol}://${host}`;
+
       // 6. Procesar con IA y responder (en segundo plano)
-      console.log(`[WHATSAPP] Procesando respuesta de IA para ${senderNumber}...`);
-      processChatMessage(userMessage, senderNumber, 'whatsapp', null, pushName).then(async (aiResponse) => {
+      console.log(`[WHATSAPP] Procesando respuesta de IA para ${senderNumber}... (baseUrl: ${baseUrl})`);
+      processChatMessage(userMessage, senderNumber, 'whatsapp', null, pushName, baseUrl).then(async (aiResponse) => {
         // Enviar a WhatsApp
         await sendWhatsAppMessage(senderNumber, aiResponse.text);
         

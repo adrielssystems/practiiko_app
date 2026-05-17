@@ -24,6 +24,10 @@ export async function GET(req) {
 // POST: Recepción de mensajes y comentarios de Instagram
 export async function POST(req) {
   try {
+    const protocol = req.headers.get("x-forwarded-proto") || "https";
+    const host = req.headers.get("x-forwarded-host") || req.headers.get("host");
+    const baseUrl = `${protocol}://${host}`;
+
     const body = await req.json();
 
     // Loguear el evento completo para depuración en el panel
@@ -95,7 +99,7 @@ export async function POST(req) {
               }
 
               // 2. Procesar con IA si está habilitado
-              processChatMessage(userMessage, senderId, 'dm', null, userInfo?.name || userInfo?.username || 'Cliente').then(async (aiResponse) => {
+              processChatMessage(userMessage, senderId, 'dm', null, userInfo?.name || userInfo?.username || 'Cliente', baseUrl).then(async (aiResponse) => {
                 await sendInstagramMessage(senderId, aiResponse.text);
                 if (aiResponse.imageUrl) {
                   await sendInstagramImage(senderId, aiResponse.imageUrl);
@@ -161,7 +165,7 @@ export async function POST(req) {
                 return NextResponse.json({ status: "bot_paused" });
               }
 
-              processChatMessage(userMessage, senderId, 'comment', commentId, username || 'Cliente').then(async (aiResponse) => {
+              processChatMessage(userMessage, senderId, 'comment', commentId, username || 'Cliente', baseUrl).then(async (aiResponse) => {
                 // 1. Respuesta pública corta con guía de solicitudes
                 replyToInstagramComment(commentId, "¡Hola! Te enviamos el detalle al DM (revisa tu bandeja de mensajes) 💎");
 
