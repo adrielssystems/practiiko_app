@@ -146,7 +146,6 @@ async function getInventory(terms, intent, location) {
           name: key,
           categoria: p.categoria,
           description: p.description,
-          imageUrl: p.image_url,
           variants: []
         };
       }
@@ -154,12 +153,13 @@ async function getInventory(terms, intent, location) {
     });
 
     const productsText = Object.values(groups).map(g => {
-      const colors = g.variants
+      const colorsAndUrls = g.variants
         .map(v => {
           const match = v.name.match(/COLOR\s+([A-ZÁÉÍÓÚÑ\s]+)/i) || v.description?.match(/COLOR\s+([A-ZÁÉÍÓÚÑ\s]+)/i);
-          return match ? match[1].trim() : null;
+          const colorName = match ? match[1].trim() : "Estándar";
+          return `${colorName} (URL_FOTO: ${v.image_url || "No disponible"})`;
         })
-        .filter((v, i, a) => v && a.indexOf(v) === i); // Únicos
+        .filter((v, i, a) => a.indexOf(v) === i); // Únicos
 
       let priceInfo = "";
       const first = g.variants[0];
@@ -171,9 +171,9 @@ async function getInventory(terms, intent, location) {
 
       return `💎 MODELO: ${g.name}
 - Categoría: ${g.categoria}
-- Colores Disponibles: ${colors.length > 0 ? colors.join(", ") : "Consultar"}
+- Colores y URLs de Imágenes Disponibles:
+  ${colorsAndUrls.join("\n  ")}
 - Descripción: ${g.description || "N/A"}
-- URL Imagen: ${g.imageUrl || "No disponible"}
 ${priceInfo} 💎`;
     }).join("\n\n");
 
