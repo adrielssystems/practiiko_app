@@ -384,6 +384,8 @@ export async function processChatMessage(message, sessionId, source = 'dm', comm
     // Pasar isFallback para que DeepSeek sepa si los resultados son exactos o alternativos (#6)
     const rawResponse = await buildResponse(message, customerName, inventory, location, historyMessages, source, dynamicKnowledge, inventory.isFallback);
 
+    console.log(`[DEBUG LLM RAW]\n${rawResponse}\n[DEBUG LLM RAW END]`);
+
     // Extraer URLs de imágenes si existen etiquetas [IMG: url]
     let imageUrls = [];
     let cleanResponse = rawResponse;
