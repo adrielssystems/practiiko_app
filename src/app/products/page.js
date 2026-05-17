@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { Plus, Search, Filter, Package, Calendar, Edit } from "lucide-react";
 import DeleteProductButton from "@/components/Products/DeleteProductButton";
+import ProductFilterBar from "@/components/Products/ProductFilterBar";
 
 async function getCategories() {
   try {
@@ -68,43 +69,12 @@ export default async function ProductsPage({ searchParams }) {
         </Link>
       </header>
 
-      {/* FILTROS Y BÚSQUEDA REUBICADOS */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', gap: '1rem', flexWrap: 'wrap' }}>
-        <form action="/products" method="GET" style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flex: 1, minWidth: '300px' }}>
-          <select 
-            name="category"
-            defaultValue={categoryId}
-            className="input-field"
-            style={{ width: 'auto', minWidth: '200px' }}
-          >
-            <option value="all">Todas las categorías</option>
-            {categories.map(cat => (
-              <option key={cat.id} value={cat.id}>{cat.name}</option>
-            ))}
-          </select>
-          <button type="submit" className="btn-primary" style={{ padding: '0.6rem 1rem', background: 'var(--accent)', border: '1px solid var(--border)', color: 'var(--foreground)' }}>
-            Filtrar
-          </button>
-        </form>
-
-        <form action="/products" method="GET" style={{ display: 'flex', gap: '0.5rem', width: '100%', maxWidth: '400px' }}>
-          {categoryId !== 'all' && <input type="hidden" name="category" value={categoryId} />}
-          <div style={{ position: 'relative', flex: 1 }}>
-            <Search size={16} style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--muted-foreground)' }} />
-            <input 
-              type="text" 
-              name="search"
-              defaultValue={search}
-              placeholder="Buscar..." 
-              className="input-field" 
-              style={{ paddingLeft: '2.5rem' }}
-            />
-          </div>
-          <button type="submit" className="btn-primary" style={{ padding: '0.6rem 1.25rem' }}>
-            Buscar
-          </button>
-        </form>
-      </div>
+      {/* FILTROS Y BÚSQUEDA AUTOMÁTICOS */}
+      <ProductFilterBar 
+        categories={categories}
+        initialCategory={categoryId}
+        initialSearch={search}
+      />
 
       <div className="card glass" style={{ padding: 0, overflow: 'hidden' }}>
         <div style={{ overflowX: 'auto' }}>
