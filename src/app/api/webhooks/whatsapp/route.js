@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { processChatMessage } from "@/lib/ai/agent";
+import fs from "fs/promises";
+import path from "path";
 
 export const dynamic = "force-dynamic";
 
@@ -35,12 +37,46 @@ async function sendWhatsAppMessage(to, text) {
   }
 }
 
+async function getLocalImageAsBase64(imageUrl) {
+  try {
+    // imageUrl is e.g. "/api/media/filename.webp" or "https://domain/api/media/filename.webp"
+    const parts = imageUrl.split('/');
+    const filename = parts[parts.length - 1];
+    
+    const filePath = path.join(process.cwd(), 'public', 'uploads', 'products', filename);
+    const buffer = await fs.readFile(filePath);
+    
+    let mimetype = "image/webp";
+    if (filename.endsWith(".png")) mimetype = "image/png";
+    else if (filename.endsWith(".jpg") || filename.endsWith(".jpeg")) mimetype = "image/jpeg";
+    
+    return `data:${mimetype};base64,${buffer.toString('base64')}`;
+  } catch (error) {
+    console.error("[BASE64 CONVERSION ERROR]:", error);
+    return null;
+  }
+}
+
 async function sendWhatsAppImage(to, imageUrl) {
   if (!EVO_URL) {
     console.error("[EVOLUTION ERROR]: EVOLUTION_API_URL no está configurada en Easypanel.");
     return;
   }
   try {
+    let mediaPayload = imageUrl;
+    let mimetype = "image/webp";
+    
+    if (imageUrl.includes("/api/media/")) {
+      const base64Data = await getLocalImageAsBase64(imageUrl);
+      if (base64Data) {
+        mediaPayload = base64Data;
+        const parts = imageUrl.split('/');
+        const filename = parts[parts.length - 1];
+        if (filename.endsWith(".png")) mimetype = "image/png";
+        else if (filename.endsWith(".jpg") || filename.endsWith(".jpeg")) mimetype = "image/jpeg";
+      }
+    }
+
     const response = await fetch(`${EVO_URL}/message/sendMedia/${EVO_INSTANCE}`, {
       method: 'POST',
       headers: {
@@ -50,7 +86,8 @@ async function sendWhatsAppImage(to, imageUrl) {
       body: JSON.stringify({
         number: to,
         mediatype: "image",
-        media: imageUrl,
+        media: mediaPayload,
+        mimetype: mimetype,
         delay: 500
       })
     });
