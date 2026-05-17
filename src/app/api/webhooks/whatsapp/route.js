@@ -3,6 +3,7 @@ import { query } from "@/lib/db";
 import { processChatMessage } from "@/lib/ai/agent";
 import fs from "fs/promises";
 import path from "path";
+import sharp from "sharp";
 
 export const dynamic = "force-dynamic";
 
@@ -46,11 +47,12 @@ async function getLocalImageAsBase64(imageUrl) {
     const filePath = path.join(process.cwd(), 'public', 'uploads', 'products', filename);
     const buffer = await fs.readFile(filePath);
     
-    let mimetype = "image/webp";
-    if (filename.endsWith(".png")) mimetype = "image/png";
-    else if (filename.endsWith(".jpg") || filename.endsWith(".jpeg")) mimetype = "image/jpeg";
+    // Convertir a JPEG garantizando compatibilidad absoluta con WhatsApp/Evolution API
+    const jpegBuffer = await sharp(buffer)
+      .jpeg({ quality: 85 })
+      .toBuffer();
     
-    return `data:${mimetype};base64,${buffer.toString('base64')}`;
+    return `data:image/jpeg;base64,${jpegBuffer.toString('base64')}`;
   } catch (error) {
     console.error("[BASE64 CONVERSION ERROR]:", error);
     return null;
@@ -64,17 +66,24 @@ async function sendWhatsAppImage(to, imageUrl) {
   }
   try {
     let mediaPayload = imageUrl;
-    let mimetype = "image/webp";
+    let mimetype = "image/jpeg"; // Usamos jpeg por defecto debido a la conversión
     
     if (imageUrl.includes("/api/media/")) {
       const base64Data = await getLocalImageAsBase64(imageUrl);
       if (base64Data) {
         mediaPayload = base64Data;
+      } else {
+        // Fallback si falla la conversión: detectar tipo por extensión
         const parts = imageUrl.split('/');
         const filename = parts[parts.length - 1];
         if (filename.endsWith(".png")) mimetype = "image/png";
-        else if (filename.endsWith(".jpg") || filename.endsWith(".jpeg")) mimetype = "image/jpeg";
+        else if (filename.endsWith(".webp")) mimetype = "image/webp";
       }
+    } else {
+      const parts = imageUrl.split('/');
+      const filename = parts[parts.length - 1];
+      if (filename.endsWith(".png")) mimetype = "image/png";
+      else if (filename.endsWith(".webp")) mimetype = "image/webp";
     }
 
     const response = await fetch(`${EVO_URL}/message/sendMedia/${EVO_INSTANCE}`, {
