@@ -155,8 +155,19 @@ async function getInventory(terms, intent, location) {
     const productsText = Object.values(groups).map(g => {
       const colorsAndUrls = g.variants
         .map(v => {
-          const match = v.name.match(/COLOR\s+([A-ZÁÉÍÓÚÑ\s]+)/i) || v.description?.match(/COLOR\s+([A-ZÁÉÍÓÚÑ\s]+)/i);
-          const colorName = match ? match[1].trim() : "Estándar";
+          let colorName = "";
+          if (v.pseudonimo) {
+            const nameLower = v.name.toLowerCase();
+            const pseudonimoLower = v.pseudonimo.toLowerCase();
+            if (nameLower.includes(pseudonimoLower)) {
+              const idx = nameLower.indexOf(pseudonimoLower);
+              colorName = v.name.substring(idx + v.pseudonimo.length).trim();
+            }
+          }
+          if (!colorName) {
+            const match = v.name.match(/COLOR\s+([A-ZÁÉÍÓÚÑ\s]+)/i) || v.description?.match(/COLOR\s+([A-ZÁÉÍÓÚÑ\s]+)/i);
+            colorName = match ? match[1].trim() : "Estándar";
+          }
           return `${colorName} (URL_FOTO: ${v.image_url || "No disponible"})`;
         })
         .filter((v, i, a) => a.indexOf(v) === i); // Únicos
