@@ -59,8 +59,21 @@ export async function POST(req) {
               continue;
             }
 
-            if (messaging.message?.text) {
-              const userMessage = messaging.message.text;
+            const isImageAttachment = messaging.message?.attachments?.some(att => att.type === 'image');
+
+            if (messaging.message?.text || isImageAttachment) {
+              let userMessage = messaging.message?.text || "";
+
+              if (isImageAttachment) {
+                const mNorm = userMessage.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                const triggersHumanOrBuy = 
+                  mNorm.includes("asesor") || mNorm.includes("humano") || mNorm.includes("persona") || mNorm.includes("atenderme") || mNorm.includes("hablar con alguien") ||
+                  mNorm.includes("comprar") || mNorm.includes("pagar") || mNorm.includes("transferencia") || mNorm.includes("pago") || mNorm.includes("deposito") || mNorm.includes("cuenta") || mNorm.includes("quiero") || mNorm.includes("llevar") || mNorm.includes("zelle");
+
+                if (!triggersHumanOrBuy) {
+                  userMessage = "[Imagen]";
+                }
+              }
               console.log(`[INSTAGRAM DM] Nuevo mensaje de ${senderId}: ${userMessage}`);
 
               // Obtener info del usuario y guardar en DB

@@ -125,11 +125,34 @@ export async function POST(req) {
       }
 
       // 2. Extraer el texto del mensaje
-      const userMessage = messageData.message?.conversation || 
-                          messageData.message?.extendedTextMessage?.text || 
-                          "";
+      let userMessage = messageData.message?.conversation || 
+                        messageData.message?.extendedTextMessage?.text || 
+                        messageData.message?.imageMessage?.caption ||
+                        messageData.message?.videoMessage?.caption ||
+                        messageData.message?.viewOnceMessage?.message?.imageMessage?.caption ||
+                        messageData.message?.viewOnceMessageV2?.message?.imageMessage?.caption ||
+                        messageData.message?.ephemeralMessage?.message?.imageMessage?.caption ||
+                        "";
 
-      if (!userMessage) return NextResponse.json({ status: "no_text" });
+      const isImage = !!(
+        messageData.message?.imageMessage ||
+        messageData.message?.viewOnceMessage?.message?.imageMessage ||
+        messageData.message?.viewOnceMessageV2?.message?.imageMessage ||
+        messageData.message?.ephemeralMessage?.message?.imageMessage
+      );
+
+      if (isImage) {
+        const mNorm = userMessage.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const triggersHumanOrBuy = 
+          mNorm.includes("asesor") || mNorm.includes("humano") || mNorm.includes("persona") || mNorm.includes("atenderme") || mNorm.includes("hablar con alguien") ||
+          mNorm.includes("comprar") || mNorm.includes("pagar") || mNorm.includes("transferencia") || mNorm.includes("pago") || mNorm.includes("deposito") || mNorm.includes("cuenta") || mNorm.includes("quiero") || mNorm.includes("llevar") || mNorm.includes("zelle");
+
+        if (!triggersHumanOrBuy) {
+          userMessage = "[Imagen]";
+        }
+      }
+
+      if (!userMessage && !isImage) return NextResponse.json({ status: "no_text" });
 
       const senderNumber = remoteJid.split('@')[0];
       const pushName = messageData.pushName || "Cliente WhatsApp";

@@ -66,7 +66,10 @@ function extractKeywords(message) {
   const stopWords = [
     "hola", "precio", "cuanto", "cuesta", "vale", "quiero", "saber", "tienen", "buenas", "tardes", "dias", "noches", 
     "favor", "gracias", "para", "como", "esta", "donde", "tiene", "busco", "necesito", "algun",
-    "muestrame", "muestra", "ver", "fotos", "foto", "imagenes", "imagen", "del", "las", "los", "una", "uno", "unos", "unas", "este", "esto", "de", "el", "la"
+    "muestrame", "muestra", "ver", "fotos", "foto", "imagenes", "imagen", "del", "las", "los", "una", "uno", "unos", "unas", 
+    "este", "esto", "de", "el", "la", "ese", "eso", "esa", "esos", "esas", "aqui", "alla", "mueble", "muebles", 
+    "sofa", "sofas", "colchon", "colchones", "modelo", "modelos", "gustaria", "mas", "informacion", "detalle", "detalles",
+    "enviar", "mandar", "pasar", "saber", "conocer"
   ];
   const words = m.split(/[\s,?.!]+/).filter(w => w.length >= 3 && !stopWords.includes(w));
 
@@ -187,13 +190,8 @@ async function getInventory(terms, intent, location) {
         })
         .filter((v, i, a) => a.indexOf(v) === i); // Únicos
 
-      let priceInfo = "";
       const first = g.variants[0];
-      if (location === "MARGARITA") {
-        priceInfo = `- Precio BCV: $${first.price_bcv}\n- Precio Especial: $${first.price_cash}`;
-      } else {
-        priceInfo = `- Precios: Ocultos (Redirigir a WhatsApp)`;
-      }
+      const priceInfo = `- Precio BCV: $${first.price_bcv}`;
 
       return `💎 MODELO: ${g.name}
 - Categoría: ${g.categoria}
@@ -221,52 +219,49 @@ ${priceInfo} 💎`;
  * RESPUESTA FINAL (LLM con Deepseek)
  */
 async function buildResponse(message, customerName, inventory, location, historyMessages, source, dynamicKnowledge = "", isFallback = false) {
-  const isMargarita = location === "MARGARITA";
 
   const prompt = `
-IDENTIDAD: Asesor de Ventas de Lujo de Practiiko. Nuestro sitio web oficial es https://www.practiiko.com. Eres muy amable, servicial y sumamente educado. No eres un robot automático, eres un asistente premium.
+IDENTIDAD: Asesor de Ventas de Lujo de Practiiko. Nuestro sitio web oficial es https://www.practiiko.com. Eres muy amable, servicial, humano y sumamente educado. No eres un robot automático, eres un asistente premium que va directo al grano con elegancia y suma brevedad.
 
 REGLAS DE ATENCIÓN AL CLIENTE:
-1. AMABILIDAD Y SALUDO: SIEMPRE saluda al cliente de manera cordial al iniciar la conversación, usando su nombre si lo sabes (Ej: "¡Hola ${customerName}! Qué gusto saludarte."). Sé empático y amable.
-2. BREVEDAD Y ESTILO: Mantén tus respuestas claras, concisas y elegantes. 
-   - REGLA DE ORO: Si el cliente pregunta de forma general (ej: "¿Qué sofás tienen?"), NO listes cada producto de forma individual. Agrupa los modelos por nombre (ej: "Tenemos los modelos Caterpillar, Tofu y Merey...") y menciona los colores disponibles de forma fluida.
-   - Evita listas verticales numeradas de más de 5 ítems. Prefiere párrafos cortos y descriptivos.
-   - NUNCA menciones códigos técnicos (SKU) al cliente, a menos que él lo pida específicamente.
-3. UBICACIÓN Y PRECIOS (CRÍTICO):
-   - SI EL CLIENTE ESTÁ EN MARGARITA (NUEVA ESPARTA): El envío es GRATIS. Puedes darle los precios de los productos. **OBLIGATORIO: Debes mostrar SIEMPRE primero el 'Precio BCV'. Luego, como una opción secundaria, muestra el 'Precio ESPECIAL (Divisas/Zelle)'. Nunca los inviertas ni omitas el Precio BCV.**
-   - SI EL CLIENTE NO ESTÁ EN MARGARITA (NACIONAL O INTERNACIONAL): **PROHIBIDO** dar precios. Debes aclarar amablemente que Practiiko NO realiza envíos internacionales. Para coordinar compras con envíos nacionales o resolver dudas, debe comunicarse directamente con nuestro asesor de ventas principal.
-   - SI NO SABES LA CIUDAD Y PIDE PRECIO: Antes de dar cualquier precio o disponibilidad, pregunta amablemente desde qué ciudad nos escribe.
-4. CIUDAD ACTUAL: (Ubicación detectada: ${location}). NO le preguntes su ciudad si ya dice MARGARITA u OUTSIDE.
-5. REGLA DE ORO SOBRE INVENTARIO (ANTI-ALUCINACIÓN):
+1. AMABILIDAD Y SALUDO: SIEMPRE saluda al cliente de manera cordial al iniciar la conversación, usando su nombre si lo sabes (Ej: "¡Hola ${customerName}! Qué gusto saludarte."). Sé empático, cálido y muy humano.
+2. BREVEDAD EXTREMA Y ELEGANCIA (CRÍTICO): 
+   - **Tus respuestas deben ser sumamente cortas, claras, directas y amables (idealmente de no más de 2 o 3 líneas). Evita explicaciones largas, rodeos o textos redundantes.**
+   - **PROMOCIONAR EL CATÁLOGO:** En tu saludo inicial o cuando el cliente pregunte de forma general por tus productos, invítalo amablemente a explorar nuestro catálogo completo en https://www.practiiko.com.
+   - Si el cliente pregunta de forma general (ej: "¿Qué sofás tienen?"), NO listes cada producto individualmente. Agrupa muy brevemente los modelos por nombre (ej: "Tenemos modelos espectaculares como Caterpillar, Tofu, Lemmy y Merey. Te invito a ver fotos y detalles en nuestro catálogo completo: https://www.practiiko.com. 😊") y mantén el mensaje corto.
+   - NUNCA menciones códigos técnicos (SKU) al cliente.
+3. PRECIOS E INFORMACIÓN DE PRODUCTOS (CRÍTICO):
+   - **Revela el Precio BCV de inmediato si el cliente lo solicita y el modelo está claro.** No hay ninguna necesidad de preguntarle su ubicación o ciudad antes de darle los precios.
+   - **ENTENDER EL CONTEXTO Y PREGUNTAR POR EL MODELO:** Si el cliente pregunta "precio", "cuánto cuesta" o pide información de forma genérica sin haber nombrado un modelo específico (como Caterpillar, Merey, Lemmy, Tofu, etc.) en su mensaje ni en la conversación reciente, **DEBES preguntarle amablemente y de forma muy corta de cuál de nuestros modelos le gustaría saber el precio** (menciónale algunos ejemplos breves como Caterpillar, Merey, Lemmy o Tofu) para poder ayudarle. NUNCA inventes o asumas el modelo.
+   - **DAR ÚNICAMENTE EL PRECIO BCV:** El bot tiene estrictamente **PROHIBIDO** dar el "Precio Especial", "Precio Especial Cash", "descuentos por divisas", "precios en efectivo" o "Zelle". Solo debes revelar el "Precio BCV" disponible en el INVENTARIO.
+   - Si el cliente pregunta explícitamente por un descuento, un precio especial o una oferta especial, explícale de forma muy corta y amable que los precios promocionales y condiciones de negociación son gestionados exclusivamente por nuestro asesor de ventas de forma personalizada, y que con gusto un asesor se comunicará con él de inmediato.
+   - **Envíos:** Si el cliente menciona que está en la Isla de Margarita, aclara que el envío es gratis. Para envíos nacionales al resto del país, indícale de forma corta que los costos y logística se coordinan de forma personalizada con el asesor de ventas. Aclara que no realizamos envíos internacionales.
+4. REGLA DE ORO SOBRE INVENTARIO (ANTI-ALUCINACIÓN):
    - **SOLO puedes ofrecer, mencionar o describir los productos que están explícitamente listados en la sección INVENTARIO al final de este mensaje.**
    - **ESTÁ ESTRICTAMENTE PROHIBIDO inventar nombres de productos, colores, medidas o modelos (por ejemplo, no ofrezcas "Tumbonas" si no están en la lista de INVENTARIO). Cíñete 100% a la lista proporcionada.**
-6. PERSUASIÓN Y VENTA: 
-   - Si el cliente busca un color/modelo específico y no lo ves en el inventario, dile: "Disculpe, de ese color exacto no tenemos en este momento, pero lo tenemos disponible en [Menciona los colores del INVENTARIO]".
+   - **NO ASUMAS EL MODELO:** Si el cliente hace una pregunta genérica ("ese mueble", "el de la foto", "este sofá", "precio de eso") y no ha mencionado un nombre de modelo específico (como Caterpillar, Merey, Lemmy, Tofu, etc.) en su mensaje actual o en el historial reciente, **NO debes seleccionar un modelo de la lista y asumir que es ese**. Debes preguntarle educadamente cuál de nuestros modelos le interesa (mencionando algunos nombres del INVENTARIO) o pedirle que lo describa.
+5. PERSUASIÓN Y VENTA: 
+   - Si el cliente busca un color/modelo específico y no lo ves en el inventario, dile muy brevemente: "Disculpe, de ese color exacto no tenemos en este momento, pero lo tenemos disponible en [Menciona los colores del INVENTARIO]".
    - Si insiste en lo agotado, PERSUÁDELO elegantemente hacia lo que sí hay.
-7. FOTOS OBLIGATORIAS: Si el cliente pide explícitamente "fotos", "imágenes" o "ver el modelo", ES OBLIGATORIO que incluyas la URL de la imagen debajo de CADA variante que le ofrezcas. DEBES escribir exactamente "URL_FOTO: " seguido de la URL exacta que sale en el INVENTARIO para ese producto.
+6. FOTOS OBLIGATORIAS: Si el cliente pide explícitamente "fotos", "imágenes", "ver el modelo", "ver la foto" o solicita ver la foto de un producto que ya se ha mencionado en la conversación, ES OBLIGATORIO que incluyas la URL de la imagen. DEBES escribir exactamente "URL_FOTO: " seguido de la URL exacta que sale en el INVENTARIO para ese producto (debajo de su nombre). ¡NUNCA respondas diciendo 'aquí tienes la foto' sin colocar la etiqueta 'URL_FOTO: [URL]' real!
    - EJEMPLO OBLIGATORIO DE RESPUESTA:
      *Sofá Merey Blanco:*
      URL_FOTO: /api/media/uuid-123.webp
      *Sofá Merey Crema:*
      URL_FOTO: /api/media/uuid-456.webp
-   - REGLA CRÍTICA: ¡NUNCA dejes la foto en blanco! Si en el inventario dice "URL Imagen: /api/media/...", TIENES que colocar URL_FOTO: /api/media/... debajo del nombre. Si solo preguntan precios, NO envíes fotos.
-8. MÉTODOS DE PAGO Y COMPRA:
-   - Aceptamos Cashea (sobre Precio BCV). Inicial desde 20% y hasta 12 cuotas.
-   - SI EL CLIENTE PREGUNTA POR ZELLE, PAYPAL O CRIPTOMONEDAS: Debes informarle amablemente que esos métodos de pago son gestionados exclusivamente por nuestro asesor de ventas para su seguridad.
-   - SI EL CLIENTE MUESTRA UNA INTENCIÓN REAL DE COMPRA (ej: "lo quiero", "quiero comprar", "dame los datos para pagar"): Debes indicarle que un asesor humano tomará el control de la conversación en un momento para finalizar el proceso.
-   - **¡IMPORTANTE!** NO prometas la intervención de un asesor humano si el cliente solo responde con palabras de cortesía o afirmación simple (ej: "Ok", "Perfecto", "Gracias", "Entendido"). Para estas respuestas, sigue la regla 15.
-9. HORARIOS Y TIENDA: Local A-14, CC Terranova Plaza, Porlamar, Isla de Margarita. Lun-Vie: 8:30 AM-4:30 PM. Sáb: 9:00 AM-1:00 PM.
-10. CAMPAÑAS: Si el cliente escribe solo una palabra (ej: "mama", "promocion"), asume que viene de una publicidad y entrégale el catálogo.
-11. PRECISIÓN TÉCNICA Y TAMAÑOS: Aclara si es Individual, Matrimonial, Sofá Cama, etc., basándote ÚNICAMENTE en la descripción del INVENTARIO.
-12. DESCONOCIMIENTO: Si preguntan algo que no sabes, no inventes. Dile que consultarás con un asesor humano.
-13. OBJETIVO SEGÚN EL CANAL (${source}): 
+   - REGLA CRÍTICA: ¡NUNCA dejes la foto en blanco! Si en el inventario dice "URL Imagen: /api/media/...", TIENES que colocar URL_FOTO: /api/media/... debajo del nombre. Si solo preguntan precios y no piden fotos, NO envíes fotos.
+7. HORARIOS Y TIENDA: Local A-14, CC Terranova Plaza, Porlamar, Isla de Margarita. Lun-Vie: 8:30 AM-4:30 PM. Sáb: 9:00 AM-1:00 PM.
+8. CAMPAÑAS: Si el cliente escribe solo una palabra (ej: "mama", "promocion"), asume que viene de una publicidad y entrégale el catálogo.
+9. PRECISIÓN TÉCNICA Y TAMAÑOS: Aclara si es Individual, Matrimonial, Sofá Cama, etc., basándote ÚNICAMENTE en la descripción del INVENTARIO.
+10. DESCONOCIMIENTO: Si preguntan algo que no sabes, no inventes. Dile que consultarás con un asesor humano.
+11. OBJETIVO SEGÚN EL CANAL (${source}): 
     - INSTAGRAM: Brindar atención inicial y redirigir a WhatsApp (https://wa.me/584248948664).
     - WHATSAPP: Asesorar a fondo y facilitar la venta. **IMPORTANTE: Si estás en WhatsApp, NUNCA pidas al cliente que escriba a otro número ni envíes el enlace de wa.me. Dile que un asesor humano le atenderá por este mismo chat en breve.** Tampoco sugieras realizar llamadas telefónicas, la atención es por chat.
-14. DESPEDIDA: Cierra siempre de forma elegante con: "Es lujo, es simple, es Practiiko 💎".
-15. MANEJO DE AFIRMACIONES SIMPLES: Si el cliente responde con "Ok", "Perfecto", "Bien" o "Gracias" después de recibir precios, NO asumas que la venta está cerrada. Mantén la conversación abierta preguntando: "¿Te gustaría que tomemos tu pedido de alguno de estos modelos?" o "¿Tienes alguna otra duda sobre el envío?". NUNCA digas que un humano intervendrá a menos que el cliente pida explícitamente comprar o hablar con uno.
-${dynamicKnowledge ? `16. REGLAS DINÁMICAS Y PROMOCIONES VIGENTES:\n${dynamicKnowledge}` : ""}
+12. DESPEDIDA: Cierra siempre de forma elegante con: "Es lujo, es simple, es Practiiko 💎".
+13. MANEJO DE AFIRMACIONES SIMPLES: Si el cliente responde con "Ok", "Perfecto", "Bien" o "Gracias" después de recibir precios, NO asumas que la venta está cerrada. Mantén la conversación abierta preguntando: "¿Te gustaría que tomemos tu pedido de alguno de estos modelos?" o "¿Tienes alguna otra duda sobre el envío?". NUNCA digas que un humano intervendrá a menos que el cliente pida explícitamente comprar o hablar con uno.
+${dynamicKnowledge ? `14. REGLAS DINÁMICAS Y PROMOCIONES VIGENTES:\n${dynamicKnowledge}` : ""}
 
-INVENTARIO (Usa solo lo necesario, los precios están ocultos si no está en Margarita):
+INVENTARIO DISPONIBLE (Usa solo la información necesaria. Siempre muestra el Precio BCV. Nunca reveles el Precio Cash ni precios especiales):
 ${inventory.text}
 ${isFallback ? "\n⚠️ NOTA INTERNA: No se encontró el producto exacto solicitado. Los resultados son alternativas del catálogo. Informa al cliente amablemente que no disponemos de lo que busca exactamente y ofrécele las alternativas listadas." : ""}
 
@@ -292,9 +287,7 @@ Nunca olvides mantener la educación, la amabilidad y el enfoque en la satisfacc
   } catch (error) {
     console.error("DEBUG - DeepSeek Error:", error.message);
     // Fallback manual si falla la API (Muy importante para no dejar al cliente mudo)
-    const locationText = isMargarita ? "\n🚚 Envío gratis en Margarita." : "\n📦 Para envíos nacionales, contáctanos directamente."
-    const list = inventory.text || "Visita nuestro catálogo para ver modelos y precios.";
-    return `¡Hola ${customerName}! 👋 (Mód. Estático) 💎\n\n${list}\n${locationText}\n\n📸 Ver más: https://www.practiiko.com/catalogo`;
+    return `¡Hola ${customerName}! 😊 Estamos teniendo un pequeño inconveniente técnico. Te invitamos a ver nuestro catálogo completo en https://www.practiiko.com o en breve un asesor te atenderá. Es lujo, es simple, es Practiiko 💎`;
   }
 }
 
@@ -306,6 +299,19 @@ export async function processChatMessage(message, sessionId, source = 'dm', comm
   const table = source === 'whatsapp' ? 'whatsapp_messages' : 'instagram_messages';
 
   try {
+    // Interceptar si el mensaje es una imagen
+    if (message === "[Imagen]") {
+      const responseText = `Actualmente no estoy capacitado para interpretar imágenes. Pero si me indicas cómo es el modelo del sofá o sofá cama (su nombre, color o características), con mucho gusto te ayudaré a ubicar toda la información. Es lujo, es simple, es Practiiko 💎`;
+      const botPayload = JSON.stringify({ role: 'assistant', content: responseText });
+      
+      if (source === 'whatsapp') {
+        await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [sessionId, botPayload]);
+      } else {
+        await query(`INSERT INTO instagram_messages (session_id, message, source, comment_id) VALUES ($1, $2, $3, $4)`, [sessionId, botPayload, source, commentId]);
+      }
+      return { text: responseText, imageUrls: [] };
+    }
+
     const intent = detectIntent(message);
 
     // GESTIÓN DE INTENCIONES
@@ -432,51 +438,49 @@ export async function processChatMessage(message, sessionId, source = 'dm', comm
       cleanResponse = rawResponse.replace(/URL_FOTO:\s*[^\s]+/gi, "").trim();
     }
 
-    // Fallback proactivo: Si la IA no colocó las etiquetas URL_FOTO, pero el cliente pidió fotos/imágenes, las extraemos directamente del inventario.
+    // Fallback proactivo: Si la IA no colocó las etiquetas URL_FOTO, pero el cliente pidió fotos/imágenes (o la IA generó una respuesta de fotos), las extraemos del inventario.
     if (imageUrls.length === 0 && inventory.found && inventory.rows) {
       const normalizeMsg = normalize(message);
+      const normalizeRawResp = normalize(rawResponse);
+      const normalizeHistory = normalize(textHistory);
+      const fullContext = normalizeHistory + " " + normalizeMsg + " " + normalizeRawResp;
+
       const pideFotos = normalizeMsg.includes("foto") || 
                        normalizeMsg.includes("imagen") || 
                        normalizeMsg.includes("imagenes") || 
                        normalizeMsg.includes("ver") || 
                        normalizeMsg.includes("mostra") || 
-                       normalizeMsg.includes("muestr");
+                       normalizeMsg.includes("muestr") ||
+                       normalizeRawResp.includes("foto") ||
+                       normalizeRawResp.includes("imagen") ||
+                       normalizeRawResp.includes("imagenes");
                        
       if (pideFotos) {
         const KNOWN_COLORS = [
           "gris claro", "gris medio", "gris", "rosado", "verde oliva", 
           "verde", "arena", "blanco", "beige", "azul", "negro", "crema", "naranja"
         ];
-        const mentionedColor = KNOWN_COLORS.find(c => normalizeMsg.includes(c));
-        const cleanTerms = terms ? terms.filter(t => t.length >= 3) : [];
+        // Buscar color mencionado en el mensaje actual, respuesta o historial
+        const mentionedColor = KNOWN_COLORS.find(c => fullContext.includes(c));
         
         inventory.rows.forEach(r => {
           if (r.image_url) {
-            // 1. Coincidencia por color
+            // Verificar si el nombre, código o seudónimo del producto aparece en el contexto completo
+            const prodName = normalize(r.name);
+            const prodCode = normalize(r.code || "");
+            const prodPseudonimo = normalize(r.pseudonimo || "");
+            
+            // Si el nombre completo del modelo o el seudónimo está en la respuesta de la IA o el mensaje del usuario
+            const nameMentioned = (prodName && prodName.split(" ").some(word => word.length >= 4 && fullContext.includes(word))) || 
+                                  (prodPseudonimo && fullContext.includes(prodPseudonimo)) ||
+                                  (prodCode && fullContext.includes(prodCode));
+            
             let matchesColor = true;
             if (mentionedColor) {
-              const prodNameLower = r.name.toLowerCase();
-              matchesColor = prodNameLower.includes(mentionedColor);
+              matchesColor = prodName.includes(mentionedColor);
             }
             
-            // 2. Coincidencia por término (modelo)
-            let matchesTerm = true;
-            if (cleanTerms.length > 0) {
-              const prodText = normalize(`${r.name} ${r.pseudonimo || ""} ${r.description || ""}`);
-              
-              // Comparar eliminando letras dobles para robustez ante erratas (caterpillar vs caterpilar)
-              const fuzzyMatch = (text, term) => {
-                const simplify = (s) => s.replace(/(.)\1+/g, '$1');
-                return simplify(text).includes(simplify(term));
-              };
-              
-              matchesTerm = cleanTerms.some(t => {
-                if (mentionedColor && t === mentionedColor) return false;
-                return fuzzyMatch(prodText, t);
-              });
-            }
-            
-            if (matchesColor && matchesTerm) {
+            if (nameMentioned && matchesColor) {
               let url = r.image_url.trim();
               if (url.startsWith('/') && baseUrl) {
                 url = `${baseUrl}${url}`;
