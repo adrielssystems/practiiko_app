@@ -445,15 +445,28 @@ export async function processChatMessage(message, sessionId, source = 'dm', comm
       const normalizeHistory = normalize(textHistory);
       const fullContext = normalizeHistory + " " + normalizeMsg + " " + normalizeRawResp;
 
-      const pideFotos = normalizeMsg.includes("foto") || 
-                       normalizeMsg.includes("imagen") || 
-                       normalizeMsg.includes("imagenes") || 
-                       normalizeMsg.includes("ver") || 
-                       normalizeMsg.includes("mostra") || 
-                       normalizeMsg.includes("muestr") ||
-                       normalizeRawResp.includes("foto") ||
-                       normalizeRawResp.includes("imagen") ||
-                       normalizeRawResp.includes("imagenes");
+      // 1. Detección Inteligente de Petición de Fotos (evita disparar si el bot solo pregunta u ofrece)
+      const userPideFotos = normalizeMsg.includes("foto") || 
+                            normalizeMsg.includes("imagen") || 
+                            normalizeMsg.includes("imagenes") || 
+                            normalizeMsg.includes("ver") || 
+                            normalizeMsg.includes("mostra") || 
+                            normalizeMsg.includes("muestr");
+                            
+      const botEntregaFotos = (normalizeRawResp.includes("foto") || 
+                              normalizeRawResp.includes("imagen") || 
+                              normalizeRawResp.includes("imagenes")) && 
+                             (normalizeRawResp.includes("aqui tiene") || 
+                              normalizeRawResp.includes("aqui esta") || 
+                              normalizeRawResp.includes("te muestro") || 
+                              normalizeRawResp.includes("te envio") || 
+                              normalizeRawResp.includes("foto de") || 
+                              normalizeRawResp.includes("imagen de") || 
+                              normalizeRawResp.includes("estas son") ||
+                              normalizeRawResp.includes("aqui adjunto") ||
+                              normalizeRawResp.includes("te adjunto"));
+
+      const pideFotos = userPideFotos || botEntregaFotos;
                        
       if (pideFotos) {
         const KNOWN_COLORS = [
@@ -463,6 +476,14 @@ export async function processChatMessage(message, sessionId, source = 'dm', comm
         // Buscar color mencionado en el mensaje actual, respuesta o historial
         const mentionedColor = KNOWN_COLORS.find(c => fullContext.includes(c));
         
+        // Palabras genéricas a ignorar para evitar falsos positivos de otros modelos
+        const GENERIC_WORDS = [
+          "sofa", "sofas", "sofá", "sofás", "modular", "mueble", "muebles", "poltrona", "butaca", 
+          "sillon", "sillón", "mesa", "juego", "para", "tres", "puestos", "asientos", 
+          "gris", "claro", "medio", "verde", "oliva", "arena", "blanco", "beige", 
+          "azul", "negro", "crema", "naranja", "rosado"
+        ];
+        
         inventory.rows.forEach(r => {
           if (r.image_url) {
             // Verificar si el nombre, código o seudónimo del producto aparece en el contexto completo
@@ -470,8 +491,11 @@ export async function processChatMessage(message, sessionId, source = 'dm', comm
             const prodCode = normalize(r.code || "");
             const prodPseudonimo = normalize(r.pseudonimo || "");
             
-            // Si el nombre completo del modelo o el seudónimo está en la respuesta de la IA o el mensaje del usuario
-            const nameMentioned = (prodName && prodName.split(" ").some(word => word.length >= 4 && fullContext.includes(word))) || 
+            // Filtrar palabras genéricas y colores de la comparación del nombre del producto
+            const nameWords = prodName.split(" ").filter(word => !GENERIC_WORDS.includes(word));
+            
+            // El modelo se considera mencionado si alguna palabra distintiva aparece en el contexto completo
+            const nameMentioned = (nameWords.some(word => word.length >= 3 && fullContext.includes(word))) || 
                                   (prodPseudonimo && fullContext.includes(prodPseudonimo)) ||
                                   (prodCode && fullContext.includes(prodCode));
             
