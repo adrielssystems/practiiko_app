@@ -78,7 +78,7 @@ function detectIntent(message) {
   if (m.includes("vengo de instagram") || m.includes("vengo de ig") || m.includes("vengo del instagram")) return "BUY_REQUEST";
 
   // 1. Solicitud Humana (PRIORITARIA)
-  if (m.includes("asesor") || m.includes("humano") || m.includes("persona") || m.includes("atenderme") || m.includes("hablar con alguien") || m.includes("hablar con un") || m.includes("contacto") || m.includes("llamar") || m.includes("telefono") || m.includes("numero") || m.includes("whatsapp") || m.includes("whats") || m.includes("wts") || m.includes("ws") || m.includes("tlf") || m.includes("celular") || m.includes("escribirles")) return "HUMAN_REQUEST";
+  if (m.includes("asesor") || m.includes("humano") || m.includes("persona") || m.includes("atenderme") || m.includes("hablar con alguien") || m.includes("hablar con un")) return "HUMAN_REQUEST";
 
   // Cortesía simple (evaluar después de redirección para no cortocircuitar)
   if (["gracias", "ok", "dale", "perfecto", "entendido"].some(w => m.includes(w))) return "OTHER";
@@ -396,47 +396,7 @@ www.practiiko.com/catalogo
       console.warn("No se pudo cargar ai_custom_instructions de la BD:", e.message);
     }
 
-    // 6. Si no hay inventario y no es un saludo ni consulta de precio general, transferir a humano
-    if (!inventory.found && intent !== "GREETING" && intent !== "OTHER" && !isGeneralPriceQuery) {
-      const response = "Entendido 🌹. Para darte los detalles correctos, te estoy comunicando de inmediato con un asesor de ventas especializado por este mismo chat. Él te atenderá en breve 💎.";
-      const notifyText = `🚨 CONSULTA SIN INVENTARIO\n\n*Canal:* WHATSAPP\n*Cliente:* ${customerName} (+${sessionId})\n*Mensaje:* "${message}"\n\n👇 Responde aquí:\nhttps://wa.me/${sessionId}`;
 
-      const EVO_URL = process.env.EVOLUTION_API_URL;
-      const EVO_KEY = process.env.EVOLUTION_API_KEY;
-      const EVO_INSTANCE = process.env.EVOLUTION_INSTANCE || "Practiiko";
-      const adminPhone = "584248068515";
-      const groupId = process.env.NOTIFICATIONS_GROUP_ID;
-
-      if (EVO_URL) {
-        try {
-          await fetch(`${EVO_URL}/message/sendText/${EVO_INSTANCE}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'apikey': EVO_KEY },
-            body: JSON.stringify({ number: adminPhone, text: notifyText })
-          });
-          if (groupId) {
-            await fetch(`${EVO_URL}/message/sendText/${EVO_INSTANCE}`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'apikey': EVO_KEY },
-              body: JSON.stringify({ number: groupId, text: notifyText })
-            });
-          }
-        } catch(e) {
-          console.error("Error en notificaciones de fallback WhatsApp:", e);
-        }
-      }
-
-      // El webhook ya guardó el mensaje del usuario — solo guardamos la respuesta del bot
-      try {
-        await query("UPDATE whatsapp_customers SET ai_enabled = false, requires_human = true WHERE id = $1", [sessionId]);
-      } catch(e) {
-        console.error("Error desactivando bot (fallback) WhatsApp:", e);
-      }
-      await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`,
-        [sessionId, JSON.stringify({ role: 'assistant', content: response })]);
-
-      return { text: response, imageUrls: [] };
-    }
 
     // 7. Invocar LLM
     const rawResponse = await buildResponse(message, customerName, inventory, historyMessages, dynamicKnowledge, inventory.isFallback, isGeneralPriceQuery);
