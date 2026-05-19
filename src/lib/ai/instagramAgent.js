@@ -78,10 +78,12 @@ function extractKeywords(message) {
 async function getInventory(terms, currentIntent) {
   try {
     const queryStr = `
-      SELECT p.id as product_id, p.name, p.categoria, p.description, 
-             v.id as variant_id, v.color, v.image_url, v.price_bcv, v.pseudonimo, v.code
+      SELECT p.id as product_id, p.name, p.description, p.price_bcv, p.price_cash, p.code, p.stock,
+             c.name as categoria,
+             (SELECT url FROM product_images WHERE product_id = p.id ORDER BY is_main DESC, sort_order ASC LIMIT 1) as image_url
       FROM products p
-      LEFT JOIN product_variants v ON p.id = v.product_id
+      LEFT JOIN categories c ON p.category_id = c.id
+      WHERE p.status = 'active'
       ORDER BY p.id ASC
     `;
     const { rows } = await query(queryStr);
@@ -97,16 +99,12 @@ async function getInventory(terms, currentIntent) {
         const nameNorm = normalize(r.name);
         const catNorm = normalize(r.categoria || "");
         const descNorm = normalize(r.description || "");
-        const colorNorm = normalize(r.color || "");
-        const pseudNorm = normalize(r.pseudonimo || "");
         const codeNorm = normalize(r.code || "");
 
         return normalizedTerms.some(term => 
           nameNorm.includes(term) ||
           catNorm.includes(term) ||
           descNorm.includes(term) ||
-          colorNorm.includes(term) ||
-          pseudNorm.includes(term) ||
           codeNorm.includes(term)
         );
       });
@@ -123,62 +121,22 @@ async function getInventory(terms, currentIntent) {
       found = rows.length > 0;
     }
 
-    // Agrupar por producto
-    const grouped = {};
     const categories = [];
-
     finalRows.forEach((r) => {
       if (r.categoria && !categories.includes(r.categoria)) {
         categories.push(r.categoria);
       }
-      if (!grouped[r.product_id]) {
-        grouped[r.product_id] = {
-          name: r.name,
-          categoria: r.categoria,
-          description: r.description,
-          variants: []
-        };
-      }
-      if (r.variant_id) {
-        grouped[r.product_id].variants.push({
-          name: r.color,
-          image_url: r.image_url,
-          price_bcv: r.price_bcv,
-          pseudonimo: r.pseudonimo,
-          code: r.code
-        });
-      }
     });
 
-    const productsText = Object.values(grouped).map((g) => {
-      const colorsAndUrls = g.variants
-        .map((v) => {
-          let colorName = v.name;
-          if (terms && terms.length > 0) {
-            const nameLower = v.name.toLowerCase();
-            const pseudonimoLower = v.pseudonimo ? v.pseudonimo.toLowerCase() : "";
-            if (pseudonimoLower && nameLower.includes(pseudonimoLower)) {
-              const idx = nameLower.indexOf(pseudonimoLower);
-              colorName = v.name.substring(idx + v.pseudonimo.length).trim();
-            }
-          }
-          if (!colorName) {
-            const match = v.name.match(/COLOR\s+([A-ZÁÉÍÓÚÑ\s]+)/i) || v.description?.match(/COLOR\s+([A-ZÁÉÍÓÚÑ\s]+)/i);
-            colorName = match ? match[1].trim() : "Estándar";
-          }
-          return `${colorName} (URL_FOTO: ${v.image_url || "No disponible"})`;
-        })
-        .filter((v, i, a) => a.indexOf(v) === i); // Únicos
-
-      const first = g.variants[0];
-      const priceInfo = first ? `- Precio BCV: $${first.price_bcv}` : "";
-
-      return `💎 MODELO: ${g.name}
-- Categoría: ${g.categoria}
-- Colores y URLs de Imágenes Disponibles:
-  ${colorsAndUrls.join("\n  ")}
-- Descripción: ${g.description || "N/A"}
-${priceInfo} 💎`;
+    const productsText = finalRows.map((p) => {
+      const imageUrl = p.image_url || "No disponible";
+      return `💎 MODELO: ${p.name}
+- Código: ${p.code || "N/A"}
+- Categoría: ${p.categoria || "N/A"}
+- Descripción: ${p.description || "N/A"}
+- Precio BCV: $${p.price_bcv}
+- Precio Cash: $${p.price_cash}
+- Imagen: (URL_FOTO: ${imageUrl}) 💎`;
     }).join("\n\n");
 
     const categoriesText = categories.length > 0 ? `CATEGORÍAS DISPONIBLES: ${categories.join(", ")}` : "";
