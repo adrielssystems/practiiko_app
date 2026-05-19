@@ -19,7 +19,7 @@ function getModel() {
       openAIApiKey: apiKey,
       configuration: { baseURL: baseUrl },
       modelName: "deepseek-chat",
-      temperature: 0.3,
+      temperature: 0.2,
     });
   }
   return _model;
