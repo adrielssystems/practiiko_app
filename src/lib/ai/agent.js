@@ -216,6 +216,12 @@ ${priceInfo} 💎`;
  * RESPUESTA FINAL (LLM con Deepseek)
  */
 async function buildResponse(message, customerName, inventory, historyMessages, source, dynamicKnowledge = "", isFallback = false) {
+  const channelGoal = source === 'whatsapp'
+    ? `* Atender en modo lobby concierge.
+* Transferir al asesor humano por ESTE MISMO CHAT si pide comprar, especificaciones o pagos.
+* Nunca envíes otro número de WhatsApp ni enlaces wa.me.`
+    : `* Brindar una atención inicial muy breve y cordial.
+* Redirigir al cliente a nuestro canal oficial de WhatsApp usando este enlace exacto: https://wa.me/584248948664 para concretar su compra o recibir atención personalizada.`;
 
   const prompt = `[SYSTEM PROMPT – RECEPCIONISTA LUXURY LOBBY | PRACTIIKO v4.0]
 
@@ -462,17 +468,7 @@ Horario:
 OBJETIVO SEGÚN EL CANAL
 ━━━━━━━━━━━━━━━━━━
 
-INSTAGRAM:
-
-* Atención inicial breve
-* Redirigir a WhatsApp:
-  https://wa.me/584248948664
-
-WHATSAPP:
-
-* Atender en modo lobby concierge
-* Transferir al asesor humano por ESTE MISMO CHAT
-* Nunca enviar otro número de WhatsApp
+${channelGoal}
 
 ━━━━━━━━━━━━━━━━━━
 SEGURIDAD
