@@ -63,12 +63,12 @@ function extractKeywords(message) {
   const m = normalize(message);
 
   const stopWords = [
-    "hola", "precio", "cuanto", "cuesta", "vale", "quiero", "saber", "tienen", "buenas", "tardes", "dias", "noches", 
+    "hola", "precio", "precios", "cuanto", "cuesta", "vale", "quiero", "saber", "tienen", "buenas", "tardes", "dias", "noches", 
     "favor", "gracias", "para", "como", "esta", "donde", "tiene", "busco", "necesito", "algun",
     "muestrame", "muestra", "ver", "fotos", "foto", "imagenes", "imagen", "del", "las", "los", "una", "uno", "unos", "unas", 
     "este", "esto", "de", "el", "la", "ese", "eso", "esa", "esos", "esas", "aqui", "alla", "mueble", "muebles", 
     "sofa", "sofas", "colchon", "colchones", "modelo", "modelos", "gustaria", "mas", "informacion", "detalle", "detalles",
-    "enviar", "mandar", "pasar", "saber", "conocer"
+    "enviar", "mandar", "pasar", "saber", "conocer", "por", "con", "que", "sus", "estos", "estas", "cual", "cuales", "dame"
   ];
   const words = m.split(/[\s,?.!]+/).filter(w => w.length >= 3 && !stopWords.includes(w));
 
