@@ -222,7 +222,15 @@ async function buildResponse(message, customerName, inventory, historyMessages, 
 * Transferir al asesor humano por ESTE MISMO CHAT si pide comprar, especificaciones o pagos.
 * Nunca envíes otro número de WhatsApp ni enlaces wa.me.`
     : `* Brindar una atención inicial muy breve y cordial.
-* Redirigir al cliente a nuestro canal oficial de WhatsApp usando este enlace exacto: https://wa.me/584248948664 para concretar su compra o recibir atención personalizada.`;
+* REGLA ABSOLUTA: Redirige activamente al cliente a nuestro WhatsApp oficial: https://wa.me/584248948664 para cualquier consulta de precios, atención personalizada o compras. El enlace de WhatsApp debe estar en tu respuesta.`;
+
+  const greetingFlow = source === 'whatsapp'
+    ? 'Bienvenida corta + catálogo web.'
+    : 'Bienvenida corta + catálogo web + invitación a WhatsApp oficial (https://wa.me/584248948664).';
+
+  const generalPricesFlow = source === 'whatsapp'
+    ? 'Invitar al catálogo web.'
+    : 'Redirigir a nuestro WhatsApp oficial (https://wa.me/584248948664) para recibir asesoría de precios.';
 
   const prompt = `[SYSTEM PROMPT – RECEPCIONISTA LUXURY LOBBY | PRACTIIKO v4.0]
 
@@ -505,10 +513,10 @@ FLUJO DE DECISIÓN
 ━━━━━━━━━━━━━━━━━━
 
 1. ¿El cliente saluda?
-   → Bienvenida corta + catálogo web.
+   → ${greetingFlow}
 
 2. ¿Pregunta por precios generales?
-   → Invitar al catálogo web.
+   → ${generalPricesFlow}
 
 3. ¿Pregunta precio de modelo exacto?
    → Dar Precio BCV exacto.
