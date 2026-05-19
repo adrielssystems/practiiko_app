@@ -249,6 +249,21 @@ export async function processInstagramMessage(message, sessionId, customerName =
 
     const intent = detectIntent(message);
 
+    if (intent === "GREETING") {
+      const greetingResponse = `👋🏼 ¡Hola! Gracias por comunicarte con nosotros
+
+Te invitamos a visitar nuestra pagina web www.practiiko.com con información de interes para ti. Puedes consultar nuestro catálogo de muebles y colchones en el siguiente enlace: 
+
+www.practiiko.com/catalogo
+
+📄Deja tu consulta detallada y en breve le atenderemos. ¡Gracias por tu paciencia! 😊`;
+
+      await query(`INSERT INTO instagram_messages (session_id, message, source, comment_id) VALUES ($1, $2, $3, $4)`,
+        [sessionId, JSON.stringify({ role: 'assistant', content: greetingResponse }), source, commentId]);
+
+      return { text: greetingResponse, imageUrls: [] };
+    }
+
     // GESTIÓN DE INTENCIONES
     let currentIntent = intent;
     if (intent === "GREETING" || intent === "OTHER") currentIntent = "CATALOG";
