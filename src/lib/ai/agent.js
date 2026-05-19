@@ -775,6 +775,7 @@ export async function processChatMessage(message, sessionId, source = 'dm', comm
 
     // Fallback proactivo: Si la IA no colocó las etiquetas URL_FOTO, pero el cliente pidió fotos/imágenes (o la IA generó una respuesta de fotos), las extraemos del inventario.
     if (imageUrls.length === 0 && inventory.found && inventory.rows) {
+      const textHistory = historyMessages.map(m => m.content || "").join(" ");
       const normalizeMsg = normalize(message);
       const normalizeRawResp = normalize(rawResponse);
       const normalizeHistory = normalize(textHistory);
