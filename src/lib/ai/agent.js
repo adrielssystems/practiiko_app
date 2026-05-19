@@ -40,6 +40,9 @@ function normalize(text) {
 function detectIntent(message) {
   const m = normalize(message);
 
+  // 0. Redirección Automática de Instagram a WhatsApp (Evita bucles de catálogo)
+  if (m.includes("vengo de instagram") || m.includes("vengo de ig") || m.includes("vengo del instagram")) return "BUY_REQUEST";
+
   // 1. Solicitud Humana (PRIORITARIA)
   if (m.includes("asesor") || m.includes("humano") || m.includes("persona") || m.includes("atenderme") || m.includes("hablar con alguien") || m.includes("hablar con un") || m.includes("contacto") || m.includes("llamar") || m.includes("telefono") || m.includes("numero") || m.includes("whatsapp") || m.includes("whats") || m.includes("wts") || m.includes("ws") || m.includes("tlf") || m.includes("celular") || m.includes("escribirles")) return "HUMAN_REQUEST";
 
@@ -222,15 +225,15 @@ async function buildResponse(message, customerName, inventory, historyMessages, 
 * Transferir al asesor humano por ESTE MISMO CHAT si pide comprar, especificaciones o pagos.
 * Nunca envíes otro número de WhatsApp ni enlaces wa.me.`
     : `* Brindar una atención inicial muy breve y cordial.
-* REGLA ABSOLUTA: Redirige activamente al cliente a nuestro WhatsApp oficial: https://wa.me/584248948664 para cualquier consulta de precios, atención personalizada o compras. El enlace de WhatsApp debe estar en tu respuesta.`;
+* REGLA ABSOLUTA: Redirige activamente al cliente a nuestro WhatsApp oficial: https://wa.me/584248948664?text=Hola%2C%20vengo%20de%20Instagram%20y%20me%20gustar%C3%ADa%20recibir%20asesor%C3%ADa%20con%20los%20modelos%20y%20precios%20%F0%9F%92%8E para cualquier consulta de precios, atención personalizada o compras. El enlace de WhatsApp debe estar en tu respuesta.`;
 
   const greetingFlow = source === 'whatsapp'
     ? 'Bienvenida corta + catálogo web.'
-    : 'Bienvenida corta + catálogo web + invitación a WhatsApp oficial (https://wa.me/584248948664).';
+    : 'Bienvenida corta + catálogo web + invitación a WhatsApp oficial (https://wa.me/584248948664?text=Hola%2C%20vengo%20de%20Instagram%20y%20me%20gustar%C3%ADa%20recibir%20asesor%C3%ADa%20con%20los%20modelos%20y%20precios%20%F0%9F%92%8E).';
 
   const generalPricesFlow = source === 'whatsapp'
     ? 'Invitar al catálogo web.'
-    : 'Redirigir a nuestro WhatsApp oficial (https://wa.me/584248948664) para recibir asesoría de precios.';
+    : 'Redirigir a nuestro WhatsApp oficial (https://wa.me/584248948664?text=Hola%2C%20vengo%20de%20Instagram%20y%20me%20gustar%C3%ADa%20recibir%20asesor%C3%ADa%20con%20los%20modelos%20y%20precios%20%F0%9F%92%8E) para recibir asesoría de precios.';
 
   const prompt = `[SYSTEM PROMPT – RECEPCIONISTA LUXURY LOBBY | PRACTIIKO v4.0]
 
