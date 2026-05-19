@@ -74,50 +74,50 @@ function extractKeywords(message) {
 
 async function getInventory(terms, currentIntent) {
   try {
-    let queryStr = `
+    const queryStr = `
       SELECT p.id as product_id, p.name, p.categoria, p.description, 
              v.id as variant_id, v.color, v.image_url, v.price_bcv, v.pseudonimo, v.code
       FROM products p
       LEFT JOIN product_variants v ON p.id = v.product_id
-      WHERE 1=1
+      ORDER BY p.id ASC
     `;
-    let queryParams = [];
-
-    if (terms && terms.length > 0) {
-      const matchConditions = [];
-      terms.forEach((term) => {
-        queryParams.push(`%${term}%`);
-        const idx = queryParams.length;
-        matchConditions.push(`
-          (p.name ILIKE $${idx} 
-           OR p.categoria ILIKE $${idx} 
-           OR p.description ILIKE $${idx}
-           OR v.color ILIKE $${idx} 
-           OR v.pseudonimo ILIKE $${idx}
-           OR v.code ILIKE $${idx})
-        `);
-      });
-      queryStr += ` AND (${matchConditions.join(' OR ')})`;
-    }
-
-    queryStr += ` ORDER BY p.id ASC`;
-
-    const { rows } = await query(queryStr, queryParams);
+    const { rows } = await query(queryStr);
 
     let isFallback = false;
     let finalRows = rows;
+    let found = false;
 
-    if (rows.length === 0 && currentIntent !== "GREETING" && currentIntent !== "OTHER") {
-      console.log("[INVENTORY] Buscando todas las alternativas como fallback...");
-      const fallbackRes = await query(`
-        SELECT p.id as product_id, p.name, p.categoria, p.description, 
-               v.id as variant_id, v.color, v.image_url, v.price_bcv, v.pseudonimo, v.code
-        FROM products p
-        LEFT JOIN product_variants v ON p.id = v.product_id
-        ORDER BY p.id ASC
-      `);
-      finalRows = fallbackRes.rows;
-      isFallback = true;
+    if (terms && terms.length > 0) {
+      const normalizedTerms = terms.map(t => normalize(t));
+      
+      finalRows = rows.filter(r => {
+        const nameNorm = normalize(r.name);
+        const catNorm = normalize(r.categoria || "");
+        const descNorm = normalize(r.description || "");
+        const colorNorm = normalize(r.color || "");
+        const pseudNorm = normalize(r.pseudonimo || "");
+        const codeNorm = normalize(r.code || "");
+
+        return normalizedTerms.some(term => 
+          nameNorm.includes(term) ||
+          catNorm.includes(term) ||
+          descNorm.includes(term) ||
+          colorNorm.includes(term) ||
+          pseudNorm.includes(term) ||
+          codeNorm.includes(term)
+        );
+      });
+
+      if (finalRows.length > 0) {
+        found = true;
+      } else {
+        // Fallback: si no coincide ninguno, mostrar todo el inventario
+        finalRows = rows;
+        found = false;
+        isFallback = true;
+      }
+    } else {
+      found = rows.length > 0;
     }
 
     // Agrupar por producto
@@ -181,7 +181,7 @@ ${priceInfo} 💎`;
     const categoriesText = categories.length > 0 ? `CATEGORÍAS DISPONIBLES: ${categories.join(", ")}` : "";
 
     return {
-      found: rows.length > 0 || categories.length > 0,
+      found,
       text: `${categoriesText}\n\n${productsText}`,
       isFallback,
       rows: finalRows
