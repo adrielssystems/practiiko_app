@@ -385,6 +385,7 @@ www.practiiko.com/catalogo
     // 4. Buscar Inventario
     const terms = extractKeywords(message);
     const inventory = await getInventory(terms, currentIntent);
+    const isGeneralPriceQuery = intent === "PRICE_INFO" && (!terms || terms.length === 0);
 
     // 5. Cargar instrucciones personalizadas de la BD
     let dynamicKnowledge = "";
@@ -397,8 +398,8 @@ www.practiiko.com/catalogo
       console.warn("No se pudo cargar ai_custom_instructions de la BD:", e.message);
     }
 
-    // 6. Si no hay inventario y no es un saludo, transferir a humano
-    if (!inventory.found && intent !== "GREETING" && intent !== "OTHER") {
+    // 6. Si no hay inventario y no es un saludo ni consulta de precio general, transferir a humano
+    if (!inventory.found && intent !== "GREETING" && intent !== "OTHER" && !isGeneralPriceQuery) {
       const response = "Entendido 🌹. Para darte los detalles correctos, te estoy comunicando de inmediato con un asesor de ventas especializado por este mismo chat. Él te atenderá en breve 💎.";
       const notifyText = `🚨 CONSULTA SIN INVENTARIO\n\n*Canal:* WHATSAPP\n*Cliente:* ${customerName} (+${sessionId})\n*Mensaje:* "${message}"\n\n👇 Responde aquí:\nhttps://wa.me/${sessionId}`;
 
@@ -440,7 +441,6 @@ www.practiiko.com/catalogo
     }
 
     // 7. Invocar LLM
-    const isGeneralPriceQuery = intent === "PRICE_INFO" && (!terms || terms.length === 0);
     const rawResponse = await buildResponse(message, customerName, inventory, historyMessages, dynamicKnowledge, inventory.isFallback, isGeneralPriceQuery);
 
     console.log(`[DEBUG WHATSAPP LLM RAW]\n${rawResponse}\n[DEBUG WHATSAPP LLM RAW END]`);
