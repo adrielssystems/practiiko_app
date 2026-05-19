@@ -29,7 +29,8 @@ function getModel() {
  * NORMALIZADOR
  */
 function normalize(text) {
-  return text.toLowerCase()
+  if (!text) return "";
+  return String(text).toLowerCase()
     .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
 
@@ -40,7 +41,7 @@ function detectIntent(message) {
   const m = normalize(message);
 
   // 1. Solicitud Humana (PRIORITARIA)
-  if (m.includes("asesor") || m.includes("humano") || m.includes("persona") || m.includes("atenderme") || m.includes("hablar con alguien") || m.includes("hablar con un") || m.includes("contacto") || m.includes("llamar") || m.includes("telefono")) return "HUMAN_REQUEST";
+  if (m.includes("asesor") || m.includes("humano") || m.includes("persona") || m.includes("atenderme") || m.includes("hablar con alguien") || m.includes("hablar con un") || m.includes("contacto") || m.includes("llamar") || m.includes("telefono") || m.includes("numero") || m.includes("whatsapp") || m.includes("whats") || m.includes("wts") || m.includes("ws") || m.includes("tlf") || m.includes("celular") || m.includes("escribirles")) return "HUMAN_REQUEST";
 
   // 2. Métodos de Pago, Compras, Crédito y ofertas (Redirigir a agente)
   if (m.includes("comprar") || m.includes("compro") || m.includes("adquirir") || m.includes("ordenar") || m.includes("pedido") || m.includes("zelle") || m.includes("paypal") || m.includes("transferencia") || m.includes("deposito") || m.includes("cuenta") || m.includes("efectivo") || m.includes("tarjeta") || m.includes("cuotas") || m.includes("credito") || m.includes("financiamiento") || m.includes("descuento") || m.includes("oferta") || m.includes("precio especial") || m.includes("pagar") || m.includes("pago") || m.includes("pagos") || m.includes("metodos de pago")) return "BUY_REQUEST";
@@ -405,10 +406,20 @@ Ejemplo:
 Puedes descubrir toda nuestra colección, fotos y estilos en https://www.practiiko.com ✨”
 
 ━━━━━━━━━━━━━━━━━━
+SOBRE MUEBLES QUE "SE INFLAN" / EMBALAJE AL VACÍO
+━━━━━━━━━━━━━━━━━━
+
+Si el cliente pregunta por "muebles que se inflan", "muebles inflables", "colchones inflables" o "muebles empacados al vacío/comprimidos", aclárale con total amabilidad y elegancia que nuestros muebles NO son inflables con aire. Explícales:
+
+"Nuestros muebles están hechos de espuma de poliuretano de alta densidad para evitar deformaciones, y son comprimidos y empacados al vacío para facilitar su transporte 🌹 Al abrirlos, expanden y toman su forma final ✨"
+
+Invítalos a explorar todos nuestros modelos de espuma de alta densidad en https://www.practiiko.com.
+
+━━━━━━━━━━━━━━━━━━
 PRODUCTOS NO DISPONIBLES
 ━━━━━━━━━━━━━━━━━━
 
-Si el producto no existe o no aparece en INVENTARIO:
+Si el producto no existe o no aparece en INVENTARIO (y no es el caso de muebles que "se inflan"):
 
 “Actualmente no disponemos de ese modelo 🌹
 Con gusto un asesor especializado puede ayudarte a encontrar alternativas similares por este mismo chat ✨”
@@ -598,9 +609,17 @@ export async function processChatMessage(message, sessionId, source = 'dm', comm
       [sessionId]
     );
     const historyMessages = historyRes.rows.reverse().map(r => {
-      const msg = typeof r.message === 'string' ? JSON.parse(r.message) : r.message;
-      return msg.role === 'user' ? new HumanMessage(msg.content) : new AIMessage(msg.content);
-    });
+      if (!r.message) return null;
+      let msg;
+      try {
+        msg = typeof r.message === 'string' ? JSON.parse(r.message) : r.message;
+      } catch (e) {
+        msg = { role: 'user', content: String(r.message) };
+      }
+      if (!msg || typeof msg !== 'object') return null;
+      const content = msg.content || "";
+      return msg.role === 'assistant' ? new AIMessage(content) : new HumanMessage(content);
+    }).filter(Boolean);
 
 
 
