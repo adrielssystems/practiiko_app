@@ -54,7 +54,6 @@ function detectIntent(message) {
   // Cortesía simple (evaluar DESPUÉS de redirección para no cortocircuitar)
   if (["gracias", "ok", "dale", "perfecto", "entendido"].some(w => m.includes(w))) return "OTHER";
 
-  if (m.includes("margarita") || m.includes("porlamar") || m.includes("pampatar")) return "LOCATION_UPDATE";
   if (m.includes("precio") || m.includes("cuanto") || m.includes("cuesta") || m.includes("vale")) return "PRICE_INFO";
   if (m.includes("catalogo") || m.includes("ver todo")) return "CATALOG";
   if (m.includes("sofa") || m.includes("colchon") || m.match(/[a-z]\d{3}/)) return "PRODUCT_QUERY";
@@ -82,20 +81,12 @@ function extractKeywords(message) {
   return words.length > 0 ? words : null;
 }
 
-function detectLocation(message, history) {
-  const text = normalize(history + " " + message);
-  if (text.includes("margarita") || text.includes("porlamar") || text.includes("pampatar") || text.includes("nueva esparta") || text.includes("juan griego") || text.includes("asuncion")) return "MARGARITA";
 
-  const outsideCities = ["caracas", "valencia", "maracaibo", "maracay", "barquisimeto", "lecheria", "puerto la cruz", "barcelona", "maturin", "cumana", "merida", "tachira", "zulia", "anzoategui", "aragua", "carabobo", "miranda", "lara", "extranjero", "brasil", "colombia", "usa", "miami", "panama", "españa", "chile", "peru", "ecuador", "argentina"];
-  if (outsideCities.some(city => text.includes(city))) return "OUTSIDE";
-
-  return "UNKNOWN";
-}
 
 /**
  * DB
  */
-async function getInventory(terms, intent, location) {
+async function getInventory(terms, intent) {
   try {
     let rows = [];
     let categories = [];
@@ -224,7 +215,7 @@ ${priceInfo} 💎`;
 /**
  * RESPUESTA FINAL (LLM con Deepseek)
  */
-async function buildResponse(message, customerName, inventory, location, historyMessages, source, dynamicKnowledge = "", isFallback = false) {
+async function buildResponse(message, customerName, inventory, historyMessages, source, dynamicKnowledge = "", isFallback = false) {
 
   const prompt = `[SYSTEM PROMPT – RECEPCIONISTA LUXURY LOBBY | PRACTIIKO v4.0]
 
@@ -603,7 +594,6 @@ export async function processChatMessage(message, sessionId, source = 'dm', comm
 
     // GESTIÓN DE INTENCIONES
     let currentIntent = intent;
-    if (intent === "LOCATION_UPDATE") currentIntent = "CATALOG";
     if (intent === "GREETING" || intent === "OTHER") currentIntent = "CATALOG";
 
     // --- CARGAR HISTORIAL PRIMERO para que detectLocation tenga contexto completo (#5) ---
@@ -616,9 +606,7 @@ export async function processChatMessage(message, sessionId, source = 'dm', comm
       return msg.role === 'user' ? new HumanMessage(msg.content) : new AIMessage(msg.content);
     });
 
-    // Detectar ubicación con historial completo disponible
-    const textHistory = historyMessages.map(m => m.content).join(" ");
-    const location = detectLocation(message, textHistory);
+
 
     // Manejo de HUMAN_REQUEST y BUY_REQUEST (ALERTA CRÍTICA)
     if (currentIntent === "HUMAN_REQUEST" || currentIntent === "BUY_REQUEST") {
@@ -628,7 +616,9 @@ export async function processChatMessage(message, sessionId, source = 'dm', comm
       }
 
       const motivo = currentIntent === "BUY_REQUEST" ? "🔥 INTENCIÓN DE COMPRA" : "🚨 SOLICITUD HUMANA";
-      const notifyText = `${motivo}\n\n*Canal:* ${source.toUpperCase()}\n*Cliente:* ${customerName} (+${sessionId})\n*Ubicación detectada:* ${location}\n*Mensaje:* "${message}"\n\n👇 Responde aquí:\nhttps://wa.me/${sessionId}`;
+      const replyLink = source === 'whatsapp' ? `https://wa.me/${sessionId}` : `Bandeja de Instagram / Meta Business Suite`;
+      const phonePrefix = source === 'whatsapp' ? '+' : '';
+      const notifyText = `${motivo}\n\n*Canal:* ${source.toUpperCase()}\n*Cliente:* ${customerName} (${phonePrefix}${sessionId})\n*Mensaje:* "${message}"\n\n👇 Responde aquí:\n${replyLink}`;
 
       const EVO_URL = process.env.EVOLUTION_API_URL;
       const EVO_KEY = process.env.EVOLUTION_API_KEY;
@@ -678,7 +668,7 @@ export async function processChatMessage(message, sessionId, source = 'dm', comm
     }
 
     const terms = extractKeywords(message);
-    const inventory = await getInventory(terms, currentIntent, location);
+    const inventory = await getInventory(terms, currentIntent);
 
     // EXTRAER CONOCIMIENTO DINÁMICO DE LA BD (Cerebro IA)
     let dynamicKnowledge = "";
@@ -697,7 +687,9 @@ export async function processChatMessage(message, sessionId, source = 'dm', comm
     if (!inventory.found && intent !== "GREETING" && intent !== "OTHER") {
       const response = "Entendido 💎. En este momento no cuento con la información exacta sobre ese modelo o artículo. Te estoy transfiriendo de inmediato con un asesor de ventas especializado por este chat para que te ayude y aclare todas tus dudas.";
 
-      const notifyText = `🚨 CONSULTA DE PRODUCTO INEXISTENTE/DESCONOCIDO\n\n*Canal:* ${source.toUpperCase()}\n*Cliente:* ${customerName} (+${sessionId})\n*Ubicación detectada:* ${location}\n*Mensaje:* "${message}"\n\n👇 Responde aquí:\nhttps://wa.me/${sessionId}`;
+      const replyLink = source === 'whatsapp' ? `https://wa.me/${sessionId}` : `Bandeja de Instagram / Meta Business Suite`;
+      const phonePrefix = source === 'whatsapp' ? '+' : '';
+      const notifyText = `🚨 CONSULTA DE PRODUCTO INEXISTENTE/DESCONOCIDO\n\n*Canal:* ${source.toUpperCase()}\n*Cliente:* ${customerName} (${phonePrefix}${sessionId})\n*Mensaje:* "${message}"\n\n👇 Responde aquí:\n${replyLink}`;
 
       const EVO_URL = process.env.EVOLUTION_API_URL;
       const EVO_KEY = process.env.EVOLUTION_API_KEY;
@@ -745,7 +737,7 @@ export async function processChatMessage(message, sessionId, source = 'dm', comm
     }
 
     // Pasar isFallback para que DeepSeek sepa si los resultados son exactos o alternativos (#6)
-    const rawResponse = await buildResponse(message, customerName, inventory, location, historyMessages, source, dynamicKnowledge, inventory.isFallback);
+    const rawResponse = await buildResponse(message, customerName, inventory, historyMessages, source, dynamicKnowledge, inventory.isFallback);
 
     console.log(`[DEBUG LLM INVENTORY]\n${inventory.text}\n[DEBUG LLM INVENTORY END]`);
     console.log(`[DEBUG LLM RAW]\n${rawResponse}\n[DEBUG LLM RAW END]`);
