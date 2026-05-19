@@ -118,7 +118,7 @@ async function getInventory(terms, currentIntent) {
              (SELECT url FROM product_images WHERE product_id = p.id ORDER BY is_main DESC, sort_order ASC LIMIT 1) as image_url
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
-      WHERE p.status = 'active'
+      WHERE p.status = 'active' AND p.stock > 0
       ORDER BY p.id ASC
     `;
     const { rows } = await query(queryStr);
