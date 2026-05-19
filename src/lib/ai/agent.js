@@ -619,7 +619,21 @@ export async function processChatMessage(message, sessionId, source = 'dm', comm
       `SELECT message FROM ${table} WHERE session_id = $1 ORDER BY created_at DESC LIMIT 6`,
       [sessionId]
     );
-    const historyMessages = historyRes.rows.reverse().map(r => {
+
+    // Evitar duplicar el mensaje actual si ya fue insertado por el webhook
+    if (historyRes.rows.length > 0) {
+      try {
+        const mostRecentRaw = historyRes.rows[0].message;
+        const mostRecentMsg = typeof mostRecentRaw === 'string' ? JSON.parse(mostRecentRaw) : mostRecentRaw;
+        if (mostRecentMsg && mostRecentMsg.role === 'user' && mostRecentMsg.content === message) {
+          historyRes.rows.shift();
+        }
+      } catch (e) {
+        console.warn("Error filtrando mensaje actual del historial:", e.message);
+      }
+    }
+
+    const historyMessagesRaw = historyRes.rows.reverse().map(r => {
       if (!r.message) return null;
       let msg;
       try {
@@ -628,9 +642,22 @@ export async function processChatMessage(message, sessionId, source = 'dm', comm
         msg = { role: 'user', content: String(r.message) };
       }
       if (!msg || typeof msg !== 'object') return null;
-      const content = msg.content || "";
-      return msg.role === 'assistant' ? new AIMessage(content) : new HumanMessage(content);
+      return { role: msg.role === 'assistant' ? 'assistant' : 'user', content: msg.content || "" };
     }).filter(Boolean);
+
+    // Agrupar mensajes consecutivos del mismo rol para no confundir al LLM
+    const groupedMessages = [];
+    for (const msg of historyMessagesRaw) {
+      if (groupedMessages.length > 0 && groupedMessages[groupedMessages.length - 1].role === msg.role) {
+        groupedMessages[groupedMessages.length - 1].content += "\n" + msg.content;
+      } else {
+        groupedMessages.push({ ...msg });
+      }
+    }
+
+    const historyMessages = groupedMessages.map(msg => {
+      return msg.role === 'assistant' ? new AIMessage(msg.content) : new HumanMessage(msg.content);
+    });
 
 
 
