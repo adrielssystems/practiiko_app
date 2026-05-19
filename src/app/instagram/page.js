@@ -23,7 +23,7 @@ async function getConversations() {
       WHERE session_id != 'practiiko'
       GROUP BY session_id
       ORDER BY last_message DESC
-      LIMIT 20
+      LIMIT 100
     `);
     return res.rows;
   } catch (e) {
