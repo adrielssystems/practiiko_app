@@ -36,6 +36,41 @@ function normalize(str) {
     .trim();
 }
 
+function levenshtein(a, b) {
+  const tmp = [];
+  let i, j, alen = a.length, blen = b.length;
+  if (alen === 0) return blen;
+  if (blen === 0) return alen;
+  for (i = 0; i <= alen; i++) tmp[i] = [i];
+  for (j = 0; j <= blen; j++) tmp[0][j] = j;
+  for (i = 1; i <= alen; i++) {
+    for (j = 1; j <= blen; j++) {
+      tmp[i][j] = Math.min(
+        tmp[i - 1][j] + 1,
+        tmp[i][j - 1] + 1,
+        tmp[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)
+      );
+    }
+  }
+  return tmp[alen][blen];
+}
+
+function isFuzzyMatch(term, text) {
+  const cleanText = normalize(text);
+  const cleanTerm = normalize(term);
+  if (cleanText.includes(cleanTerm)) return true;
+
+  const textWords = cleanText.split(/[\s,?.!/-]+/).filter(w => w.length >= 3);
+  for (const word of textWords) {
+    const dist = levenshtein(cleanTerm, word);
+    const maxAllowedDist = cleanTerm.length > 6 ? 2 : (cleanTerm.length >= 4 ? 1 : 0);
+    if (dist <= maxAllowedDist) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function detectIntent(message) {
   const m = normalize(message);
 
@@ -96,16 +131,16 @@ async function getInventory(terms, currentIntent) {
       const normalizedTerms = terms.map(t => normalize(t));
       
       finalRows = rows.filter(r => {
-        const nameNorm = normalize(r.name);
-        const catNorm = normalize(r.categoria || "");
-        const descNorm = normalize(r.description || "");
-        const codeNorm = normalize(r.code || "");
+        const nameVal = r.name || "";
+        const catVal = r.categoria || "";
+        const descVal = r.description || "";
+        const codeVal = r.code || "";
 
         return normalizedTerms.some(term => 
-          nameNorm.includes(term) ||
-          catNorm.includes(term) ||
-          descNorm.includes(term) ||
-          codeNorm.includes(term)
+          isFuzzyMatch(term, nameVal) ||
+          isFuzzyMatch(term, catVal) ||
+          isFuzzyMatch(term, descVal) ||
+          isFuzzyMatch(term, codeVal)
         );
       });
 
@@ -135,7 +170,6 @@ async function getInventory(terms, currentIntent) {
 - Categoría: ${p.categoria || "N/A"}
 - Descripción: ${p.description || "N/A"}
 - Precio BCV: $${p.price_bcv}
-- Precio Cash: $${p.price_cash}
 - Imagen: (URL_FOTO: ${imageUrl}) 💎`;
     }).join("\n\n");
 
