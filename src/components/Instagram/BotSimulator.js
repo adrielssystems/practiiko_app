@@ -34,7 +34,11 @@ export default function BotSimulator() {
       const data = await response.json();
       
       if (data.success) {
-        setMessages(prev => [...prev, { role: 'assistant', content: data.bot_response }]);
+        const botText = typeof data.bot_response === 'string' 
+          ? data.bot_response 
+          : (data.bot_response?.text || '');
+        const imageUrls = data.bot_response?.imageUrls || [];
+        setMessages(prev => [...prev, { role: 'assistant', content: botText, imageUrls }]);
       } else {
         setMessages(prev => [...prev, { role: 'assistant', content: '❌ Error: No se pudo procesar la respuesta.' }]);
       }
@@ -141,9 +145,25 @@ export default function BotSimulator() {
             color: m.role === 'user' ? 'white' : 'black',
             boxShadow: '0 2px 5px rgba(0,0,0,0.05)',
             fontSize: '0.9rem',
-            border: m.role === 'assistant' ? '1px solid var(--border)' : 'none'
+            border: m.role === 'assistant' ? '1px solid var(--border)' : 'none',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.5rem'
           }}>
-            {m.content}
+            <div>{m.content}</div>
+            {m.imageUrls && m.imageUrls.map((url, imgIdx) => (
+              <img 
+                key={imgIdx} 
+                src={url} 
+                alt="Product" 
+                style={{ 
+                  maxWidth: '100%', 
+                  borderRadius: '10px', 
+                  marginTop: '0.25rem',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                }} 
+              />
+            ))}
           </div>
         ))}
         {isLoading && (
