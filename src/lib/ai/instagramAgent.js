@@ -195,7 +195,7 @@ ${priceInfo} 💎`;
   }
 }
 
-async function buildResponse(message, customerName, inventory, historyMessages, dynamicKnowledge = "", isFallback = false) {
+async function buildResponse(message, customerName, inventory, historyMessages, dynamicKnowledge = "", isFallback = false, isGeneralPriceQuery = false) {
   const prompt = getInstagramPrompt(inventory.text, dynamicKnowledge, isFallback);
 
   try {
@@ -213,7 +213,8 @@ async function buildResponse(message, customerName, inventory, historyMessages, 
                          message.toLowerCase().includes("página") || 
                          message.toLowerCase().includes("web") || 
                          message.toLowerCase().includes("catalogo") || 
-                         message.toLowerCase().includes("catálogo");
+                         message.toLowerCase().includes("catálogo") ||
+                         isGeneralPriceQuery;
 
     const suppressLink = alreadySentLink && !userPideLink;
 
@@ -347,7 +348,8 @@ www.practiiko.com/catalogo
     }
 
     // 6. Invocar LLM
-    const rawResponse = await buildResponse(message, customerName, inventory, historyMessages, dynamicKnowledge, inventory.isFallback);
+    const isGeneralPriceQuery = intent === "PRICE_INFO" && (!terms || terms.length === 0);
+    const rawResponse = await buildResponse(message, customerName, inventory, historyMessages, dynamicKnowledge, inventory.isFallback, isGeneralPriceQuery);
 
     console.log(`[DEBUG INSTAGRAM LLM RAW]\n${rawResponse}\n[DEBUG INSTAGRAM LLM RAW END]`);
 
