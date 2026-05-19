@@ -49,6 +49,12 @@ export async function POST(req) {
           for (const messaging of entry.messaging) {
             const senderId = messaging.sender?.id;
 
+            // IGNORAR REACCIONES A MENSAJES (DMs)
+            if (messaging.reaction) {
+              console.log("[WEBHOOK] Reacción a mensaje detectada. Ignorando.");
+              continue;
+            }
+
             // FILTRO CRÍTICO: Si el remitente es la misma página, es un eco. IGNORAR.
             if (senderId === pageId) {
               console.log("[WEBHOOK] Mensaje propio de la página detectado. Ignorando para evitar bucle.");
@@ -136,6 +142,12 @@ export async function POST(req) {
             if (change.field === "comments") {
               const commentId = change.value.id;
               const senderId = change.value.from?.id;
+
+              // FILTRO CRÍTICO: Solo procesar cuando se AGREGAN nuevos comentarios (evita responder a likes, reacciones, ediciones o eliminaciones)
+              if (change.value.verb && change.value.verb !== "add") {
+                console.log(`[WEBHOOK] Cambio en comentarios con verbo '${change.value.verb}'. Ignorando.`);
+                continue;
+              }
 
               // FILTRO CRÍTICO: No responder a comentarios hechos por la propia página
               if (senderId === pageId) {
