@@ -7,6 +7,8 @@ import sharp from "sharp";
 
 export const dynamic = "force-dynamic";
 
+const whatsappDebounceMap = new Map();
+
 // Configuración de Evolution API desde variables de entorno
 const EVO_URL = process.env.EVOLUTION_API_URL;
 const EVO_KEY = process.env.EVOLUTION_API_KEY;
@@ -204,21 +206,52 @@ export async function POST(req) {
         baseUrl = "https://auto.practiiko.com";
       }
 
-      // 6. Procesar con IA y responder (en segundo plano)
-      console.log(`[WHATSAPP] Procesando respuesta de IA para ${senderNumber}... (baseUrl: ${baseUrl})`);
-      processWhatsappMessage(userMessage, senderNumber, pushName, baseUrl).then(async (aiResponse) => {
-        // Enviar a WhatsApp
-        await sendWhatsAppMessage(senderNumber, aiResponse.text);
+      // 6. Procesar con IA y responder (con debounce de 5 segundos)
+      let debounceState = whatsappDebounceMap.get(senderNumber);
+      if (debounceState) {
+        clearTimeout(debounceState.timer);
+        debounceState.messages.push(userMessage);
+        debounceState.pushName = pushName;
+        debounceState.baseUrl = baseUrl;
+      } else {
+        debounceState = {
+          messages: [userMessage],
+          pushName,
+          baseUrl,
+          timer: null
+        };
+        whatsappDebounceMap.set(senderNumber, debounceState);
+      }
+
+      debounceState.timer = setTimeout(async () => {
+        whatsappDebounceMap.delete(senderNumber);
         
-        // Si hay imágenes, enviarlas todas
-        if (aiResponse.imageUrls && aiResponse.imageUrls.length > 0) {
-          for (const imgUrl of aiResponse.imageUrls) {
-            await sendWhatsAppImage(senderNumber, imgUrl);
-            console.log(`[WHATSAPP] Imagen de IA enviada a ${senderNumber}: ${imgUrl}`);
+        const combinedMessage = debounceState.messages.join(" ").trim();
+        console.log(`[WHATSAPP DEBOUNCE] Procesando mensajes combinados para ${senderNumber} ("${debounceState.pushName}"): "${combinedMessage}"`);
+
+        try {
+          const aiResponse = await processWhatsappMessage(combinedMessage, senderNumber, debounceState.pushName, debounceState.baseUrl);
+          
+          if (aiResponse.ignored) {
+            console.log(`[WHATSAPP DEBOUNCE] Respuesta de IA ignorada (bot pausado) para ${senderNumber}.`);
+            return;
           }
+
+          // Enviar a WhatsApp
+          await sendWhatsAppMessage(senderNumber, aiResponse.text);
+          
+          // Si hay imágenes, enviarlas todas
+          if (aiResponse.imageUrls && aiResponse.imageUrls.length > 0) {
+            for (const imgUrl of aiResponse.imageUrls) {
+              await sendWhatsAppImage(senderNumber, imgUrl);
+              console.log(`[WHATSAPP] Imagen de IA enviada a ${senderNumber}: ${imgUrl}`);
+            }
+          }
+          console.log(`[WHATSAPP] Respuesta de IA enviada a ${senderNumber}`);
+        } catch (e) {
+          console.error("[ERROR WHATSAPP AI]:", e);
         }
-        console.log(`[WHATSAPP] Respuesta de IA enviada a ${senderNumber}`);
-      }).catch(e => console.error("[ERROR WHATSAPP AI]:", e));
+      }, 5000);
     }
 
     return NextResponse.json({ status: "success" });

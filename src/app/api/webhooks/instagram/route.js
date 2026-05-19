@@ -3,6 +3,8 @@ export const dynamic = "force-dynamic";
 import { processInstagramMessage } from "@/lib/ai/instagramAgent";
 import { query } from "@/lib/db";
 
+const instagramDebounceMap = new Map();
+
 // GET: Verificación de Webhook para Meta (Instagram)
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
@@ -121,15 +123,49 @@ export async function POST(req) {
                 return NextResponse.json({ status: "bot_paused" });
               }
 
-              // 2. Procesar con IA si está habilitado
-              processInstagramMessage(userMessage, senderId, userInfo?.name || userInfo?.username || 'Cliente', baseUrl, 'dm', null).then(async (aiResponse) => {
-                await sendInstagramMessage(senderId, aiResponse.text);
-                if (aiResponse.imageUrls && aiResponse.imageUrls.length > 0) {
-                  for (const imgUrl of aiResponse.imageUrls) {
-                    await sendInstagramImage(senderId, imgUrl);
+              // 2. Procesar con IA si está habilitado (con debounce de 5 segundos)
+              const customerName = userInfo?.name || userInfo?.username || 'Cliente';
+              let debounceState = instagramDebounceMap.get(senderId);
+              if (debounceState) {
+                clearTimeout(debounceState.timer);
+                debounceState.messages.push(userMessage);
+                debounceState.customerName = customerName;
+                debounceState.baseUrl = baseUrl;
+              } else {
+                debounceState = {
+                  messages: [userMessage],
+                  customerName,
+                  baseUrl,
+                  timer: null
+                };
+                instagramDebounceMap.set(senderId, debounceState);
+              }
+
+              debounceState.timer = setTimeout(async () => {
+                instagramDebounceMap.delete(senderId);
+
+                const combinedMessage = debounceState.messages.join(" ").trim();
+                console.log(`[INSTAGRAM DM DEBOUNCE] Procesando mensajes combinados para ${senderId} ("${debounceState.customerName}"): "${combinedMessage}"`);
+
+                try {
+                  const aiResponse = await processInstagramMessage(combinedMessage, senderId, debounceState.customerName, debounceState.baseUrl, 'dm', null);
+                  
+                  if (aiResponse.ignored) {
+                    console.log(`[INSTAGRAM DM DEBOUNCE] Respuesta de IA ignorada (bot pausado) para ${senderId}.`);
+                    return;
                   }
+
+                  await sendInstagramMessage(senderId, aiResponse.text);
+                  if (aiResponse.imageUrls && aiResponse.imageUrls.length > 0) {
+                    for (const imgUrl of aiResponse.imageUrls) {
+                      await sendInstagramImage(senderId, imgUrl);
+                    }
+                  }
+                  console.log(`[INSTAGRAM DM] Respuesta de IA enviada a ${senderId}`);
+                } catch (e) {
+                  console.error("[ERROR ASYNC DM]:", e);
                 }
-              }).catch(e => console.error("[ERROR ASYNC DM]:", e));
+              }, 5000);
             }
           }
         }

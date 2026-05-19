@@ -300,6 +300,12 @@ www.practiiko.com/catalogo
       return { role: msg.role === 'assistant' ? 'assistant' : 'user', content: msg.content || "" };
     }).filter(Boolean);
 
+    // Eliminar los mensajes del usuario consecutivos más recientes (al final de la lista ASC)
+    // para evitar duplicación con el mensaje combinado actual.
+    while (historyMessagesRaw.length > 0 && historyMessagesRaw[historyMessagesRaw.length - 1].role === 'user') {
+      historyMessagesRaw.pop();
+    }
+
     // Agrupar mensajes consecutivos
     const groupedMessages = [];
     for (const msg of historyMessagesRaw) {
