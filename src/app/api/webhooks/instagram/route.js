@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
-import { processChatMessage } from "@/lib/ai/agent";
+import { processInstagramMessage } from "@/lib/ai/instagramAgent";
 import { query } from "@/lib/db";
 
 // GET: Verificación de Webhook para Meta (Instagram)
@@ -122,7 +122,7 @@ export async function POST(req) {
               }
 
               // 2. Procesar con IA si está habilitado
-              processChatMessage(userMessage, senderId, 'dm', null, userInfo?.name || userInfo?.username || 'Cliente', baseUrl).then(async (aiResponse) => {
+              processInstagramMessage(userMessage, senderId, userInfo?.name || userInfo?.username || 'Cliente', baseUrl, 'dm', null).then(async (aiResponse) => {
                 await sendInstagramMessage(senderId, aiResponse.text);
                 if (aiResponse.imageUrls && aiResponse.imageUrls.length > 0) {
                   for (const imgUrl of aiResponse.imageUrls) {
@@ -196,7 +196,7 @@ export async function POST(req) {
                 return NextResponse.json({ status: "bot_paused" });
               }
 
-              processChatMessage(userMessage, senderId, 'comment', commentId, username || 'Cliente', baseUrl).then(async (aiResponse) => {
+              processInstagramMessage(userMessage, senderId, username || 'Cliente', baseUrl, 'comment', commentId).then(async (aiResponse) => {
                 // 1. Respuesta pública corta con guía de solicitudes
                 replyToInstagramComment(commentId, "¡Hola! Te enviamos el detalle al DM (revisa tu bandeja de mensajes) 💎");
 

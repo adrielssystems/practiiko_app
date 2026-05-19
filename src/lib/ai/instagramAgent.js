@@ -1,0 +1,464 @@
+import { ChatOpenAI } from "@langchain/openai";
+import { HumanMessage, SystemMessage, AIMessage } from "@langchain/core/messages";
+import { query } from "@/lib/db";
+import { getInstagramPrompt } from "./prompts";
+
+let _model;
+function getModel() {
+  const apiKey = process.env.DEEPSEEK_API_KEY;
+  const baseUrl = process.env.DEEPSEEK_API_URL || "https://api.deepseek.com";
+
+  if (!apiKey || apiKey === "") {
+    if (process.env.NODE_ENV === 'production') {
+      console.warn("⚠️ Advertencia: DEEPSEEK_API_KEY no detectada.");
+    }
+    return null;
+  }
+
+  if (!_model) {
+    _model = new ChatOpenAI({
+      openAIApiKey: apiKey,
+      configuration: { baseURL: baseUrl },
+      modelName: "deepseek-chat",
+      temperature: 0.2, // Respuestas deterministas
+      maxTokens: 500
+    });
+  }
+  return _model;
+}
+
+function normalize(str) {
+  if (!str) return "";
+  return str
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // Remover acentos
+    .trim();
+}
+
+function detectIntent(message) {
+  const m = normalize(message);
+
+  // Instagram: Solo detectar solicitudes EXPLICITAS de atención humana en este mismo chat.
+  // Consultas de precio, envíos, pagos, etc. las maneja el LLM redirigiendolas a WhatsApp.
+  if (
+    m.includes("atiendeme") || m.includes("atenderme") || m.includes("quiero hablar con") ||
+    m.includes("hablar con alguien") || m.includes("hablar con un humano") || m.includes("hablar con un asesor") ||
+    m.includes("no tengo whatsapp") || m.includes("sin whatsapp") || m.includes("por aqui") ||
+    m.includes("este chat") || m.includes("este mismo chat")
+  ) return "HUMAN_REQUEST";
+
+  // Cortesía simple
+  if (["gracias", "ok", "dale", "perfecto", "entendido"].some(w => m.includes(w))) return "OTHER";
+
+  if (m.includes("precio") || m.includes("cuanto") || m.includes("cuesta") || m.includes("vale")) return "PRICE_INFO";
+  if (m.includes("catalogo") || m.includes("ver todo")) return "CATALOG";
+  if (m.includes("sofa") || m.includes("colchon") || m.match(/[a-z]\d{3}/)) return "PRODUCT_QUERY";
+  if (m.includes("hola") || m.includes("buen") || m.includes("saludos")) return "GREETING";
+
+  return "OTHER";
+}
+
+function extractKeywords(message) {
+  const m = normalize(message);
+
+  const stopWords = [
+    "hola", "precio", "cuanto", "cuesta", "vale", "quiero", "saber", "tienen", "buenas", "tardes", "dias", "noches", 
+    "favor", "gracias", "para", "como", "esta", "donde", "tiene", "busco", "necesito", "algun",
+    "muestrame", "muestra", "ver", "fotos", "foto", "imagenes", "imagen", "del", "las", "los", "una", "uno", "unos", "unas", 
+    "este", "esto", "de", "el", "la", "ese", "eso", "esa", "esos", "esas", "aqui", "alla", "mueble", "muebles", 
+    "sofa", "sofas", "colchon", "colchones", "modelo", "modelos", "gustaria", "mas", "informacion", "detalle", "detalles",
+    "enviar", "mandar", "pasar", "saber", "conocer"
+  ];
+  const words = m.split(/[\s,?.!]+/).filter(w => w.length >= 3 && !stopWords.includes(w));
+
+  return words.length > 0 ? words : null;
+}
+
+async function getInventory(terms, currentIntent) {
+  try {
+    let queryStr = `
+      SELECT p.id as product_id, p.name, p.categoria, p.description, 
+             v.id as variant_id, v.color, v.image_url, v.price_bcv, v.pseudonimo, v.code
+      FROM products p
+      LEFT JOIN product_variants v ON p.id = v.product_id
+      WHERE 1=1
+    `;
+    let queryParams = [];
+
+    if (terms && terms.length > 0) {
+      const matchConditions = [];
+      terms.forEach((term) => {
+        queryParams.push(`%${term}%`);
+        const idx = queryParams.length;
+        matchConditions.push(`
+          (p.name ILIKE $${idx} 
+           OR p.categoria ILIKE $${idx} 
+           OR p.description ILIKE $${idx}
+           OR v.color ILIKE $${idx} 
+           OR v.pseudonimo ILIKE $${idx}
+           OR v.code ILIKE $${idx})
+        `);
+      });
+      queryStr += ` AND (${matchConditions.join(' OR ')})`;
+    }
+
+    queryStr += ` ORDER BY p.id ASC`;
+
+    const { rows } = await query(queryStr, queryParams);
+
+    let isFallback = false;
+    let finalRows = rows;
+
+    if (rows.length === 0 && currentIntent !== "GREETING" && currentIntent !== "OTHER") {
+      console.log("[INVENTORY] Buscando todas las alternativas como fallback...");
+      const fallbackRes = await query(`
+        SELECT p.id as product_id, p.name, p.categoria, p.description, 
+               v.id as variant_id, v.color, v.image_url, v.price_bcv, v.pseudonimo, v.code
+        FROM products p
+        LEFT JOIN product_variants v ON p.id = v.product_id
+        ORDER BY p.id ASC
+      `);
+      finalRows = fallbackRes.rows;
+      isFallback = true;
+    }
+
+    // Agrupar por producto
+    const grouped = {};
+    const categories = [];
+
+    finalRows.forEach((r) => {
+      if (r.categoria && !categories.includes(r.categoria)) {
+        categories.push(r.categoria);
+      }
+      if (!grouped[r.product_id]) {
+        grouped[r.product_id] = {
+          name: r.name,
+          categoria: r.categoria,
+          description: r.description,
+          variants: []
+        };
+      }
+      if (r.variant_id) {
+        grouped[r.product_id].variants.push({
+          name: r.color,
+          image_url: r.image_url,
+          price_bcv: r.price_bcv,
+          pseudonimo: r.pseudonimo,
+          code: r.code
+        });
+      }
+    });
+
+    const productsText = Object.values(grouped).map((g) => {
+      const colorsAndUrls = g.variants
+        .map((v) => {
+          let colorName = v.name;
+          if (terms && terms.length > 0) {
+            const nameLower = v.name.toLowerCase();
+            const pseudonimoLower = v.pseudonimo ? v.pseudonimo.toLowerCase() : "";
+            if (pseudonimoLower && nameLower.includes(pseudonimoLower)) {
+              const idx = nameLower.indexOf(pseudonimoLower);
+              colorName = v.name.substring(idx + v.pseudonimo.length).trim();
+            }
+          }
+          if (!colorName) {
+            const match = v.name.match(/COLOR\s+([A-ZÁÉÍÓÚÑ\s]+)/i) || v.description?.match(/COLOR\s+([A-ZÁÉÍÓÚÑ\s]+)/i);
+            colorName = match ? match[1].trim() : "Estándar";
+          }
+          return `${colorName} (URL_FOTO: ${v.image_url || "No disponible"})`;
+        })
+        .filter((v, i, a) => a.indexOf(v) === i); // Únicos
+
+      const first = g.variants[0];
+      const priceInfo = first ? `- Precio BCV: $${first.price_bcv}` : "";
+
+      return `💎 MODELO: ${g.name}
+- Categoría: ${g.categoria}
+- Colores y URLs de Imágenes Disponibles:
+  ${colorsAndUrls.join("\n  ")}
+- Descripción: ${g.description || "N/A"}
+${priceInfo} 💎`;
+    }).join("\n\n");
+
+    const categoriesText = categories.length > 0 ? `CATEGORÍAS DISPONIBLES: ${categories.join(", ")}` : "";
+
+    return {
+      found: rows.length > 0 || categories.length > 0,
+      text: `${categoriesText}\n\n${productsText}`,
+      isFallback,
+      rows: finalRows
+    };
+  } catch (e) {
+    console.error("[DB ERROR]:", e);
+    return { found: false, text: "", isFallback: false, rows: [] };
+  }
+}
+
+async function buildResponse(message, customerName, inventory, historyMessages, dynamicKnowledge = "", isFallback = false) {
+  const prompt = getInstagramPrompt(inventory.text, dynamicKnowledge, isFallback);
+
+  try {
+    const model = getModel();
+    if (!model) throw new Error("Model not initialized (missing API Key)");
+
+    const alreadySentLink = historyMessages.some(m => 
+      m instanceof AIMessage && 
+      (m.content.toLowerCase().includes("practiiko.com") || m.content.toLowerCase().includes("catalogo"))
+    );
+
+    const userPideLink = message.toLowerCase().includes("link") || 
+                         message.toLowerCase().includes("enlace") || 
+                         message.toLowerCase().includes("pagina") || 
+                         message.toLowerCase().includes("página") || 
+                         message.toLowerCase().includes("web") || 
+                         message.toLowerCase().includes("catalogo") || 
+                         message.toLowerCase().includes("catálogo");
+
+    const suppressLink = alreadySentLink && !userPideLink;
+
+    const finalMessages = [
+      new SystemMessage(prompt),
+      ...historyMessages
+    ];
+
+    if (suppressLink) {
+      finalMessages.push(new SystemMessage("REGLA DE CONTROL DE ENLACES: Ya le has enviado el enlace del catálogo web al cliente en los mensajes anteriores de esta conversación. Por lo tanto, queda estrictamente PROHIBIDO incluir cualquier URL de catálogo (como https://www.practiiko.com/catalogo) en tu respuesta actual. Si necesitas hacer referencia al catálogo o a la página, hazlo textualmente sin escribir el enlace literal. No obstante, el enlace oficial de redirección a WhatsApp SIEMPRE debe estar permitido si es requerido."));
+    }
+
+    finalMessages.push(new SystemMessage("REGLA CRÍTICA DE RESPUESTA: Si el cliente ha pedido fotos, imágenes o ver el modelo, DEBES obligatoriamente escribir 'URL_FOTO: [URL]' para cada color del inventario que le nombres. NUNCA respondas con una línea en blanco debajo del nombre del color. El formato exacto debe ser:\n\n*Color NombreColor*:\nURL_FOTO: /api/media/..."));
+    finalMessages.push(new HumanMessage(message));
+
+    const response = await model.invoke(finalMessages);
+    return response.content;
+  } catch (error) {
+    console.error("DEBUG - DeepSeek Error (Instagram):", error.message);
+    return `¡Hola ${customerName}! 🌹 Escríbenos a nuestro WhatsApp oficial para atención inmediata y ver todos nuestros precios: https://wa.me/584248948664?text=Hola%2C%20vengo%20de%20Instagram%20y%20me%20gustar%C3%ADa%20recibir%20asesor%C3%ADa%20con%20los%20modelos%20y%20precios%20%F0%9F%92%8E 💎`;
+  }
+}
+
+export async function processInstagramMessage(message, sessionId, customerName = "Cliente", baseUrl = "", source = "instagram", commentId = null) {
+  try {
+    // 1. Verificar si el bot está pausado para este cliente
+    const customerRes = await query("SELECT ai_enabled FROM instagram_customers WHERE id = $1", [sessionId]);
+    const isAiEnabled = customerRes.rows[0]?.ai_enabled ?? true;
+    if (!isAiEnabled) {
+      console.log(`[INSTAGRAM AGENT] Bot pausado para ${sessionId}.`);
+      return { text: "", imageUrls: [], ignored: true };
+    }
+
+    const intent = detectIntent(message);
+
+    // GESTIÓN DE INTENCIONES
+    let currentIntent = intent;
+    if (intent === "GREETING" || intent === "OTHER") currentIntent = "CATALOG";
+
+    // 2. Cargar historial
+    const historyRes = await query(
+      `SELECT message FROM instagram_messages WHERE session_id = $1 ORDER BY created_at DESC LIMIT 6`,
+      [sessionId]
+    );
+
+    // Evitar duplicar el mensaje actual si ya fue insertado por el webhook
+    if (historyRes.rows.length > 0) {
+      try {
+        const mostRecentRaw = historyRes.rows[0].message;
+        const mostRecentMsg = typeof mostRecentRaw === 'string' ? JSON.parse(mostRecentRaw) : mostRecentRaw;
+        if (mostRecentMsg && mostRecentMsg.role === 'user' && mostRecentMsg.content === message) {
+          historyRes.rows.shift();
+        }
+      } catch (e) {
+        console.warn("Error filtrando mensaje actual del historial:", e.message);
+      }
+    }
+
+    const historyMessagesRaw = historyRes.rows.reverse().map(r => {
+      if (!r.message) return null;
+      let msg;
+      try {
+        msg = typeof r.message === 'string' ? JSON.parse(r.message) : r.message;
+      } catch (e) {
+        msg = { role: 'user', content: String(r.message) };
+      }
+      if (!msg || typeof msg !== 'object') return null;
+      return { role: msg.role === 'assistant' ? 'assistant' : 'user', content: msg.content || "" };
+    }).filter(Boolean);
+
+    // Agrupar mensajes consecutivos
+    const groupedMessages = [];
+    for (const msg of historyMessagesRaw) {
+      if (groupedMessages.length > 0 && groupedMessages[groupedMessages.length - 1].role === msg.role) {
+        groupedMessages[groupedMessages.length - 1].content += "\n" + msg.content;
+      } else {
+        groupedMessages.push({ ...msg });
+      }
+    }
+
+    const historyMessages = groupedMessages.map(msg => {
+      return msg.role === 'assistant' ? new AIMessage(msg.content) : new HumanMessage(msg.content);
+    });
+
+    // 3. Manejo de HUMAN_REQUEST (Fast Path) - Instagram
+    // Solo para solicitudes EXPLICITAS de atención humana en este mismo chat.
+    // NO se envían notificaciones al grupo de WhatsApp — el bot ya redirige a WA por su propia cuenta.
+    if (currentIntent === "HUMAN_REQUEST") {
+      const response = "Con mucho gusto 💎 Te atiendo por este mismo chat en breve. Uno de nuestros asesores se comunicará contigo aquí 🌹";
+
+      // Solo marcamos en DB para el panel de monitoreo interno
+      try {
+        await query("UPDATE instagram_customers SET ai_enabled = false, requires_human = true WHERE id = $1", [sessionId]);
+      } catch(e) {
+        console.error("Error actualizando requires_human Instagram:", e);
+      }
+      await query(`INSERT INTO instagram_messages (session_id, message, source, comment_id) VALUES ($1, $2, $3, $4)`,
+        [sessionId, JSON.stringify({ role: 'assistant', content: response }), source, commentId]);
+
+      return { text: response, imageUrls: [] };
+    }
+
+    // 4. Buscar Inventario
+    const terms = extractKeywords(message);
+    const inventory = await getInventory(terms, currentIntent);
+
+    // 5. Cargar instrucciones personalizadas
+    let dynamicKnowledge = "";
+    try {
+      const settingsRes = await query("SELECT value FROM app_settings WHERE key = 'ai_custom_instructions'");
+      if (settingsRes.rows.length > 0) {
+        dynamicKnowledge = settingsRes.rows[0].value;
+      }
+    } catch (e) {
+      console.warn("No se pudo cargar ai_custom_instructions de la BD:", e.message);
+    }
+
+    // 6. Invocar LLM
+    const rawResponse = await buildResponse(message, customerName, inventory, historyMessages, dynamicKnowledge, inventory.isFallback);
+
+    console.log(`[DEBUG INSTAGRAM LLM RAW]\n${rawResponse}\n[DEBUG INSTAGRAM LLM RAW END]`);
+
+    let cleanResponse = rawResponse;
+    let shouldTransfer = false;
+
+    if (cleanResponse.includes("[TRANSFER]")) {
+      shouldTransfer = true;
+      cleanResponse = cleanResponse.replace(/\[TRANSFER\]/gi, "").trim();
+    }
+
+    if (shouldTransfer) {
+      // Instagram: solo actualizamos DB para el panel de monitoreo interno.
+      // NO se envían notificaciones al grupo de WhatsApp desde Instagram.
+      try {
+        await query("UPDATE instagram_customers SET ai_enabled = false, requires_human = true WHERE id = $1", [sessionId]);
+      } catch(e) {
+        console.error("Error actualizando requires_human (IA-TRANSFER) Instagram:", e);
+      }
+    }
+
+    // Extraer URLs de imágenes
+    let imageUrls = [];
+    const imgMatches = [...cleanResponse.matchAll(/URL_FOTO:\s*([^\s]+)/gi)];
+    if (imgMatches.length > 0) {
+      imageUrls = imgMatches.map(m => {
+        let url = m[1].trim();
+        if (url.startsWith('/') && baseUrl) {
+          url = `${baseUrl}${url}`;
+        }
+        return url;
+      });
+      cleanResponse = cleanResponse.replace(/URL_FOTO:\s*[^\s]+/gi, "").trim();
+    }
+
+    // Fallback de extracción de imágenes
+    if (imageUrls.length === 0 && inventory.found && inventory.rows) {
+      const textHistory = historyMessages.map(m => m.content || "").join(" ");
+      const normalizeMsg = normalize(message);
+      const normalizeRawResp = normalize(rawResponse);
+      const normalizeHistory = normalize(textHistory);
+      const fullContext = normalizeHistory + " " + normalizeMsg + " " + normalizeRawResp;
+
+      const userPideFotos = normalizeMsg.includes("foto") || 
+                            normalizeMsg.includes("imagen") || 
+                            normalizeMsg.includes("imagenes") || 
+                            normalizeMsg.includes("ver") || 
+                            normalizeMsg.includes("mostra") || 
+                            normalizeMsg.includes("muestr");
+                            
+      const botEntregaFotos = (normalizeRawResp.includes("foto") || 
+                              normalizeRawResp.includes("imagen") || 
+                              normalizeRawResp.includes("imagenes")) && 
+                             (normalizeRawResp.includes("aqui tiene") || 
+                              normalizeRawResp.includes("aqui esta") || 
+                              normalizeRawResp.includes("te muestro") || 
+                              normalizeRawResp.includes("te envio") || 
+                              normalizeRawResp.includes("foto de") || 
+                              normalizeRawResp.includes("imagen de") || 
+                              normalizeRawResp.includes("estas son") ||
+                              normalizeRawResp.includes("aqui adjunto") ||
+                              normalizeRawResp.includes("en la imagen"));
+
+      if (userPideFotos || botEntregaFotos) {
+        let mentionedColor = "";
+        const COLORS_LIST = ["blanco", "negro", "gris", "beige", "azul", "verde", "arena", "crema", "rosado", "naranja", "oliva"];
+        for (const col of COLORS_LIST) {
+          if (normalizeMsg.includes(col) || normalizeRawResp.includes(col)) {
+            mentionedColor = col;
+            break;
+          }
+        }
+
+        const GENERIC_WORDS = [
+          "sofa", "sofas", "sofá", "sofás", "modular", "mueble", "muebles", "poltrona", "butaca", 
+          "sillon", "sillón", "mesa", "juego", "para", "tres", "puestos", "asientos", 
+          "gris", "claro", "medio", "verde", "oliva", "arena", "blanco", "beige", 
+          "azul", "negro", "crema", "naranja", "rosado"
+        ];
+        
+        inventory.rows.forEach(r => {
+          if (r.image_url) {
+            const prodName = normalize(r.name);
+            const prodCode = normalize(r.code || "");
+            const prodPseudonimo = normalize(r.pseudonimo || "");
+            
+            const nameWords = prodName.split(" ").filter(word => !GENERIC_WORDS.includes(word));
+            
+            const nameMentioned = (nameWords.some(word => word.length >= 3 && fullContext.includes(word))) || 
+                                  (prodPseudonimo && fullContext.includes(prodPseudonimo)) ||
+                                  (prodCode && fullContext.includes(prodCode));
+            
+            let matchesColor = true;
+            if (mentionedColor) {
+              matchesColor = prodName.includes(mentionedColor);
+            }
+            
+            if (nameMentioned && matchesColor) {
+              let url = r.image_url.trim();
+              if (url.startsWith('/') && baseUrl) {
+                url = `${baseUrl}${url}`;
+              }
+              if (!imageUrls.includes(url)) {
+                imageUrls.push(url);
+              }
+            }
+          }
+        });
+      }
+    }
+
+    // Guardar en DB
+    await query(`INSERT INTO instagram_messages (session_id, message, source, comment_id) VALUES ($1, $2, $3, $4)`,
+      [sessionId, JSON.stringify({ role: 'assistant', content: cleanResponse }), source, commentId]);
+
+    return { text: cleanResponse, imageUrls };
+
+  } catch (error) {
+    console.error("CRITICAL INSTAGRAM AGENT ERROR:", error);
+    const errorMsg = "Error consultando inventario 💎";
+    try {
+      await query(`INSERT INTO instagram_messages (session_id, message, source, comment_id) VALUES ($1, $2, $3, $4)`,
+        [sessionId, JSON.stringify({ role: 'assistant', content: errorMsg }), source, commentId]);
+    } catch (dbErr) {
+      console.error("Failed to log error to DB:", dbErr);
+    }
+    return { text: errorMsg, imageUrls: [] };
+  }
+}

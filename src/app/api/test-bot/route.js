@@ -1,4 +1,4 @@
-import { processChatMessage } from "@/lib/ai/agent";
+import { processInstagramMessage } from "@/lib/ai/instagramAgent";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -7,12 +7,13 @@ export async function POST(req) {
   try {
     const { message, sessionId, customerName } = await req.json();
     
-    const aiResponse = await processChatMessage(
+    const aiResponse = await processInstagramMessage(
       message, 
       sessionId || 'simul-user', 
-      'dm', 
-      null, 
-      customerName || 'Explorador'
+      customerName || 'Explorador',
+      "",
+      'dm',
+      null
     );
     
     return NextResponse.json({ 

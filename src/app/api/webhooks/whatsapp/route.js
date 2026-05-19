@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { query } from "@/lib/db";
-import { processChatMessage } from "@/lib/ai/agent";
+import { processWhatsappMessage } from "@/lib/ai/whatsappAgent";
 import fs from "fs/promises";
 import path from "path";
 import sharp from "sharp";
@@ -206,7 +206,7 @@ export async function POST(req) {
 
       // 6. Procesar con IA y responder (en segundo plano)
       console.log(`[WHATSAPP] Procesando respuesta de IA para ${senderNumber}... (baseUrl: ${baseUrl})`);
-      processChatMessage(userMessage, senderNumber, 'whatsapp', null, pushName, baseUrl).then(async (aiResponse) => {
+      processWhatsappMessage(userMessage, senderNumber, pushName, baseUrl).then(async (aiResponse) => {
         // Enviar a WhatsApp
         await sendWhatsAppMessage(senderNumber, aiResponse.text);
         
