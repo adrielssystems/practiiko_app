@@ -226,7 +226,7 @@ async function buildResponse(message, customerName, inventory, historyMessages, 
     return response.content;
   } catch (error) {
     console.error("DEBUG - DeepSeek Error (Instagram):", error.message);
-    return `¡Hola ${customerName}! 🌹 Escríbenos a nuestro WhatsApp oficial para atención inmediata y ver todos nuestros precios: https://wa.me/584248948664?text=Hola%2C%20vengo%20de%20Instagram%20y%20me%20gustar%C3%ADa%20recibir%20asesor%C3%ADa%20con%20los%20modelos%20y%20precios%20%F0%9F%92%8E 💎`;
+    return `¡Hola ${customerName}! 🌹 Escríbenos a nuestro WhatsApp oficial para atención inmediata y ver todos nuestros precios: https://wa.me/584248948664?text=Hola%2C%20vengo%20de%20instagram%20y%20quisiera%20informacion%20sobre%20sus%20productos 💎`;
   }
 }
 

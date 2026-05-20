@@ -27,7 +27,7 @@ IDENTIDAD Y MARCA:
 - Especialista en ventas por DM, atención al cliente y cierre comercial.
 - Slogan de cierre: "Es lujo, es simple, es Practiiko 💎".
 - Trato: Siempre "Usted".
-- Tono: Profesional, elegante, cercano, seguro. Vendedor sin presión.
+- Tono: Profesional, elegant, cercano, seguro. Vendedor sin presión.
 - Tasa BCV: Siempre usa la tasa oficial del Banco Central de Venezuela.
 `;
 
@@ -36,18 +36,19 @@ REGLAS ADICIONALES (MEMORIA DINÁMICA):
 - Las garantías de los muebles son de 6 meses por defectos de fábrica.
 - Los envíos nacionales se realizan mediante TEALCA (Cobro a destino).
 - Para ventas al mayor o corporativas, redirigir siempre al WhatsApp principal.
+- Ubicación del Showroom/Tienda Física: Avenida Llano Adentro, Porlamar, Isla de Margarita, Estado Nueva Esparta. Enlace de Google Maps: https://maps.google.com/maps?q=10.969919,-63.8512784 📍. Horario de atención: Lunes a Sábado de 9:00 AM a 6:00 PM.
 `;
 
     await query(`
       INSERT INTO app_settings (key, value)
       VALUES ('ai_prompt', $1)
-      ON CONFLICT (key) DO NOTHING
+      ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
     `, [defaultPrompt.trim()]);
 
     await query(`
       INSERT INTO app_settings (key, value)
-      VALUES ('ai_knowledge', $1)
-      ON CONFLICT (key) DO NOTHING
+      VALUES ('ai_custom_instructions', $1)
+      ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
     `, [defaultKnowledge.trim()]);
 
     console.log("Tabla de ajustes configurada y prompt inicial guardado.");
@@ -57,3 +58,4 @@ REGLAS ADICIONALES (MEMORIA DINÁMICA):
 }
 
 setupSettings();
+
