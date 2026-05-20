@@ -260,9 +260,30 @@ export async function processWhatsappMessage(message, sessionId, customerName = 
       return { text: adResponse, imageUrls: [] };
     }
 
+    // 2. Cargar historial primero para determinar si es una conversación en curso
+    const historyRes = await query(
+      `SELECT message FROM whatsapp_messages WHERE session_id = $1 ORDER BY created_at DESC LIMIT 6`,
+      [sessionId]
+    );
+
+    // Determinar si ya hubo respuestas previas del asistente (evita bucles o saludos repetidos)
+    let hasChatHistory = false;
+    if (historyRes.rows.length > 0) {
+      hasChatHistory = historyRes.rows.some(r => {
+        try {
+          const msg = typeof r.message === 'string' ? JSON.parse(r.message) : r.message;
+          return msg && msg.role === 'assistant';
+        } catch (e) {
+          return false;
+        }
+      });
+    }
+
     const intent = detectIntent(message);
 
-    if (intent === "GREETING") {
+    // Si detectamos saludo ("hola", "buenas"), solo enviamos el mensaje duro de bienvenida si NO hay historial de chat previo.
+    // Si ya hay conversación, dejamos que la IA responda de forma natural y respetuosa.
+    if (intent === "GREETING" && !hasChatHistory) {
       const greetingResponse = `👋🏼 ¡Hola! Gracias por comunicarte con nosotros
 
 Te invitamos a visitar nuestra pagina web www.practiiko.com con información de interes para ti. Puedes consultar nuestro catálogo de muebles y colchones en el siguiente enlace: 
@@ -280,12 +301,6 @@ www.practiiko.com/catalogo
     // GESTIÓN DE INTENCIONES
     let currentIntent = intent;
     if (intent === "GREETING" || intent === "OTHER") currentIntent = "CATALOG";
-
-    // 2. Cargar historial
-    const historyRes = await query(
-      `SELECT message FROM whatsapp_messages WHERE session_id = $1 ORDER BY created_at DESC LIMIT 6`,
-      [sessionId]
-    );
 
     // Evitar duplicar el mensaje actual si ya fue insertado por el webhook
     if (historyRes.rows.length > 0) {

@@ -7,6 +7,9 @@ export async function POST(req) {
   try {
     const { message, sessionId, customerName } = await req.json();
     
+    // Simular el tiempo de espera de 5 segundos acordado en el simulador
+    await new Promise(resolve => setTimeout(resolve, 5000));
+    
     const aiResponse = await processInstagramMessage(
       message, 
       sessionId || 'simul-user', 
