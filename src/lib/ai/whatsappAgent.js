@@ -74,8 +74,9 @@ function isFuzzyMatch(term, text) {
 function detectIntent(message) {
   const m = normalize(message);
 
-  // 0. Redirección Automática de Instagram a WhatsApp (Evita bucles de catálogo)
-  if (m.includes("vengo de instagram") || m.includes("vengo de ig") || m.includes("vengo del instagram")) return "BUY_REQUEST";
+  // 0. Bienvenida especial para clientes referidos desde Instagram
+  // Estos clientes ya llegaron a WhatsApp — no asumir intención de compra, solo dar bienvenida y ofrecer ayuda.
+  if (m.includes("vengo de instagram") || m.includes("vengo de ig") || m.includes("vengo del instagram")) return "INSTAGRAM_REFERRAL";
 
   // 1. Solicitud Humana (PRIORITARIA)
   if (m.includes("asesor") || m.includes("humano") || m.includes("persona") || m.includes("atenderme") || m.includes("hablar con alguien") || m.includes("hablar con un")) return "HUMAN_REQUEST";
@@ -105,6 +106,32 @@ function extractKeywords(message) {
   const words = m.split(/[\s,?.!]+/).filter(w => w.length >= 3 && !stopWords.includes(w));
 
   return words.length > 0 ? words : null;
+}
+
+// Detecta cuando el cliente usa referencias de contexto (pronombres/referencias a mensajes anteriores)
+const CONTEXT_REFS = [
+  "el mismo", "la misma", "ese", "esa", "de ese", "de esa",
+  "ese modelo", "ese mueble", "esa pieza", "el de la publicidad",
+  "la de la publicidad", "el que sale", "el que aparece", "el que mostraste",
+  "el que me mandaste", "el que vimos", "el que estaba", "el que salio",
+  "el que salia", "el del anuncio", "el del video"
+];
+
+function detectContextReference(message) {
+  const m = normalize(message);
+  return CONTEXT_REFS.some(ref => m.includes(normalize(ref)));
+}
+
+// Extrae keywords de los mensajes anteriores del usuario (para resolver referencias contextuales)
+function extractLastUserKeywords(historyRaw) {
+  // Recorre el historial de más reciente a más antiguo buscando keywords de usuario
+  const reversed = [...historyRaw].reverse();
+  for (const msg of reversed) {
+    if (msg.role !== 'user') continue;
+    const kw = extractKeywords(msg.content);
+    if (kw && kw.length > 0) return kw;
+  }
+  return null;
 }
 
 async function getInventory(terms, currentIntent) {
@@ -301,6 +328,7 @@ www.practiiko.com/catalogo
     // GESTIÓN DE INTENCIONES
     let currentIntent = intent;
     if (intent === "GREETING" || intent === "OTHER") currentIntent = "CATALOG";
+    // INSTAGRAM_REFERRAL se gestiona en su propio Fast Path — no remapear a CATALOG
 
     // Evitar duplicar el mensaje actual si ya fue insertado por el webhook
     if (historyRes.rows.length > 0) {
@@ -347,7 +375,22 @@ www.practiiko.com/catalogo
       return msg.role === 'assistant' ? new AIMessage(msg.content) : new HumanMessage(msg.content);
     });
 
-    // 3. Manejo de HUMAN_REQUEST y BUY_REQUEST (ALERTA CRÍTICA - Fast Path)
+    // 3a. Bienvenida para clientes referidos desde Instagram (Fast Path - sin pausar bot)
+    if (currentIntent === "INSTAGRAM_REFERRAL") {
+      const igResponse = `¡Bienvenido/a a Practiiko! 🌹 Qué bueno que nos escribes desde Instagram.
+
+Puedes ver nuestro catálogo completo aquí:
+👉 www.practiiko.com/catalogo
+
+¿Qué te gustaría conocer? ¿Precios, modelos, disponibilidad? Dale un vistazo al catálogo y cuéntame qué modelo te gusta más 😊`;
+
+      await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`,
+        [sessionId, JSON.stringify({ role: 'assistant', content: igResponse })]);
+
+      return { text: igResponse, imageUrls: [] };
+    }
+
+    // 3b. Manejo de HUMAN_REQUEST y BUY_REQUEST (ALERTA CRÍTICA - Fast Path)
     if (currentIntent === "HUMAN_REQUEST" || currentIntent === "BUY_REQUEST") {
       let response = "Entendido 💎. Para brindarte la mejor información de manera personalizada, en este mismo instante te estoy transfiriendo con uno de nuestros asesores de ventas especializados. Te atenderá por este mismo chat en breve.";
       if (currentIntent === "BUY_REQUEST") {
@@ -395,8 +438,16 @@ www.practiiko.com/catalogo
       return { text: response, imageUrls: [] };
     }
 
-    // 4. Buscar Inventario
-    const terms = extractKeywords(message);
+    // 4. Buscar Inventario (con soporte de referencias contextuales)
+    const isContextRef = detectContextReference(message);
+    let terms;
+    if (isContextRef) {
+      // El cliente dice "el mismo", "ese", etc. — recuperar keywords del historial
+      terms = extractLastUserKeywords(historyMessagesRaw) || extractKeywords(message);
+      console.log(`[WHATSAPP AGENT] Referencia contextual detectada. Keywords recuperados del historial:`, terms);
+    } else {
+      terms = extractKeywords(message);
+    }
     const inventory = await getInventory(terms, currentIntent);
     const isGeneralPriceQuery = intent === "PRICE_INFO" && (!terms || terms.length === 0);
 

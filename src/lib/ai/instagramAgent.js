@@ -110,6 +110,31 @@ function extractKeywords(message) {
   return words.length > 0 ? words : null;
 }
 
+// Detecta cuando el cliente usa referencias de contexto (pronombres/referencias a mensajes anteriores)
+const CONTEXT_REFS = [
+  "el mismo", "la misma", "ese", "esa", "de ese", "de esa",
+  "ese modelo", "ese mueble", "esa pieza", "el de la publicidad",
+  "la de la publicidad", "el que sale", "el que aparece", "el que mostraste",
+  "el que me mandaste", "el que vimos", "el que estaba", "el que salio",
+  "el que salia", "el del anuncio", "el del video"
+];
+
+function detectContextReference(message) {
+  const m = normalize(message);
+  return CONTEXT_REFS.some(ref => m.includes(normalize(ref)));
+}
+
+// Extrae keywords de los mensajes anteriores del usuario (para resolver referencias contextuales)
+function extractLastUserKeywords(historyRaw) {
+  const reversed = [...historyRaw].reverse();
+  for (const msg of reversed) {
+    if (msg.role !== 'user') continue;
+    const kw = extractKeywords(msg.content);
+    if (kw && kw.length > 0) return kw;
+  }
+  return null;
+}
+
 async function getInventory(terms, currentIntent) {
   try {
     const queryStr = `
@@ -345,8 +370,15 @@ www.practiiko.com/catalogo
       return { text: response, imageUrls: [] };
     }
 
-    // 4. Buscar Inventario
-    const terms = extractKeywords(message);
+    // 4. Buscar Inventario (con soporte de referencias contextuales)
+    const isContextRef = detectContextReference(message);
+    let terms;
+    if (isContextRef) {
+      terms = extractLastUserKeywords(historyMessagesRaw) || extractKeywords(message);
+      console.log(`[INSTAGRAM AGENT] Referencia contextual detectada. Keywords recuperados del historial:`, terms);
+    } else {
+      terms = extractKeywords(message);
+    }
     const inventory = await getInventory(terms, currentIntent);
 
     // 5. Cargar instrucciones personalizadas
