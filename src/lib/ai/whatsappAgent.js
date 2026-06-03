@@ -81,6 +81,15 @@ function detectIntent(message) {
   // 1. Solicitud Humana (PRIORITARIA)
   if (m.includes("asesor") || m.includes("humano") || m.includes("persona") || m.includes("atenderme") || m.includes("hablar con alguien") || m.includes("hablar con un")) return "HUMAN_REQUEST";
 
+  // 1.2. Consulta sobre publicidad, preventas o modelo ausente en catálogo
+  if (
+    m.includes("publicidad") || m.includes("anuncio") || m.includes("propaganda") || 
+    m.includes("promocion") || m.includes("preventa") || m.includes("nuevo modelo") ||
+    m.includes("no sale") || m.includes("no aparece") || m.includes("no esta en el catalogo") || 
+    m.includes("no lo encuentro") || m.includes("redes") || m.includes("instagram") || 
+    m.includes("publicacion") || m.includes("post") || m.includes("story") || m.includes("historia")
+  ) return "AD_OR_NEW_MODEL_QUERY";
+
   // Cortesía simple (evaluar después de redirección para no cortocircuitar)
   if (["gracias", "ok", "dale", "perfecto", "entendido"].some(w => m.includes(w))) return "OTHER";
 
@@ -361,6 +370,67 @@ www.practiiko.com/catalogo
       historyMessagesRaw.pop();
     }
 
+    // --- GUARDRAIL FÍSICO ANTI-BUCLE (FAIL-SAFE) ---
+    let catalogRefCount = 0;
+    let modelNameRefCount = 0;
+    
+    historyMessagesRaw.forEach(msg => {
+      if (msg.role === 'assistant') {
+        const cNorm = normalize(msg.content);
+        if (cNorm.includes("catalogo") || cNorm.includes("practiiko.com")) {
+          catalogRefCount++;
+        }
+        if (cNorm.includes("nombre del modelo") || cNorm.includes("cual es el modelo") || cNorm.includes("indicarme el nombre") || cNorm.includes("modelo que te interesa")) {
+          modelNameRefCount++;
+        }
+      }
+    });
+
+    const isLoopDetected = catalogRefCount >= 2 || modelNameRefCount >= 2 || (catalogRefCount + modelNameRefCount >= 3);
+    if (isLoopDetected) {
+      console.log(`[WHATSAPP AGENT] Guardrail Anti-Bucle activado para ${sessionId}. Forzando transferencia.`);
+      const loopResponse = "¡Entendido perfectamente! 🌹 Veo que no logramos identificar el modelo exacto que buscas por este medio automático. No te preocupes en lo absoluto: en este mismo instante te estoy transfiriendo con uno de nuestros asesores de ventas especializados para que te atienda de forma personalizada y revise tu consulta de inmediato. Te escribirá aquí mismo en breve. 💎";
+      
+      const motivo = "🚨 GUARDRAIL ANTI-BUCLE (TRANSFERENCIA)";
+      const replyLink = `https://wa.me/${sessionId}`;
+      const notifyText = `${motivo}\n\n*Canal:* WHATSAPP\n*Cliente:* ${customerName} (+${sessionId})\n*Mensaje:* "${message}"\n\n👇 Responde aquí:\n${replyLink}`;
+
+      const EVO_URL = process.env.EVOLUTION_API_URL;
+      const EVO_KEY = process.env.EVOLUTION_API_KEY;
+      const EVO_INSTANCE = process.env.EVOLUTION_INSTANCE || "Practiiko";
+      const adminPhone = "584248068515";
+      const groupId = process.env.NOTIFICATIONS_GROUP_ID;
+
+      if (EVO_URL) {
+        try {
+          await fetch(`${EVO_URL}/message/sendText/${EVO_INSTANCE}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'apikey': EVO_KEY },
+            body: JSON.stringify({ number: adminPhone, text: notifyText })
+          });
+          if (groupId) {
+            await fetch(`${EVO_URL}/message/sendText/${EVO_INSTANCE}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'apikey': EVO_KEY },
+              body: JSON.stringify({ number: groupId, text: notifyText })
+            });
+          }
+        } catch(e) {
+          console.error("Error en flujo de notificaciones WhatsApp (Guardrail):", e);
+        }
+      }
+
+      try {
+        await query("UPDATE whatsapp_customers SET ai_enabled = false, requires_human = true WHERE id = $1", [sessionId]);
+      } catch(e) {
+        console.error("Error actualizando requires_human WhatsApp (Guardrail):", e);
+      }
+      await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`,
+        [sessionId, JSON.stringify({ role: 'assistant', content: loopResponse })]);
+
+      return { text: loopResponse, imageUrls: [] };
+    }
+
     // Agrupar mensajes consecutivos del mismo rol
     const groupedMessages = [];
     for (const msg of historyMessagesRaw) {
@@ -390,14 +460,17 @@ Puedes ver nuestro catálogo completo aquí:
       return { text: igResponse, imageUrls: [] };
     }
 
-    // 3b. Manejo de HUMAN_REQUEST y BUY_REQUEST (ALERTA CRÍTICA - Fast Path)
-    if (currentIntent === "HUMAN_REQUEST" || currentIntent === "BUY_REQUEST") {
+    // 3b. Manejo de HUMAN_REQUEST, BUY_REQUEST y AD_OR_NEW_MODEL_QUERY (ALERTA CRÍTICA - Fast Path)
+    if (currentIntent === "HUMAN_REQUEST" || currentIntent === "BUY_REQUEST" || currentIntent === "AD_OR_NEW_MODEL_QUERY") {
       let response = "Entendido 💎. Para brindarte la mejor información de manera personalizada, en este mismo instante te estoy transfiriendo con uno de nuestros asesores de ventas especializados. Te atenderá por este mismo chat en breve.";
       if (currentIntent === "BUY_REQUEST") {
         response = "¡Excelente elección! 💎 Para ayudarte a concretar tu compra de inmediato, en este mismo instante te estoy comunicando con uno de nuestros asesores de ventas especializados, quien te atenderá aquí mismo en breve.";
+      } else if (currentIntent === "AD_OR_NEW_MODEL_QUERY") {
+        response = "¡Entiendo perfectamente! 🌹 A veces publicamos adelantos de temporada, preventas exclusivas o campañas de nuevos modelos que aún no están subidos a nuestro catálogo web. Para brindarte todos los detalles exactos y confirmar su llegada, en este mismo instante te estoy transfiriendo con uno de nuestros asesores de ventas especializados. Te atenderá por aquí en breve. 💎";
       }
 
-      const motivo = currentIntent === "BUY_REQUEST" ? "🔥 INTENCIÓN DE COMPRA" : "🚨 SOLICITUD HUMANA";
+      const motivo = currentIntent === "BUY_REQUEST" ? "🔥 INTENCIÓN DE COMPRA" : 
+                    (currentIntent === "AD_OR_NEW_MODEL_QUERY" ? "📢 CONSULTA PUBLICIDAD/PREVENTA" : "🚨 SOLICITUD HUMANA");
       const replyLink = `https://wa.me/${sessionId}`;
       const notifyText = `${motivo}\n\n*Canal:* WHATSAPP\n*Cliente:* ${customerName} (+${sessionId})\n*Mensaje:* "${message}"\n\n👇 Responde aquí:\n${replyLink}`;
 

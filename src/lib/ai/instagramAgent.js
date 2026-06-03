@@ -83,6 +83,15 @@ function detectIntent(message) {
     m.includes("este chat") || m.includes("este mismo chat")
   ) return "HUMAN_REQUEST";
 
+  // 0.5. Consulta sobre publicidad, preventas o modelo ausente en catálogo
+  if (
+    m.includes("publicidad") || m.includes("anuncio") || m.includes("propaganda") || 
+    m.includes("promocion") || m.includes("preventa") || m.includes("nuevo modelo") ||
+    m.includes("no sale") || m.includes("no aparece") || m.includes("no esta en el catalogo") || 
+    m.includes("no lo encuentro") || m.includes("redes") || m.includes("instagram") || 
+    m.includes("publicacion") || m.includes("post") || m.includes("story") || m.includes("historia")
+  ) return "AD_OR_NEW_MODEL_QUERY";
+
   // Cortesía simple
   if (["gracias", "ok", "dale", "perfecto", "entendido"].some(w => m.includes(w))) return "OTHER";
 
@@ -338,6 +347,38 @@ www.practiiko.com/catalogo
       historyMessagesRaw.pop();
     }
 
+    // --- GUARDRAIL FÍSICO ANTI-BUCLE (FAIL-SAFE) ---
+    let catalogRefCount = 0;
+    let modelNameRefCount = 0;
+    
+    historyMessagesRaw.forEach(msg => {
+      if (msg.role === 'assistant') {
+        const cNorm = normalize(msg.content);
+        if (cNorm.includes("catalogo") || cNorm.includes("practiiko.com")) {
+          catalogRefCount++;
+        }
+        if (cNorm.includes("nombre del modelo") || cNorm.includes("cual es el modelo") || cNorm.includes("indicarme el nombre") || cNorm.includes("modelo que te interesa")) {
+          modelNameRefCount++;
+        }
+      }
+    });
+
+    const isLoopDetected = catalogRefCount >= 2 || modelNameRefCount >= 2 || (catalogRefCount + modelNameRefCount >= 3);
+    if (isLoopDetected) {
+      console.log(`[INSTAGRAM AGENT] Guardrail Anti-Bucle activado para ${sessionId}. Forzando transferencia.`);
+      const loopResponse = "¡Entendido perfectamente! 🌹 Veo que no logramos identificar el modelo exacto que buscas por este medio automático. No te preocupes en lo absoluto: en este mismo instante te estoy transfiriendo con uno de nuestros asesores de ventas especializados para que te atienda de forma personalizada por este mismo chat en breve. ¡Muchas gracias por tu paciencia! 💎";
+
+      try {
+        await query("UPDATE instagram_customers SET ai_enabled = false, requires_human = true WHERE id = $1", [sessionId]);
+      } catch(e) {
+        console.error("Error actualizando requires_human Instagram (Guardrail):", e);
+      }
+      await query(`INSERT INTO instagram_messages (session_id, message, source, comment_id) VALUES ($1, $2, $3, $4)`,
+        [sessionId, JSON.stringify({ role: 'assistant', content: loopResponse }), source, commentId]);
+
+      return { text: loopResponse, imageUrls: [] };
+    }
+
     // Agrupar mensajes consecutivos
     const groupedMessages = [];
     for (const msg of historyMessagesRaw) {
@@ -352,11 +393,14 @@ www.practiiko.com/catalogo
       return msg.role === 'assistant' ? new AIMessage(msg.content) : new HumanMessage(msg.content);
     });
 
-    // 3. Manejo de HUMAN_REQUEST (Fast Path) - Instagram
-    // Solo para solicitudes EXPLICITAS de atención humana en este mismo chat.
+    // 3. Manejo de HUMAN_REQUEST y AD_OR_NEW_MODEL_QUERY (Fast Path) - Instagram
+    // Solo para solicitudes EXPLICITAS de atención humana en este mismo chat o consultas de publicidad/preventas.
     // NO se envían notificaciones al grupo de WhatsApp — el bot ya redirige a WA por su propia cuenta.
-    if (currentIntent === "HUMAN_REQUEST") {
-      const response = "Con mucho gusto 💎 Te atiendo por este mismo chat en breve. Uno de nuestros asesores se comunicará contigo aquí 🌹";
+    if (currentIntent === "HUMAN_REQUEST" || currentIntent === "AD_OR_NEW_MODEL_QUERY") {
+      let response = "Con mucho gusto 💎 Te atiendo por este mismo chat en breve. Uno de nuestros asesores se comunicará contigo aquí 🌹";
+      if (currentIntent === "AD_OR_NEW_MODEL_QUERY") {
+        response = "¡Entiendo perfectamente! 🌹 A veces publicamos adelantos de temporada, preventas exclusivas o campañas de nuevos modelos que aún no están subidos a nuestro catálogo web. Para brindarte todos los detalles y confirmar disponibilidad de esa publicidad, te transferiré de inmediato con uno de nuestros asesores por este chat. Te atenderá en breve. 💎";
+      }
 
       // Solo marcamos en DB para el panel de monitoreo interno
       try {

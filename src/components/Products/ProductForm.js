@@ -313,7 +313,7 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
               checked={formValues.is_featured} onChange={handleInputChange}
               style={{ width: '18px', height: '18px' }}
             />
-            Lo más Vendido
+            Best Sellers
           </label>
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem', color: '#0477BF' }}>
             <input 
