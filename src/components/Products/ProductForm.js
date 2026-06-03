@@ -383,21 +383,22 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
             
             {/* FRONT SIDE (ESTILO MARCA) */}
             <div className="flip-card-front" style={{ 
-              background: '#F28705', 
-              borderRadius: '40px', 
-              padding: '1.5rem', 
-              display: 'flex', 
-              flexDirection: 'column',
-              border: '1px solid rgba(255,255,255,0.1)',
-              overflow: 'hidden'
-            }}>
+               background: 'white', 
+               borderRadius: '40px', 
+               padding: '1.5rem', 
+               display: 'flex', 
+               flexDirection: 'column',
+               border: '2px solid rgba(242, 135, 5, 0.2)',
+               boxShadow: '0 15px 40px rgba(242, 135, 5, 0.04)',
+               overflow: 'hidden'
+             }}>
               {/* Media Preview Container */}
               <div 
                 className="group-media-preview"
                 style={{ 
                   width: '100%', 
                   aspectRatio: '4/5', 
-                  background: 'white', 
+                  background: '#f9fafb', 
                   borderRadius: '32px', 
                   position: 'relative',
                   marginBottom: '1.5rem',
@@ -405,6 +406,7 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
                   alignItems: 'center',
                   justifyContent: 'center',
                   boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.05)',
+                  border: '1px solid #f3f4f6',
                   overflow: 'hidden'
                 }}
               >
@@ -562,13 +564,13 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
 
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '0 0.5rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
-                   <div style={{ fontSize: '9px', color: 'white', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.2em' }}>{formValues.category_name || "Muebles"}</div>
+                   <div style={{ fontSize: '9px', color: '#0477BF', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.2em' }}>{formValues.category_name || "Muebles"}</div>
                 </div>
                 <h3 style={{ 
                   margin: '0 0 1rem 0', 
                   fontSize: '1.25rem', 
                   fontWeight: 800, 
-                  color: 'white', 
+                  color: '#111827', 
                   lineHeight: '1.2',
                   display: '-webkit-box',
                   WebkitLineClamp: 2,
@@ -580,16 +582,16 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
                 
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto', marginBottom: '1rem' }}>
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontSize: '1.5rem', fontWeight: 900, color: 'white', lineHeight: 1 }}>
+                    <span style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0477BF', lineHeight: 1 }}>
                       ${getPreviewPrice().toLocaleString()}
                     </span>
-                    <span style={{ fontSize: '8px', color: 'rgba(255,255,255,0.7)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Ref.</span>
+                    <span style={{ fontSize: '8px', color: '#9ca3af', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Ref.</span>
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.2)' }}>
-                   <span style={{ fontSize: '9px', color: 'rgba(255,255,255,0.7)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Ver Características</span>
-                   <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '1rem', borderTop: '1px solid rgba(242, 135, 5, 0.1)' }}>
+                   <span style={{ fontSize: '9px', color: '#6b7280', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Ver Características</span>
+                   <div className="sync-btn-preview" style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(242, 135, 5, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#F28705', transition: 'all 0.5s' }}>
                       <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>sync_alt</span>
                    </div>
                 </div>
@@ -608,44 +610,59 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
               alignItems: 'center',
               textAlign: 'center'
             }}>
-               <div style={{ marginBottom: '1.5rem' }}>
-                 <div style={{ 
-                   width: '50px', 
-                   height: '50px', 
-                   background: 'rgba(255,255,255,0.2)', 
-                   borderRadius: '50%', 
-                   display: 'flex', 
-                   alignItems: 'center', 
-                   justifyContent: 'center',
-                   marginBottom: '1rem',
-                   margin: '0 auto'
-                 }}>
-                   <Box size={24} />
-                 </div>
-                 <p style={{ fontSize: '9px', fontWeight: 900, opacity: 0.6, letterSpacing: '0.3em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Más información</p>
-                 <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, lineHeight: 1.2 }}>{formValues.name}</h3>
+               <div style={{ marginTop: '0.5rem', marginBottom: '1rem', position: 'relative', flexShrink: 0 }}>
+                 <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.2)', filter: 'blur(24px)', borderRadius: '50%', transform: 'scale(1.5)' }}></div>
+                 <img 
+                   src="/logo-p.jpeg" 
+                   alt="Practiiko Logo" 
+                   style={{ width: '4rem', height: '4rem', objectFit: 'contain', position: 'relative', zIndex: 10, filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.15))' }}
+                 />
+               </div>
+               
+               <div style={{ flexShrink: 0 }}>
+                 <p style={{ fontSize: '9px', fontWeight: 900, opacity: 0.6, letterSpacing: '0.3em', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Más información</p>
+                 <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0 0 0.75rem 0', lineHeight: 1.2 }}>{formValues.name || "Nombre del Producto"}</h3>
                </div>
 
-               <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
-                 <p style={{ fontSize: '0.85rem', fontWeight: 500, lineHeight: 1.6, opacity: 0.9 }}>
+               <div className="description-scroll-preview" style={{ flex: 1, width: '100%', margin: '0.75rem 0', overflowY: 'auto', paddingRight: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                 <p style={{ 
+                   fontWeight: 500, 
+                   lineHeight: 1.6, 
+                   opacity: 0.9, 
+                   textAlign: 'center',
+                   fontSize: (formValues.description || "").length > 250 
+                     ? '0.75rem' 
+                     : (formValues.description || "").length > 120 
+                       ? '13px' 
+                       : '0.875rem'
+                 }}>
                    {formValues.description || "Esta pieza exclusiva de Practiiko combina ergonomía de vanguardia con un diseño minimalista pensado para espacios modernos."}
                  </p>
                </div>
 
-               <div style={{ marginTop: '2rem', width: '100%' }}>
+               <div style={{ marginTop: '1rem', width: '100%', flexShrink: 0 }}>
                   <div style={{ 
-                    padding: '0.75rem', 
+                    padding: '0.65rem', 
                     borderRadius: '100px', 
                     background: '#F28705', 
-                    fontSize: '10px', 
+                    fontSize: '11px', 
                     fontWeight: 900,
                     textTransform: 'uppercase',
                     letterSpacing: '0.1em',
-                    boxShadow: '0 10px 20px rgba(242, 135, 5, 0.2)'
+                    boxShadow: '0 10px 20px rgba(242, 135, 5, 0.2)',
+                    display: 'inline-block',
+                    width: 'auto',
+                    paddingLeft: '2.5rem',
+                    paddingRight: '2.5rem',
+                    marginBottom: '0.75rem'
                   }}>
                     Comprar Ahora
                   </div>
-                  <p style={{ fontSize: '8px', opacity: 0.4, marginTop: '1rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.2em' }}>Toca para volver</p>
+                  <p style={{ fontSize: '8px', opacity: 0.4, margin: 0, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.2em' }}>Toca para volver</p>
+               </div>
+               
+               <div style={{ position: 'absolute', bottom: '1.5rem', right: '1.5rem', opacity: 0.1, pointerEvents: 'none' }}>
+                 <img src="/logo-white.png" alt="" style={{ height: '2.5rem', width: 'auto', filter: 'grayscale(100%)' }} />
                </div>
             </div>
 
@@ -664,6 +681,11 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
           height: 520px;
           perspective: 1500px;
           cursor: pointer;
+          transition: height 0.7s ease-in-out;
+        }
+
+        .flip-card-container.is-flipped {
+          height: 600px;
         }
 
         .flip-card-inner {
@@ -708,6 +730,29 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
         .carousel-btn-preview:hover {
           background: rgba(0, 0, 0, 0.7) !important;
           scale: 1.1;
+        }
+
+        .flip-card-container:hover .sync-btn-preview {
+          background-color: #F28705 !important;
+          color: white !important;
+        }
+
+        .description-scroll-preview {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+        }
+        .description-scroll-preview::-webkit-scrollbar {
+          width: 4px;
+        }
+        .description-scroll-preview::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .description-scroll-preview::-webkit-scrollbar-thumb {
+          background-color: rgba(255, 255, 255, 0.25);
+          border-radius: 4px;
+        }
+        .description-scroll-preview::-webkit-scrollbar-thumb:hover {
+          background-color: rgba(255, 255, 255, 0.4);
         }
       `}</style>
     </div>
