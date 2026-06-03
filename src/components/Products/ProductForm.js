@@ -109,12 +109,12 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     
-    // Validación de exclusividad para estados especiales
+    // Validación de exclusividad para estados especiales (máximo 2 a la vez)
     const exclusiveFlags = ["is_new", "is_promotion", "is_clearance", "is_coming_soon"];
     if (type === "checkbox" && checked && exclusiveFlags.includes(name)) {
-      const activeExclusive = exclusiveFlags.filter(f => f !== name && formValues[f]);
-      if (activeExclusive.length > 0) {
-        addToast("Solo puedes seleccionar un estado principal (Nuevo, Promoción, Liquidación o Próximamente) a la vez.", "error");
+      const activeCount = exclusiveFlags.filter(f => f !== name && formValues[f]).length;
+      if (activeCount >= 2) {
+        addToast("Solo puedes seleccionar un máximo de dos estados principales (Nuevo, Promoción, Liquidación o Próximamente) a la vez.", "error");
         return; // No procesar el cambio
       }
     }
