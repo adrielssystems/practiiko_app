@@ -74,8 +74,7 @@ function isFuzzyMatch(term, text) {
 function detectIntent(message) {
   const m = normalize(message);
 
-  // Instagram: Solo detectar solicitudes EXPLICITAS de atención humana en este mismo chat.
-  // Consultas de precio, envíos, pagos, etc. las maneja el LLM redirigiendolas a WhatsApp.
+  // --- Solicitudes EXPLICITAS de atención humana en este mismo chat ---
   if (
     m.includes("atiendeme") || m.includes("atenderme") || m.includes("quiero hablar con") ||
     m.includes("hablar con alguien") || m.includes("hablar con un humano") || m.includes("hablar con un asesor") ||
@@ -92,13 +91,41 @@ function detectIntent(message) {
     m.includes("publicacion") || m.includes("post") || m.includes("story") || m.includes("historia")
   ) return "AD_OR_NEW_MODEL_QUERY";
 
-  // Cortesía simple
-  if (["gracias", "ok", "dale", "perfecto", "entendido"].some(w => m.includes(w))) return "OTHER";
+  // --- Intenciones Emocionales/Sociales (deben evaluarse ANTES que las de venta) ---
 
+  // Agradecimiento por experiencia en tienda, atención recibida, post-compra
+  const hasGracias = m.includes("gracias") || m.includes("mil gracias") || m.includes("muy agradecido") || m.includes("muy agradecida");
+  const hasExpExperiencia = (
+    m.includes("atencion") || m.includes("trato") || m.includes("tienda") ||
+    m.includes("visita") || m.includes("servicio") || m.includes("recibida") ||
+    m.includes("recibido") || m.includes("compra") || m.includes("contento") ||
+    m.includes("contenta") || m.includes("feliz") || m.includes("encanto") ||
+    m.includes("encanta") || m.includes("excelente") || m.includes("genial") ||
+    m.includes("maravilloso") || m.includes("maravillosa") || m.includes("estupendo")
+  );
+  if (hasGracias && hasExpExperiencia) return "GRATITUDE_EXPERIENCE";
+
+  // Elogio o retroalimentación positiva sin necesariamente decir "gracias"
+  if (
+    m.includes("quede encantado") || m.includes("quede encantada") ||
+    m.includes("quede feliz") || m.includes("quede contento") || m.includes("quede contenta") ||
+    m.includes("muy buena atencion") || m.includes("excelente servicio") ||
+    m.includes("excelente atencion") || m.includes("buen trato") ||
+    m.includes("lo recomiendo") || m.includes("los recomiendo")
+  ) return "POSITIVE_FEEDBACK";
+
+  // Despedida o cierre de conversación
+  const farewordsList = ["adios", "hasta luego", "chao", "chau", "bye", "hasta pronto", "nos vemos", "hasta la proxima"];
+  if (farewordsList.some(w => m === w || (m.startsWith(w) && m.length < 30))) return "FAREWELL";
+
+  // --- Intenciones de venta / consulta ---
   if (m.includes("precio") || m.includes("cuanto") || m.includes("cuesta") || m.includes("vale")) return "PRICE_INFO";
   if (m.includes("catalogo") || m.includes("ver todo")) return "CATALOG";
   if (m.includes("sofa") || m.includes("colchon") || m.match(/[a-z]\d{3}/)) return "PRODUCT_QUERY";
   if (m.includes("hola") || m.includes("buen") || m.includes("saludos")) return "GREETING";
+
+  // Cortesía simple (ok, dale, etc.) sin contexto emocional
+  if (["ok", "dale", "perfecto", "entendido", "gracias"].some(w => m.includes(w))) return "OTHER";
 
   return "OTHER";
 }
@@ -310,6 +337,38 @@ www.practiiko.com/catalogo
         [sessionId, JSON.stringify({ role: 'assistant', content: greetingResponse }), source, commentId]);
 
       return { text: greetingResponse, imageUrls: [] };
+    }
+
+    // --- Fast-paths de Inteligencia Emocional ---
+    // Manejan respuestas sociales/emocionales sin llamar al LLM ni al inventario.
+
+    if (intent === "GRATITUDE_EXPERIENCE") {
+      const name = customerName && customerName !== "Cliente" ? ` ${customerName}` : "";
+      const options = [
+        `¡Qué alegría escuchar eso${name}! 🌹 Saber que tu visita fue especial nos llena de orgullo. En Practiiko cada detalle cuenta, y tú mereces lo mejor 💎 ¡Gracias por confiar en nosotros!`,
+        `Eso nos hace muy felices${name} ✨ Tu satisfacción es nuestra mayor recompensa. ¡Fue un placer atenderte, te esperamos pronto con más novedades! 🌹`,
+        `¡Muchísimas gracias${name}! 💎 Comentarios como el tuyo nos motivan a seguir dando lo mejor cada día. ¡Eres siempre bienvenido a Practiiko! 🌹`
+      ];
+      const resp = options[Math.floor(Math.random() * options.length)];
+      await query(`INSERT INTO instagram_messages (session_id, message, source, comment_id) VALUES ($1, $2, $3, $4)`,
+        [sessionId, JSON.stringify({ role: 'assistant', content: resp }), source, commentId]);
+      return { text: resp, imageUrls: [] };
+    }
+
+    if (intent === "POSITIVE_FEEDBACK") {
+      const name = customerName && customerName !== "Cliente" ? ` ${customerName}` : "";
+      const resp = `¡Nos alegra muchísimo${name}! 🌹 Comentarios como el tuyo nos inspiran a seguir ofreciendo la mejor experiencia. Si en algún momento necesitas algo más, aquí estaremos ✨💎`;
+      await query(`INSERT INTO instagram_messages (session_id, message, source, comment_id) VALUES ($1, $2, $3, $4)`,
+        [sessionId, JSON.stringify({ role: 'assistant', content: resp }), source, commentId]);
+      return { text: resp, imageUrls: [] };
+    }
+
+    if (intent === "FAREWELL") {
+      const name = customerName && customerName !== "Cliente" ? ` ${customerName}` : "";
+      const resp = `¡Hasta pronto${name}! 💎 Fue un placer atenderte. Recuerda que en Practiiko siempre te esperamos 🌹`;
+      await query(`INSERT INTO instagram_messages (session_id, message, source, comment_id) VALUES ($1, $2, $3, $4)`,
+        [sessionId, JSON.stringify({ role: 'assistant', content: resp }), source, commentId]);
+      return { text: resp, imageUrls: [] };
     }
 
     // GESTIÓN DE INTENCIONES
