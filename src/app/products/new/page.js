@@ -46,13 +46,14 @@ export default async function NewProductPage() {
         const is_promotion = formData.get("is_promotion") === "on" || String(formData.get("is_promotion")) === "true";
         const is_new = formData.get("is_new") === "on" || String(formData.get("is_new")) === "true";
         const is_clearance = formData.get("is_clearance") === "on" || String(formData.get("is_clearance")) === "true";
+        const is_coming_soon = formData.get("is_coming_soon") === "on" || String(formData.get("is_coming_soon")) === "true";
         const price_valid_until = formData.get("price_valid_until") || null;
 
         try {
             const catIdNum = category_id ? parseInt(category_id) : null;
             const stockNum = stock ? parseInt(stock) : 0;
 
-            console.log("DEBUG: Creating new product", { images, tags, is_featured });
+            console.log("DEBUG: Creating new product", { images, tags, is_featured, is_coming_soon });
 
             // 1. Insertar producto base
             const productRes = await query(`
@@ -61,16 +62,16 @@ export default async function NewProductPage() {
                     stock, category_id, status, video_url,
                     tags, features, pricing_matrix, 
                     is_featured, is_promotion, price_valid_until, pseudonimo,
-                    is_new, is_clearance
+                    is_new, is_clearance, is_coming_soon
                 )
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
                 RETURNING id
             `, [
                 name, code, description, price_bcv, price_cash, 
                 stockNum, catIdNum, status, video_url,
                 tags, features, pricing_matrix,
                 is_featured, is_promotion, price_valid_until,
-                pseudonimo, is_new, is_clearance
+                pseudonimo, is_new, is_clearance, is_coming_soon
             ]);
 
             const productId = productRes.rows[0].id;

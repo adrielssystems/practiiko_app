@@ -62,18 +62,19 @@ export default async function EditProductPage({ params }) {
         const features = formData.get("features_json") || "[]";
         const pricing_matrix = formData.get("pricing_matrix_json") || "[]";
         
-        // Manejar checkbox: puede venir como 'on' (nativo) o 'true' (manual)
+         // Manejar checkbox: puede venir como 'on' (nativo) o 'true' (manual)
         const is_featured = formData.get("is_featured") === "on" || String(formData.get("is_featured")) === "true";
         const is_promotion = formData.get("is_promotion") === "on" || String(formData.get("is_promotion")) === "true";
         const is_new = formData.get("is_new") === "on" || String(formData.get("is_new")) === "true";
         const is_clearance = formData.get("is_clearance") === "on" || String(formData.get("is_clearance")) === "true";
+        const is_coming_soon = formData.get("is_coming_soon") === "on" || String(formData.get("is_coming_soon")) === "true";
         const price_valid_until = formData.get("price_valid_until") || null;
 
         try {
             const catIdNum = category_id ? parseInt(category_id) : null;
             const stockNum = stock ? parseInt(stock) : 0;
 
-            console.log(`DEBUG: Updating product ${id}`, { images, tags, is_featured });
+            console.log(`DEBUG: Updating product ${id}`, { images, tags, is_featured, is_coming_soon });
 
             // 1. Actualizar datos base
             const updateRes = await query(`
@@ -82,15 +83,15 @@ export default async function EditProductPage({ params }) {
                     stock = $6, category_id = $7, status = $8, video_url = $9,
                     tags = $10, features = $11, pricing_matrix = $12, 
                     is_featured = $13, is_promotion = $14, price_valid_until = $15,
-                    pseudonimo = $16, is_new = $17, is_clearance = $18
-                WHERE id = $19
+                    pseudonimo = $16, is_new = $17, is_clearance = $18, is_coming_soon = $19
+                WHERE id = $20
                 RETURNING id
             `, [
                 name, code, description, price_bcv, price_cash, 
                 stockNum, catIdNum, status, video_url,
                 tags, features, pricing_matrix,
                 is_featured, is_promotion, price_valid_until,
-                pseudonimo, is_new, is_clearance, id
+                pseudonimo, is_new, is_clearance, is_coming_soon, id
             ]);
 
             if (updateRes.rowCount === 0) {

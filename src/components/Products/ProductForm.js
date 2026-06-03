@@ -34,6 +34,7 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
     is_promotion: initialData.is_promotion || false,
     is_new: initialData.is_new || false,
     is_clearance: initialData.is_clearance || false,
+    is_coming_soon: initialData.is_coming_soon || false,
     pseudonimo: initialData.pseudonimo || "",
     price_valid_until: initialData.price_valid_until ? new Date(initialData.price_valid_until).toISOString().split('T')[0] : ""
   });
@@ -109,11 +110,11 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
     const { name, value, type, checked } = e.target;
     
     // Validación de exclusividad para estados especiales
-    const exclusiveFlags = ["is_new", "is_promotion", "is_clearance"];
+    const exclusiveFlags = ["is_new", "is_promotion", "is_clearance", "is_coming_soon"];
     if (type === "checkbox" && checked && exclusiveFlags.includes(name)) {
       const activeExclusive = exclusiveFlags.filter(f => f !== name && formValues[f]);
       if (activeExclusive.length > 0) {
-        addToast("Solo puedes seleccionar un estado principal (Nuevo, Promoción o Liquidación) a la vez.", "error");
+        addToast("Solo puedes seleccionar un estado principal (Nuevo, Promoción, Liquidación o Próximamente) a la vez.", "error");
         return; // No procesar el cambio
       }
     }
@@ -339,6 +340,14 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
             />
             Liquidación
           </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem', color: '#7c3aed' }}>
+            <input 
+              name="is_coming_soon" type="checkbox" 
+              checked={formValues.is_coming_soon} onChange={handleInputChange}
+              style={{ width: '18px', height: '18px' }}
+            />
+            Próximamente
+          </label>
         </div>
 
         <MediaUpload onMediaChange={handleMediaChange} initialMedia={{ images: media.images, video: media.video }} />
@@ -420,6 +429,9 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
                   )}
                   {formValues.is_clearance && (
                     <span style={{ background: '#1e293b', color: 'white', fontSize: '8px', fontWeight: 900, padding: '4px 10px', borderRadius: '100px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Liquidación</span>
+                  )}
+                  {formValues.is_coming_soon && (
+                    <span style={{ background: '#7c3aed', color: 'white', fontSize: '8px', fontWeight: 900, padding: '4px 10px', borderRadius: '100px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Próximamente</span>
                   )}
                 </div>
 
