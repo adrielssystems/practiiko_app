@@ -21,7 +21,7 @@ export default async function NewProductPage() {
 
     async function createProduct(formData) {
         "use server";
-        
+
         const name = formData.get("name");
         const code = formData.get("code");
         const description = formData.get("description");
@@ -31,7 +31,7 @@ export default async function NewProductPage() {
         const category_id = formData.get("category_id");
         const status = formData.get("status");
         const pseudonimo = formData.get("pseudonimo") || null;
-        
+
         // Datos de medios
         const images = JSON.parse(formData.get("images_json") || "[]");
         const video_url = formData.get("video_url") || null;
@@ -40,20 +40,19 @@ export default async function NewProductPage() {
         const tags = formData.get("tags_json") || "[]";
         const features = formData.get("features_json") || "[]";
         const pricing_matrix = formData.get("pricing_matrix_json") || "[]";
-        
+
         // Manejar checkbox: puede venir como 'on' (nativo) o 'true' (manual)
         const is_featured = formData.get("is_featured") === "on" || String(formData.get("is_featured")) === "true";
         const is_promotion = formData.get("is_promotion") === "on" || String(formData.get("is_promotion")) === "true";
         const is_new = formData.get("is_new") === "on" || String(formData.get("is_new")) === "true";
         const is_clearance = formData.get("is_clearance") === "on" || String(formData.get("is_clearance")) === "true";
-        const is_coming_soon = formData.get("is_coming_soon") === "on" || String(formData.get("is_coming_soon")) === "true";
         const price_valid_until = formData.get("price_valid_until") || null;
 
         try {
             const catIdNum = category_id ? parseInt(category_id) : null;
             const stockNum = stock ? parseInt(stock) : 0;
 
-            console.log("DEBUG: Creating new product", { images, tags, is_featured, is_coming_soon });
+            console.log("DEBUG: Creating new product", { images, tags, is_featured });
 
             // 1. Insertar producto base
             const productRes = await query(`
@@ -62,16 +61,16 @@ export default async function NewProductPage() {
                     stock, category_id, status, video_url,
                     tags, features, pricing_matrix, 
                     is_featured, is_promotion, price_valid_until, pseudonimo,
-                    is_new, is_clearance, is_coming_soon
+                    is_new, is_clearance
                 )
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
                 RETURNING id
             `, [
-                name, code, description, price_bcv, price_cash, 
+                name, code, description, price_bcv, price_cash,
                 stockNum, catIdNum, status, video_url,
                 tags, features, pricing_matrix,
                 is_featured, is_promotion, price_valid_until,
-                pseudonimo, is_new, is_clearance, is_coming_soon
+                pseudonimo, is_new, is_clearance
             ]);
 
             const productId = productRes.rows[0].id;
@@ -90,7 +89,7 @@ export default async function NewProductPage() {
             revalidatePath("/products");
             revalidatePath("/");
             revalidatePath("/catalogo");
-            
+
             return { success: true };
         } catch (e) {
             console.error("Error creating product:", e);
@@ -100,20 +99,20 @@ export default async function NewProductPage() {
 
     return (
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-            <header style={{ 
-                marginBottom: '3rem', 
-                display: 'flex', 
-                flexDirection: 'column', 
-                gap: '0.75rem' 
+            <header style={{
+                marginBottom: '3rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.75rem'
             }}>
-                <Link 
-                    href="/products" 
-                    style={{ 
-                        display: 'inline-flex', 
-                        alignItems: 'center', 
-                        gap: '0.5rem', 
-                        color: 'var(--muted-foreground)', 
-                        textDecoration: 'none', 
+                <Link
+                    href="/products"
+                    style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        color: 'var(--muted-foreground)',
+                        textDecoration: 'none',
                         fontSize: '0.875rem',
                         fontWeight: 600,
                         transition: 'color 0.2s'
@@ -123,22 +122,22 @@ export default async function NewProductPage() {
                     Volver a la lista de productos
                 </Link>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <div style={{ 
-                        width: '48px', 
-                        height: '48px', 
-                        borderRadius: '12px', 
-                        background: 'var(--gradient-primary)', 
-                        display: 'flex', 
-                        alignItems: 'center', 
+                    <div style={{
+                        width: '48px',
+                        height: '48px',
+                        borderRadius: '12px',
+                        background: 'var(--gradient-primary)',
+                        display: 'flex',
+                        alignItems: 'center',
                         justifyContent: 'center',
                         color: 'white',
                         boxShadow: '0 8px 16px rgba(4, 119, 191, 0.2)'
                     }}>
                         <ArrowLeft size={24} style={{ transform: 'rotate(-90deg)' }} />
                     </div>
-                    <h1 style={{ 
-                        fontSize: '2.5rem', 
-                        fontWeight: 800, 
+                    <h1 style={{
+                        fontSize: '2.5rem',
+                        fontWeight: 800,
                         letterSpacing: '-0.02em',
                         color: 'var(--foreground)'
                     }}>
