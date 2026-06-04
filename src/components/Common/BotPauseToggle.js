@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Play, Pause, Loader2 } from "lucide-react";
 import { useToast } from "@/components/Toast";
 
@@ -8,6 +8,10 @@ export default function BotPauseToggle({ id, platform, initialStatus = true }) {
   const [isEnabled, setIsEnabled] = useState(initialStatus);
   const [isLoading, setIsLoading] = useState(false);
   const { addToast } = useToast();
+
+  useEffect(() => {
+    setIsEnabled(initialStatus);
+  }, [initialStatus]);
 
   const toggleBot = async (e) => {
     e.preventDefault(); // Evitar navegación del Link padre

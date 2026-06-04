@@ -121,8 +121,8 @@ export async function POST(req) {
       const remoteJid = key.remoteJid;
       const fromMe = key.fromMe;
       
-      // 1. FILTRO CRÍTICO: Ignorar si el mensaje lo envió el bot (fromMe) o si no es de un chat individual
-      if (fromMe || !remoteJid.includes('@s.whatsapp.net')) {
+      // 1. FILTRO: Ignorar si no es de un chat individual
+      if (!remoteJid.includes('@s.whatsapp.net')) {
         return NextResponse.json({ status: "ignored" });
       }
 
@@ -143,6 +143,41 @@ export async function POST(req) {
         messageData.message?.ephemeralMessage?.message?.imageMessage
       );
 
+      const senderNumber = remoteJid.split('@')[0];
+
+      // --- AUTO-TAKEOVER & GUARDADO DE MENSAJES DE ASESORES ---
+      if (fromMe) {
+        if (isImage && !userMessage) userMessage = "[Imagen/Media enviada por asesor]";
+        
+        if (userMessage) {
+          // Verificar si la IA envió exactamente este mensaje en el último minuto (es un eco de la API)
+          const recentMsg = await query(
+             `SELECT id FROM whatsapp_messages 
+              WHERE session_id = $1 
+              AND message->>'role' = 'assistant' 
+              AND message->>'content' = $2 
+              AND created_at >= NOW() - INTERVAL '1 minute'`,
+             [senderNumber, userMessage]
+          );
+
+          if (recentMsg.rowCount === 0) {
+             // Es un mensaje nuevo de un humano enviado directamente desde la app
+             await query(
+               `INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`,
+               [senderNumber, JSON.stringify({ role: 'assistant', content: userMessage })]
+             );
+             // Auto-pausar el bot para ceder el control al asesor
+             await query(
+               `UPDATE whatsapp_customers SET ai_enabled = false WHERE id = $1`,
+               [senderNumber]
+             );
+             console.log(`[WHATSAPP] Intervención humana detectada hacia ${senderNumber}. Bot pausado y mensaje saliente guardado en dashboard.`);
+          }
+        }
+        return NextResponse.json({ status: "ignored_from_me" });
+      }
+
+      // A partir de aquí es un mensaje entrante (cliente)
       if (isImage) {
         const mNorm = userMessage.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         const triggersHumanOrBuy = 
@@ -156,7 +191,6 @@ export async function POST(req) {
 
       if (!userMessage && !isImage) return NextResponse.json({ status: "no_text" });
 
-      const senderNumber = remoteJid.split('@')[0];
       const pushName = messageData.pushName || "Cliente WhatsApp";
 
       console.log(`[WHATSAPP] Mensaje de ${pushName} (${senderNumber}): ${userMessage}`);

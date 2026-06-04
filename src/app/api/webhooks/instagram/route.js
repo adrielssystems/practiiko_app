@@ -57,13 +57,40 @@ export async function POST(req) {
               continue;
             }
 
-            // FILTRO CRÍTICO: Si el remitente es la misma página, es un eco. IGNORAR.
-            if (senderId === pageId) {
-              console.log("[WEBHOOK] Mensaje propio de la página detectado. Ignorando para evitar bucle.");
-              continue;
-            }
+            // --- AUTO-TAKEOVER & GUARDADO DE MENSAJES DE ASESORES ---
+            // Si el remitente es la misma página (eco) o is_echo es true
+            if (senderId === pageId || messaging.message?.is_echo === true) {
+              const recipientId = messaging.recipient?.id;
+              let outMessage = messaging.message?.text || "";
+              const isOutImage = messaging.message?.attachments?.some(att => att.type === 'image');
+              
+              if (isOutImage && !outMessage) outMessage = "[Imagen/Media enviada por asesor]";
 
-            if (messaging.message?.is_echo === true) {
+              if (outMessage && recipientId) {
+                 // Verificar si la IA envió exactamente este mensaje en el último minuto (es un eco de la API)
+                 const recentMsg = await query(
+                   `SELECT id FROM instagram_messages 
+                    WHERE session_id = $1 
+                    AND message->>'role' = 'assistant' 
+                    AND message->>'content' = $2 
+                    AND created_at >= NOW() - INTERVAL '1 minute'`,
+                   [recipientId, outMessage]
+                 );
+
+                 if (recentMsg.rowCount === 0) {
+                    // Es un mensaje nuevo de un humano enviado directamente desde la app
+                    await query(
+                      `INSERT INTO instagram_messages (session_id, message, source) VALUES ($1, $2, 'dm')`,
+                      [recipientId, JSON.stringify({ role: 'assistant', content: outMessage })]
+                    );
+                    // Auto-pausar el bot para ceder el control al asesor
+                    await query(
+                      `UPDATE instagram_customers SET ai_enabled = false WHERE id = $1`,
+                      [recipientId]
+                    );
+                    console.log(`[INSTAGRAM DM] Intervención humana detectada hacia ${recipientId}. Bot pausado y mensaje saliente guardado en dashboard.`);
+                 }
+              }
               continue;
             }
 
