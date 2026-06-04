@@ -252,6 +252,18 @@ async function buildResponse(message, customerName, inventory, historyMessages, 
       finalMessages.push(new SystemMessage("REGLA DE CONTROL DE ENLACES: Ya le has enviado el enlace del catálogo web al cliente en los mensajes anteriores de esta conversación. Por lo tanto, queda estrictamente PROHIBIDO incluir cualquier URL (como https://www.practiiko.com o https://www.practiiko.com/catalogo) en tu respuesta actual. Si necesitas hacer referencia al catálogo o a la página, hazlo textualmente (ej. 'en nuestra página web' o 'en el catálogo') sin escribir el enlace literal."));
     }
 
+    // REGLA ANTI-SALUDO REPETIDO: Si el asistente ya saludó al cliente, prohibir volver a saludar.
+    const alreadyGreeted = historyMessages.some(m =>
+      m instanceof AIMessage &&
+      (m.content.toLowerCase().includes("hola") ||
+       m.content.toLowerCase().includes("bienvenid") ||
+       m.content.toLowerCase().includes("gracias por comunicarte") ||
+       m.content.toLowerCase().includes("fue un placer"))
+    );
+    if (alreadyGreeted) {
+      finalMessages.push(new SystemMessage("REGLA ANTI-SALUDO REPETIDO (CRÍTICA): Ya saludaste al cliente anteriormente en esta conversación. Queda TERMINANTEMENTE PROHIBIDO comenzar tu respuesta con \"¡Hola!\", \"Hola\", \"Bienvenido\", \"Bienvenida\" o cualquier variante de saludo. Ve directo al punto y responde la consulta del cliente sin preámbulos de bienvenida."));
+    }
+
     finalMessages.push(new SystemMessage("REGLA CRÍTICA DE RESPUESTA: Si el cliente ha pedido fotos, imágenes o ver el modelo, DEBES obligatoriamente escribir 'URL_FOTO: [URL]' para cada color del inventario que le nombres. NUNCA respondas con una línea en blanco debajo del nombre del color. El formato exacto debe ser:\n\n*Color NombreColor*:\nURL_FOTO: /api/media/..."));
     finalMessages.push(new HumanMessage(message));
 

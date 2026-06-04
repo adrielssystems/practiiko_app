@@ -1,19 +1,48 @@
 import { processInstagramMessage } from "@/lib/ai/instagramAgent";
+import { query } from "@/lib/db";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req) {
   try {
-    const { message, sessionId, customerName } = await req.json();
+    const { message, sessionId, testId, customerName } = await req.json();
     
+    // Resolver el ID de sesión: priorizar sessionId, luego testId, luego default
+    const resolvedSessionId = sessionId || testId || 'simul-user';
+    const resolvedName = customerName || 'Explorador (Simulador)';
+
+    // Persistir el cliente de prueba en la DB para que sea visible en el panel
+    try {
+      await query(
+        `INSERT INTO instagram_customers (id, username, full_name, last_seen)
+         VALUES ($1, $2, $3, NOW())
+         ON CONFLICT (id) DO UPDATE SET full_name = $3, last_seen = NOW()`,
+        [resolvedSessionId, resolvedSessionId, resolvedName]
+      );
+    } catch (dbErr) {
+      console.warn("[SIMULATOR] No se pudo upsert cliente:", dbErr.message);
+    }
+
+    // Guardar el mensaje del USUARIO en la DB antes de procesar la IA
+    // Esto es crucial para que el agente tenga un historial completo y coherente
+    try {
+      await query(
+        `INSERT INTO instagram_messages (session_id, message, source)
+         VALUES ($1, $2, $3)`,
+        [resolvedSessionId, JSON.stringify({ role: 'user', content: message }), 'dm']
+      );
+    } catch (dbErr) {
+      console.warn("[SIMULATOR] No se pudo guardar mensaje de usuario:", dbErr.message);
+    }
+
     // Simular el tiempo de espera de 5 segundos acordado en el simulador
     await new Promise(resolve => setTimeout(resolve, 5000));
     
     const aiResponse = await processInstagramMessage(
       message, 
-      sessionId || 'simul-user', 
-      customerName || 'Explorador',
+      resolvedSessionId, 
+      resolvedName,
       "",
       'dm',
       null
