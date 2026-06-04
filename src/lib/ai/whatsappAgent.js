@@ -398,8 +398,22 @@ www.practiiko.com/catalogo
       }
     });
 
-    const isLoopDetected = catalogRefCount >= 2 || modelNameRefCount >= 2 || (catalogRefCount + modelNameRefCount >= 3);
-    if (isLoopDetected) {
+    const isLoopDetected = 
+      // Solo disparar cuando hay MUCHAS referencias al catálogo sin avanzar (umbral alto = 3)
+      (catalogRefCount >= 3) ||
+      // O cuando la IA repitió la pregunta del nombre del modelo 2+ veces
+      (modelNameRefCount >= 2) ||
+      // O cuando hay combinación de ambas (suma >= 3 pero requiriendo al menos 1 de cada tipo)
+      (catalogRefCount >= 1 && modelNameRefCount >= 1 && catalogRefCount + modelNameRefCount >= 3);
+
+    // BYPASS CRÍTICO: Si el cliente envió un nombre de producto/modelo específico,
+    // NO transferir — el usuario está avanzando en la conversación con info concreta.
+    const earlyKeywords = extractKeywords(message);
+    const isProductSearch = currentIntent === "PRODUCT_QUERY" || 
+      (intent === "PRICE_INFO" && earlyKeywords && earlyKeywords.length > 0);
+
+    if (isLoopDetected && !isProductSearch) {
+
       console.log(`[WHATSAPP AGENT] Guardrail Anti-Bucle activado para ${sessionId}. Forzando transferencia.`);
       const loopResponse = "¡Entendido perfectamente! 🌹 Veo que no logramos identificar el modelo exacto que buscas por este medio automático. No te preocupes en lo absoluto: en este mismo instante te estoy transfiriendo con uno de nuestros asesores de ventas especializados para que te atienda de forma personalizada y revise tu consulta de inmediato. Te escribirá aquí mismo en breve. 💎";
       
