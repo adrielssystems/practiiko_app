@@ -123,3 +123,23 @@ Hoy hemos completado una serie de mejoras críticas de diseño, interactividad d
 
 ---
 **Estado Actual**: Sistema administrativo altamente optimizado, catálogo multimedia interactivo y enriquecido con video autoplay, y automatización en Instagram y WhatsApp blindada y lista para la acción. 💎🚀
+
+## 🤖 Descubrimiento Guiado y Auto-Takeover de Asesores (04/06/2026)
+
+Hoy revolucionamos la forma en que la IA atiende a clientes indecisos y logramos una sincronización perfecta entre el bot y los asesores humanos en tiempo real.
+
+### 1. Sistema de Descubrimiento Guiado (Guided Discovery)
+- **Proactividad Comercial**: Se modificaron los cerebros de WhatsApp e Instagram (`prompts.js`). Cuando un cliente pide "precios" sin saber qué quiere, el bot ya no se limita a enviar el catálogo y esperar. Ahora asume el control haciendo una **pregunta de sondeo** (ej. *"¿estás buscando algo en particular como un sofá, un sofá cama o un colchón?"*).
+- **Flexibilidad del Guardrail**: Se relajaron los sistemas Anti-Bucle (`instagramAgent.js`, `whatsappAgent.js`). Si el cliente responde a la guía de la IA (ej. dice "busco un sofá"), la IA busca en el inventario y muestra opciones sin disparar la transferencia a un humano por error. La transferencia solo ocurre si hay verdadera frustración o ceguera por parte del cliente.
+
+### 2. Auto-Takeover Humano y Sincronización de Ecos (Webhooks)
+- **Captura de Mensajes Salientes**: Los webhooks de Evolution API (WhatsApp) y Meta Graph API (Instagram) fueron reescritos para procesar los "ecos" (`fromMe` y `is_echo`).
+- **Visibilidad Total en el Panel**: Ahora, cualquier mensaje que un asesor humano envíe desde su celular o PC (usando WhatsApp Business o Instagram DMs) se captura inmediatamente y se guarda en la base de datos con `role: assistant`. Las respuestas del equipo humano ya son 100% visibles en el Dashboard de Practiiko.
+- **Pausa Automática Inteligente**: El sistema distingue entre un mensaje de la IA y uno de un humano (verificando marcas de tiempo exactas). Si detecta que un humano intervino, **apaga automáticamente la IA** (`ai_enabled = false`) para ese cliente, cediendo el control total al asesor sin que el bot interrumpa la venta.
+
+### 3. Reactividad de Interfaz (Frontend)
+- **Sincronización del Botón Pausa/Play**: Se mejoró el componente `BotPauseToggle.js` con un `useEffect` para escuchar cambios del servidor. Ahora, cuando el Auto-Takeover pausa al bot en segundo plano, el botón del dashboard cambia visualmente a "Pausa" en tiempo real sin requerir interacción manual.
+- **Simulador de Instagram Mejorado**: Se añadió un botón de **"Nuevo Chat"** en el `BotSimulator.js` que se comunica con una nueva ruta backend (`delete-chat/route.js`) para purgar el historial de la base de datos, permitiendo realizar pruebas limpias y rápidas.
+
+---
+**Estado Actual**: Asistente proactivo con embudo de ventas conversacional guiado. Ecosistema híbrido IA/Humano operando en perfecta sincronía sin colisiones. 💎🚀
