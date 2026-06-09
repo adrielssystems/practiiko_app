@@ -406,7 +406,8 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
                 className="group-media-preview"
                 style={{ 
                   width: '100%', 
-                  aspectRatio: '4/5', 
+                  flex: 1, 
+                  minHeight: '200px',
                   background: '#f9fafb', 
                   borderRadius: '32px', 
                   position: 'relative',
