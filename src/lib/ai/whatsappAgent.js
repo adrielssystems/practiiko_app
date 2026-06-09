@@ -198,12 +198,12 @@ async function getInventory(terms, currentIntent) {
 
     const productsText = finalRows.map((p) => {
       const imageUrl = p.image_url || "No disponible";
-      return `💎 MODELO: ${p.name}
+      return `MODELO: ${p.name}
 - Código: ${p.code || "N/A"}
 - Categoría: ${p.categoria || "N/A"}
 - Descripción: ${p.description || "N/A"}
 - Precio BCV: $${p.price_bcv}
-- Imagen: (URL_FOTO: ${imageUrl}) 💎`;
+- Imagen: (URL_FOTO: ${imageUrl})`;
     }).join("\n\n");
 
     const categoriesText = categories.length > 0 ? `CATEGORÍAS DISPONIBLES: ${categories.join(", ")}` : "";
@@ -271,7 +271,7 @@ async function buildResponse(message, customerName, inventory, historyMessages, 
     return response.content;
   } catch (error) {
     console.error("DEBUG - DeepSeek Error:", error.message);
-    return `¡Hola ${customerName}! 😊 Estamos teniendo un pequeño inconveniente técnico. Te invitamos a ver nuestro catálogo completo en https://www.practiiko.com/catalogo o en breve un asesor te atenderá. Es lujo, es simple, es Practiiko 💎`;
+    return `¡Hola ${customerName}! Estamos teniendo un pequeño inconveniente técnico. Le invitamos a ver nuestro catálogo completo en https://www.practiiko.com/catalogo o en breve un asesor le atenderá. Es lujo, es simple, es Practiiko.`;
   }
 }
 
@@ -300,7 +300,7 @@ export async function processWhatsappMessage(message, sessionId, customerName = 
     const isAdMessage = AD_MESSAGES.some(ad => normalizedMsg.includes(normalize(ad)));
 
     if (isAdMessage) {
-      const adResponse = `¡Hola ${customerName}! Qué gusto tenerte por aquí 🌹 Veo que te interesó nuestro anuncio. Te invito a descubrir toda nuestra colección de sofás y muebles en nuestro catálogo digital: https://www.practiiko.com/catalogo ✨\n\n¿Hay algún modelo o estilo en particular que te llame la atención? Con gusto te doy el precio al instante 💎`;
+      const adResponse = `¡Hola ${customerName}! Qué gusto tenerle por aquí. Veo que le interesó nuestro anuncio. Le invito a descubrir toda nuestra colección de sofás y muebles en nuestro catálogo digital: https://www.practiiko.com/catalogo\n\n¿Hay algún modelo o estilo en particular que le llame la atención? Con gusto le doy el precio al instante.`;
 
       await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`,
         [sessionId, JSON.stringify({ role: 'assistant', content: adResponse })]);
@@ -332,13 +332,13 @@ export async function processWhatsappMessage(message, sessionId, customerName = 
     // Si detectamos saludo ("hola", "buenas"), solo enviamos el mensaje duro de bienvenida si NO hay historial de chat previo.
     // Si ya hay conversación, dejamos que la IA responda de forma natural y respetuosa.
     if (intent === "GREETING" && !hasChatHistory) {
-      const greetingResponse = `👋🏼 ¡Hola! Gracias por comunicarte con nosotros
+      const greetingResponse = `¡Hola! Gracias por comunicarte con nosotros.
 
-Te invitamos a visitar nuestra pagina web www.practiiko.com con información de interes para ti. Puedes consultar nuestro catálogo de muebles y colchones en el siguiente enlace: 
+Te invitamos a visitar nuestra pagina web www.practiiko.com con información de interes para usted. Puede consultar nuestro catálogo de muebles y colchones en el siguiente enlace: 
 
 www.practiiko.com/catalogo
 
-📄Deja tu consulta detallada y en breve le atenderemos. ¡Gracias por tu paciencia! 😊`;
+Deja tu consulta detallada y en breve le atenderemos. ¡Gracias por tu paciencia!`;
 
       await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`,
         [sessionId, JSON.stringify({ role: 'assistant', content: greetingResponse })]);
@@ -415,7 +415,7 @@ www.practiiko.com/catalogo
     if (isLoopDetected && !isProductSearch) {
 
       console.log(`[WHATSAPP AGENT] Guardrail Anti-Bucle activado para ${sessionId}. Forzando transferencia.`);
-      const loopResponse = "¡Entendido perfectamente! 🌹 Veo que no logramos identificar el modelo exacto que buscas por este medio automático. No te preocupes en lo absoluto: en este mismo instante te estoy transfiriendo con uno de nuestros asesores de ventas especializados para que te atienda de forma personalizada y revise tu consulta de inmediato. Te escribirá aquí mismo en breve. 💎";
+      const loopResponse = "¡Entendido perfectamente! Veo que no logramos identificar el modelo exacto que busca por este medio automático. No se preocupe en lo absoluto: en este mismo instante le estoy transfiriendo con uno de nuestros asesores de ventas especializados para que le atienda de forma personalizada y revise su consulta de inmediato. Le escribirá aquí mismo en breve.";
       
       const motivo = "🚨 GUARDRAIL ANTI-BUCLE (TRANSFERENCIA)";
       const replyLink = `https://wa.me/${sessionId}`;
@@ -473,12 +473,12 @@ www.practiiko.com/catalogo
 
     // 3a. Bienvenida para clientes referidos desde Instagram (Fast Path - sin pausar bot)
     if (currentIntent === "INSTAGRAM_REFERRAL") {
-      const igResponse = `¡Bienvenido/a a Practiiko! 🌹 Qué bueno que nos escribes desde Instagram.
+      const igResponse = `¡Bienvenido/a a Practiiko! Qué bueno que nos escribe desde Instagram.
 
-Puedes ver nuestro catálogo completo aquí:
-👉 www.practiiko.com/catalogo
+Puede ver nuestro catálogo completo aquí:
+https://www.practiiko.com/catalogo
 
-¿Qué te gustaría conocer? ¿Precios, modelos, disponibilidad? Dale un vistazo al catálogo y cuéntame qué modelo te gusta más 😊`;
+¿Qué le gustaría conocer? ¿Precios, modelos, disponibilidad? Dele un vistazo al catálogo y cuéntenos qué modelo le gusta más.`;
 
       await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`,
         [sessionId, JSON.stringify({ role: 'assistant', content: igResponse })]);
@@ -488,11 +488,11 @@ Puedes ver nuestro catálogo completo aquí:
 
     // 3b. Manejo de HUMAN_REQUEST, BUY_REQUEST y AD_OR_NEW_MODEL_QUERY (ALERTA CRÍTICA - Fast Path)
     if (currentIntent === "HUMAN_REQUEST" || currentIntent === "BUY_REQUEST" || currentIntent === "AD_OR_NEW_MODEL_QUERY") {
-      let response = "Entendido 💎. Para brindarte la mejor información de manera personalizada, en este mismo instante te estoy transfiriendo con uno de nuestros asesores de ventas especializados. Te atenderá por este mismo chat en breve.";
+      let response = "Entendido. Para brindarle la mejor información de manera personalizada, en este mismo instante le estoy transfiriendo con uno de nuestros asesores de ventas especializados. Le atenderá por este mismo chat en breve.";
       if (currentIntent === "BUY_REQUEST") {
-        response = "¡Excelente elección! 💎 Para ayudarte a concretar tu compra de inmediato, en este mismo instante te estoy comunicando con uno de nuestros asesores de ventas especializados, quien te atenderá aquí mismo en breve.";
+        response = "¡Excelente elección! Para ayudarle a concretar su compra de inmediato, en este mismo instante le estoy comunicando con uno de nuestros asesores de ventas especializados, quien le atenderá aquí mismo en breve.";
       } else if (currentIntent === "AD_OR_NEW_MODEL_QUERY") {
-        response = "¡Entiendo perfectamente! 🌹 A veces publicamos adelantos de temporada, preventas exclusivas o campañas de nuevos modelos que aún no están subidos a nuestro catálogo web. Para brindarte todos los detalles exactos y confirmar su llegada, en este mismo instante te estoy transfiriendo con uno de nuestros asesores de ventas especializados. Te atenderá por aquí en breve. 💎";
+        response = "¡Entiendo perfectamente! A veces publicamos adelantos de temporada, preventas exclusivas o campañas de nuevos modelos que aún no están subidos a nuestro catálogo web. Para brindarle todos los detalles exactos y confirmar su llegada, en este mismo instante le estoy transfiriendo con uno de nuestros asesores de ventas especializados. Le atenderá por aquí en breve.";
       }
 
       const motivo = currentIntent === "BUY_REQUEST" ? "🔥 INTENCIÓN DE COMPRA" : 
@@ -711,7 +711,7 @@ Puedes ver nuestro catálogo completo aquí:
 
   } catch (error) {
     console.error("CRITICAL WHATSAPP AGENT ERROR:", error);
-    const errorMsg = "Error consultando inventario 💎";
+    const errorMsg = "Error consultando inventario.";
     try {
       await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`,
         [sessionId, JSON.stringify({ role: 'assistant', content: errorMsg })]);

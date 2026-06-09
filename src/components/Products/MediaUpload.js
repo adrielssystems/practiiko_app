@@ -10,7 +10,34 @@ export default function MediaUpload({ onMediaChange, initialMedia = { images: []
   const [images, setImages] = useState(initialMedia.images || []);
   const [video, setVideo] = useState(initialMedia.video || null);
   const [localPreviews, setLocalPreviews] = useState({});
+  const [localSpecs, setLocalSpecs] = useState({});
   const [isUploading, setIsUploading] = useState(false);
+
+  // Obtener specs para imágenes existentes (ya subidas al servidor)
+  useEffect(() => {
+    images.forEach(url => {
+      if (!localSpecs[url] && !localPreviews[url]) {
+        const img = new window.Image();
+        img.onload = async () => {
+          let sizeStr = "N/A";
+          try {
+            const res = await fetch(url, { method: 'HEAD' });
+            const bytes = res.headers.get('content-length');
+            if (bytes) {
+              const kb = bytes / 1024;
+              sizeStr = kb > 1024 ? (kb/1024).toFixed(2) + ' MB' : kb.toFixed(1) + ' KB';
+            }
+          } catch(e) {}
+          
+          setLocalSpecs(prev => ({
+            ...prev,
+            [url]: { w: img.naturalWidth, h: img.naturalHeight, size: sizeStr }
+          }));
+        };
+        img.src = url;
+      }
+    });
+  }, [images, localSpecs, localPreviews]);
 
   // Limpiar URLs locales al desmontar para evitar fugas de memoria
   useEffect(() => {
@@ -60,6 +87,25 @@ export default function MediaUpload({ onMediaChange, initialMedia = { images: []
         if (data.url) {
           // Mapear la URL del servidor a la URL local para la preview
           setLocalPreviews(prev => ({ ...prev, [data.url]: localUrl }));
+
+          const kb = file.size / 1024;
+          const sizeStr = kb > 1024 ? (kb/1024).toFixed(2) + ' MB' : kb.toFixed(1) + ' KB';
+
+          if (!isVideo) {
+            const img = new window.Image();
+            img.onload = () => {
+              setLocalSpecs(prev => ({
+                ...prev,
+                [data.url]: { w: img.naturalWidth, h: img.naturalHeight, size: sizeStr }
+              }));
+            };
+            img.src = localUrl;
+          } else {
+            setLocalSpecs(prev => ({
+              ...prev,
+              [data.url]: { size: sizeStr }
+            }));
+          }
 
           if (isVideo) {
             setVideo(data.url);
@@ -171,20 +217,21 @@ export default function MediaUpload({ onMediaChange, initialMedia = { images: []
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 110px))', gap: '1.25rem' }}>
         
         {images.map((url, index) => (
-          <div key={index} style={{ 
-            width: '110px', 
-            height: '110px', 
-            position: 'relative', 
-            borderRadius: '16px', 
-            overflow: 'hidden', 
-            border: '2px solid #ffffff',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-            transition: 'transform 0.2s',
-            cursor: 'default'
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
-          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-          >
+          <div key={index} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'center' }}>
+            <div style={{ 
+              width: '110px', 
+              height: '110px', 
+              position: 'relative', 
+              borderRadius: '16px', 
+              overflow: 'hidden', 
+              border: '2px solid #ffffff',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+              transition: 'transform 0.2s',
+              cursor: 'default'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            >
             <img src={localPreviews[url] || url} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             <button 
               type="button"
@@ -224,6 +271,14 @@ export default function MediaUpload({ onMediaChange, initialMedia = { images: []
                 fontWeight: 900,
                 letterSpacing: '0.05em'
               }}>PORTADA</div>
+            )}
+            </div>
+            
+            {localSpecs[url] && (
+              <div style={{ fontSize: '10px', color: '#64748b', textAlign: 'center', fontWeight: 600, lineHeight: 1.2, marginTop: '2px' }}>
+                {localSpecs[url].w && <div>{localSpecs[url].w} x {localSpecs[url].h} px</div>}
+                <div>{localSpecs[url].size}</div>
+              </div>
             )}
           </div>
         ))}

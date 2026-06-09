@@ -464,7 +464,7 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
                       ) : (
                         <img 
                           alt={`${formValues.name} - ${idx + 1}`}
-                          style={{ width: '85%', height: '85%', objectFit: 'contain', padding: '1rem' }} 
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '32px' }} 
                           src={item.url}
                         />
                       )}

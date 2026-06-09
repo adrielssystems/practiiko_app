@@ -226,12 +226,12 @@ async function getInventory(terms, currentIntent) {
 
     const productsText = finalRows.map((p) => {
       const imageUrl = p.image_url || "No disponible";
-      return `💎 MODELO: ${p.name}
+      return `MODELO: ${p.name}
 - Código: ${p.code || "N/A"}
 - Categoría: ${p.categoria || "N/A"}
 - Descripción: ${p.description || "N/A"}
 - Precio BCV: $${p.price_bcv}
-- Imagen: (URL_FOTO: ${imageUrl}) 💎`;
+- Imagen: (URL_FOTO: ${imageUrl})`;
     }).join("\n\n");
 
     const categoriesText = categories.length > 0 ? `CATEGORÍAS DISPONIBLES: ${categories.join(", ")}` : "";
@@ -299,7 +299,7 @@ async function buildResponse(message, customerName, inventory, historyMessages, 
     return response.content;
   } catch (error) {
     console.error("DEBUG - DeepSeek Error (Instagram):", error.message);
-    return `¡Hola ${customerName}! 🌹 Escríbenos a nuestro WhatsApp oficial para atención inmediata y ver todos nuestros precios: https://wa.me/584248948664?text=Hola%2C%20vengo%20de%20instagram%20y%20quisiera%20informacion%20sobre%20sus%20productos 💎`;
+    return `¡Hola ${customerName}! Escríbenos a nuestro WhatsApp oficial para atención inmediata y ver todos nuestros precios: https://wa.me/584248948664?text=Hola%2C%20vengo%20de%20instagram%20y%20quisiera%20informacion%20sobre%20sus%20productos`;
   }
 }
 
@@ -337,13 +337,13 @@ export async function processInstagramMessage(message, sessionId, customerName =
     // Si detectamos saludo ("hola", "buenas"), solo enviamos el mensaje duro de bienvenida si NO hay historial de chat previo.
     // Si ya hay conversación, dejamos que la IA responda de forma natural y respetuosa.
     if (intent === "GREETING" && !hasChatHistory) {
-      const greetingResponse = `👋🏼 ¡Hola! Gracias por comunicarte con nosotros
+      const greetingResponse = `¡Hola! Gracias por comunicarte con nosotros.
 
-Te invitamos a visitar nuestra pagina web www.practiiko.com con información de interes para ti. Puedes consultar nuestro catálogo de muebles y colchones en el siguiente enlace: 
+Te invitamos a visitar nuestra pagina web www.practiiko.com con información de interes para usted. Puede consultar nuestro catálogo de muebles y colchones en el siguiente enlace: 
 
 www.practiiko.com/catalogo
 
-📄Deja tu consulta detallada y en breve le atenderemos. ¡Gracias por tu paciencia! 😊`;
+Deja tu consulta detallada y en breve le atenderemos. ¡Gracias por tu paciencia!`;
 
       await query(`INSERT INTO instagram_messages (session_id, message, source, comment_id) VALUES ($1, $2, $3, $4)`,
         [sessionId, JSON.stringify({ role: 'assistant', content: greetingResponse }), source, commentId]);
@@ -357,9 +357,9 @@ www.practiiko.com/catalogo
     if (intent === "GRATITUDE_EXPERIENCE") {
       const name = customerName && customerName !== "Cliente" ? ` ${customerName}` : "";
       const options = [
-        `¡Qué alegría escuchar eso${name}! 🌹 Saber que tu visita fue especial nos llena de orgullo. En Practiiko cada detalle cuenta, y tú mereces lo mejor 💎 ¡Gracias por confiar en nosotros!`,
-        `Eso nos hace muy felices${name} ✨ Tu satisfacción es nuestra mayor recompensa. ¡Fue un placer atenderte, te esperamos pronto con más novedades! 🌹`,
-        `¡Muchísimas gracias${name}! 💎 Comentarios como el tuyo nos motivan a seguir dando lo mejor cada día. ¡Eres siempre bienvenido a Practiiko! 🌹`
+        `¡Qué alegría escuchar eso${name}! Saber que su visita fue especial nos llena de orgullo. En Practiiko cada detalle cuenta, y usted merece lo mejor. ¡Gracias por confiar en nosotros!`,
+        `Eso nos hace muy felices${name}. Su satisfacción es nuestra mayor recompensa. ¡Fue un placer atenderle, le esperamos pronto con más novedades!`,
+        `¡Muchísimas gracias${name}! Comentarios como el suyo nos motivan a seguir dando lo mejor cada día. ¡Es siempre bienvenido a Practiiko!`
       ];
       const resp = options[Math.floor(Math.random() * options.length)];
       await query(`INSERT INTO instagram_messages (session_id, message, source, comment_id) VALUES ($1, $2, $3, $4)`,
@@ -369,7 +369,7 @@ www.practiiko.com/catalogo
 
     if (intent === "POSITIVE_FEEDBACK") {
       const name = customerName && customerName !== "Cliente" ? ` ${customerName}` : "";
-      const resp = `¡Nos alegra muchísimo${name}! 🌹 Comentarios como el tuyo nos inspiran a seguir ofreciendo la mejor experiencia. Si en algún momento necesitas algo más, aquí estaremos ✨💎`;
+      const resp = `¡Nos alegra muchísimo${name}! Comentarios como el suyo nos inspiran a seguir ofreciendo la mejor experiencia. Si en algún momento necesita algo más, aquí estaremos.`;
       await query(`INSERT INTO instagram_messages (session_id, message, source, comment_id) VALUES ($1, $2, $3, $4)`,
         [sessionId, JSON.stringify({ role: 'assistant', content: resp }), source, commentId]);
       return { text: resp, imageUrls: [] };
@@ -377,7 +377,7 @@ www.practiiko.com/catalogo
 
     if (intent === "FAREWELL") {
       const name = customerName && customerName !== "Cliente" ? ` ${customerName}` : "";
-      const resp = `¡Hasta pronto${name}! 💎 Fue un placer atenderte. Recuerda que en Practiiko siempre te esperamos 🌹`;
+      const resp = `¡Hasta pronto${name}! Fue un placer atenderle. Recuerde que en Practiiko siempre le esperamos.`;
       await query(`INSERT INTO instagram_messages (session_id, message, source, comment_id) VALUES ($1, $2, $3, $4)`,
         [sessionId, JSON.stringify({ role: 'assistant', content: resp }), source, commentId]);
       return { text: resp, imageUrls: [] };
@@ -451,7 +451,7 @@ www.practiiko.com/catalogo
     if (isLoopDetected && !isProductSearch) {
 
       console.log(`[INSTAGRAM AGENT] Guardrail Anti-Bucle activado para ${sessionId}. Forzando transferencia.`);
-      const loopResponse = "¡Entendido perfectamente! 🌹 Veo que no logramos identificar el modelo exacto que buscas por este medio automático. No te preocupes en lo absoluto: en este mismo instante te estoy transfiriendo con uno de nuestros asesores de ventas especializados para que te atienda de forma personalizada por este mismo chat en breve. ¡Muchas gracias por tu paciencia! 💎";
+      const loopResponse = "¡Entendido perfectamente! Veo que no logramos identificar el modelo exacto que busca por este medio automático. No se preocupe en lo absoluto: en este mismo instante le estoy transfiriendo con uno de nuestros asesores de ventas especializados para que le atienda de forma personalizada por este mismo chat en breve. ¡Muchas gracias por su paciencia!";
 
       try {
         await query("UPDATE instagram_customers SET ai_enabled = false, requires_human = true WHERE id = $1", [sessionId]);
@@ -482,9 +482,9 @@ www.practiiko.com/catalogo
     // Solo para solicitudes EXPLICITAS de atención humana en este mismo chat o consultas de publicidad/preventas.
     // NO se envían notificaciones al grupo de WhatsApp — el bot ya redirige a WA por su propia cuenta.
     if (currentIntent === "HUMAN_REQUEST" || currentIntent === "AD_OR_NEW_MODEL_QUERY") {
-      let response = "Con mucho gusto 💎 Te atiendo por este mismo chat en breve. Uno de nuestros asesores se comunicará contigo aquí 🌹";
+      let response = "Con mucho gusto. Le atiendo por este mismo chat en breve. Uno de nuestros asesores se comunicará con usted aquí.";
       if (currentIntent === "AD_OR_NEW_MODEL_QUERY") {
-        response = "¡Entiendo perfectamente! 🌹 A veces publicamos adelantos de temporada, preventas exclusivas o campañas de nuevos modelos que aún no están subidos a nuestro catálogo web. Para brindarte todos los detalles y confirmar disponibilidad de esa publicidad, te transferiré de inmediato con uno de nuestros asesores por este chat. Te atenderá en breve. 💎";
+        response = "¡Entiendo perfectamente! A veces publicamos adelantos de temporada, preventas exclusivas o campañas de nuevos modelos que aún no están subidos a nuestro catálogo web. Para brindarle todos los detalles y confirmar disponibilidad de esa publicidad, le transferiré de inmediato con uno de nuestros asesores por este chat. Le atenderá en breve.";
       }
 
       // Solo marcamos en DB para el panel de monitoreo interno
@@ -643,7 +643,7 @@ www.practiiko.com/catalogo
 
   } catch (error) {
     console.error("CRITICAL INSTAGRAM AGENT ERROR:", error);
-    const errorMsg = "Error consultando inventario 💎";
+    const errorMsg = "Error consultando inventario.";
     try {
       await query(`INSERT INTO instagram_messages (session_id, message, source, comment_id) VALUES ($1, $2, $3, $4)`,
         [sessionId, JSON.stringify({ role: 'assistant', content: errorMsg }), source, commentId]);
