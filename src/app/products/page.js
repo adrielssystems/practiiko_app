@@ -133,11 +133,17 @@ export default async function ProductsPage({ searchParams }) {
                         {product.category_name || 'Sin categoría'}
                       </span>
                     </td>
-                    <td style={{ padding: '1.25rem 1.5rem', fontWeight: 700, color: 'var(--foreground)' }}>
-                      ${parseFloat(product.price_bcv || 0).toLocaleString()}
-                    </td>
-                    <td style={{ padding: '1.25rem 1.5rem', fontWeight: 700, color: 'var(--secondary)' }}>
-                      ${parseFloat(product.price_cash || 0).toLocaleString()}
+                    <td style={{ padding: '1.25rem 1.5rem' }}>
+                      <div style={{ display: 'flex', gap: '1rem', fontSize: '0.85rem' }}>
+                        <div>
+                          <span style={{ color: '#64748b' }}>BCV: </span>
+                          <strong style={{ color: '#0477BF' }}>${parseFloat(product.price_bcv || 0).toLocaleString('es-VE', {minimumFractionDigits: 2})}</strong>
+                        </div>
+                        <div>
+                          <span style={{ color: '#64748b' }}>Cash: </span>
+                          <strong style={{ color: '#10b981' }}>${parseFloat(product.price_cash || 0).toLocaleString('es-VE', {minimumFractionDigits: 2})}</strong>
+                        </div>
+                      </div>
                     </td>
                     <td style={{ padding: '1.25rem 1.5rem', fontSize: '0.8125rem', color: 'var(--muted-foreground)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>

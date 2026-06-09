@@ -184,7 +184,7 @@ export default async function OverviewPage() {
             </div>
           </div>
           <h3 style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b', marginBottom: '0.1rem', textTransform: 'uppercase' }}>Catálogo</h3>
-          <p style={{ fontSize: '1.75rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>{data.products}</p>
+          <p style={{ fontSize: '1.75rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>{data.products.toLocaleString('es-VE')}</p>
           <p style={{ fontSize: '0.65rem', color: '#94a3b8', marginTop: '0.25rem' }}>Listos para venta</p>
         </div>
 
@@ -197,7 +197,7 @@ export default async function OverviewPage() {
             <span style={{ fontSize: '0.55rem', fontWeight: 800, background: '#fdf2f8', color: '#be185d', padding: '2px 8px', borderRadius: '20px' }}>IG FEED</span>
           </div>
           <h3 style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b', marginBottom: '0.1rem', textTransform: 'uppercase' }}>Interacciones</h3>
-          <p style={{ fontSize: '1.75rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>{data.igMessages.toLocaleString()}</p>
+          <p style={{ fontSize: '1.75rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>{data.igMessages.toLocaleString('es-VE')}</p>
           <p style={{ fontSize: '0.65rem', color: '#94a3b8', marginTop: '0.25rem' }}>Mensajes y comentarios</p>
         </div>
 
@@ -210,7 +210,7 @@ export default async function OverviewPage() {
             <span style={{ fontSize: '0.55rem', fontWeight: 800, background: '#f0fdf4', color: '#15803d', padding: '2px 8px', borderRadius: '20px' }}>WHA</span>
           </div>
           <h3 style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b', marginBottom: '0.1rem', textTransform: 'uppercase' }}>WhatsApp</h3>
-          <p style={{ fontSize: '1.75rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>{data.waMessages.toLocaleString()}</p>
+          <p style={{ fontSize: '1.75rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>{data.waMessages.toLocaleString('es-VE')}</p>
           <p style={{ fontSize: '0.65rem', color: '#94a3b8', marginTop: '0.25rem' }}>Conversaciones</p>
         </div>
       </div>

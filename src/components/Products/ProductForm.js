@@ -592,7 +592,7 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto', marginBottom: '1rem' }}>
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
                     <span style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0477BF', lineHeight: 1 }}>
-                      ${getPreviewPrice().toLocaleString()}
+                      ${getPreviewPrice().toLocaleString('es-VE')}
                     </span>
                     <span style={{ fontSize: '8px', color: '#9ca3af', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Ref.</span>
                   </div>
