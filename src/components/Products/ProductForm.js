@@ -394,7 +394,6 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
             <div className="flip-card-front" style={{ 
                background: 'white', 
                borderRadius: '40px', 
-               padding: '1.5rem', 
                display: 'flex', 
                flexDirection: 'column',
                border: '2px solid rgba(242, 135, 5, 0.2)',
@@ -409,14 +408,11 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
                   flex: 1, 
                   minHeight: '200px',
                   background: '#f9fafb', 
-                  borderRadius: '32px', 
                   position: 'relative',
-                  marginBottom: '1.5rem',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.05)',
-                  border: '1px solid #f3f4f6',
+                  borderBottom: '1px solid #f3f4f6',
                   overflow: 'hidden'
                 }}
               >
@@ -460,12 +456,12 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
                           muted 
                           playsInline
                           loop
-                          style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '32px' }}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         />
                       ) : (
                         <img 
                           alt={`${formValues.name} - ${idx + 1}`}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '32px' }} 
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                           src={item.url}
                         />
                       )}
@@ -575,7 +571,7 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
                 )}
               </div>
 
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '0 0.5rem' }}>
+              <div style={{ flex: 'none', display: 'flex', flexDirection: 'column', padding: '1.25rem 1.5rem 1.5rem 1.5rem', height: '170px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
                    <div style={{ fontSize: '9px', color: '#0477BF', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.2em' }}>{formValues.category_name || "Muebles"}</div>
                 </div>
