@@ -40,6 +40,7 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
   });
 
   const [isFlipped, setIsFlipped] = useState(false);
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const previewVideoRef = useRef(null);
@@ -386,7 +387,6 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
 
         <div 
           className={`flip-card-container ${isFlipped ? 'is-flipped' : ''}`}
-          onClick={handleFlip}
         >
           <div className="flip-card-inner">
             
@@ -433,7 +433,10 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
                 </div>
 
                 {/* Renderizado de Media (Imágenes / Video) */}
-                <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+                <div 
+                  style={{ width: '100%', height: '100%', position: 'relative', cursor: 'pointer' }}
+                  onClick={() => setIsPreviewModalOpen(true)}
+                >
                   {mediaList.map((item, idx) => (
                     <div 
                       key={idx} 
@@ -600,7 +603,11 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '1rem', borderTop: '1px solid rgba(242, 135, 5, 0.1)' }}>
                    <span style={{ fontSize: '9px', color: '#6b7280', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Ver Características</span>
-                   <div className="sync-btn-preview" style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(242, 135, 5, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#F28705', transition: 'all 0.5s' }}>
+                   <div 
+                     className="sync-btn-preview" 
+                     onClick={handleFlip}
+                     style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(242, 135, 5, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#F28705', transition: 'all 0.5s', cursor: 'pointer' }}
+                   >
                       <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>sync_alt</span>
                    </div>
                 </div>
@@ -649,7 +656,7 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
                  </p>
                </div>
 
-               <div style={{ marginTop: '1rem', width: '100%', flexShrink: 0 }}>
+               <div style={{ marginTop: '1rem', width: '100%', flexShrink: 0, cursor: 'pointer' }} onClick={handleFlip}>
                   <div style={{ 
                     padding: '0.65rem', 
                     borderRadius: '100px', 
@@ -679,6 +686,42 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
         </div>
       </div>
       
+      {/* MODAL DE VISTA PREVIA (PANTALLA COMPLETA) */}
+      {isPreviewModalOpen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.95)', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(10px)' }}>
+          <div 
+            style={{ position: 'absolute', top: '20px', right: '20px', zIndex: 10000, cursor: 'pointer', background: 'rgba(255,255,255,0.1)', padding: '10px', borderRadius: '50%' }} 
+            onClick={() => setIsPreviewModalOpen(false)}
+          >
+            <span className="material-symbols-outlined" style={{ color: 'white' }}>close</span>
+          </div>
+          <div style={{ width: '90%', height: '90%', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+            {mediaList[activeIndex]?.type === 'video' ? (
+              <video src={mediaList[activeIndex].url} controls autoPlay style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', margin: 'auto' }} />
+            ) : (
+              <img src={mediaList[activeIndex]?.url} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', margin: 'auto' }} />
+            )}
+            
+            {mediaList.length > 1 && (
+              <>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); handlePrev(); }}
+                  style={{ position: 'absolute', left: '0', top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none', borderRadius: '50%', width: '50px', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                >
+                  <span className="material-symbols-outlined">chevron_left</span>
+                </button>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); handleNext(); }}
+                  style={{ position: 'absolute', right: '0', top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none', borderRadius: '50%', width: '50px', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                >
+                  <span className="material-symbols-outlined">chevron_right</span>
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+      
       <style jsx>{`
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(10px); }
@@ -687,14 +730,14 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
 
         .flip-card-container {
           width: 100%;
-          height: 520px;
+          height: 460px;
           perspective: 1500px;
           cursor: pointer;
           transition: height 0.7s ease-in-out;
         }
 
         .flip-card-container.is-flipped {
-          height: 600px;
+          height: 540px;
         }
 
         .flip-card-inner {

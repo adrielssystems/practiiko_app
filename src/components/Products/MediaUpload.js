@@ -224,15 +224,19 @@ export default function MediaUpload({ onMediaChange, initialMedia = { images: []
               position: 'relative', 
               borderRadius: '16px', 
               overflow: 'hidden', 
-              border: '2px solid #ffffff',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+              border: '1px solid #e2e8f0',
+              background: '#ffffff',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.04)',
               transition: 'transform 0.2s',
-              cursor: 'default'
+              cursor: 'default',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
             }}
             onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
             onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
             >
-            <img src={localPreviews[url] || url} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <img src={localPreviews[url] || url} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             <button 
               type="button"
               onClick={() => removeImage(index)}
