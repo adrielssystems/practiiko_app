@@ -407,7 +407,7 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
                   width: '100%', 
                   flex: 1, 
                   minHeight: '200px',
-                  background: '#f9fafb', 
+                  background: 'white', 
                   position: 'relative',
                   display: 'flex',
                   alignItems: 'center',
@@ -456,12 +456,12 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
                           muted 
                           playsInline
                           loop
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                         />
                       ) : (
                         <img 
                           alt={`${formValues.name} - ${idx + 1}`}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                          style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
                           src={item.url}
                         />
                       )}
