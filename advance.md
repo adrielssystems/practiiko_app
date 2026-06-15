@@ -142,4 +142,22 @@ Hoy revolucionamos la forma en que la IA atiende a clientes indecisos y logramos
 - **Simulador de Instagram Mejorado**: Se añadió un botón de **"Nuevo Chat"** en el `BotSimulator.js` que se comunica con una nueva ruta backend (`delete-chat/route.js`) para purgar el historial de la base de datos, permitiendo realizar pruebas limpias y rápidas.
 
 ---
-**Estado Actual**: Asistente proactivo con embudo de ventas conversacional guiado. Ecosistema híbrido IA/Humano operando en perfecta sincronía sin colisiones. 💎🚀
+**Estado Actual (Anterior)**: Asistente proactivo con embudo de ventas conversacional guiado. Ecosistema híbrido IA/Humano operando en perfecta sincronía sin colisiones. 💎🚀
+
+## 🚨 Alertas de WhatsApp para Transferencias de Instagram (15/06/2026)
+
+Hoy hemos unificado el sistema de alertas de derivación para que los asesores reciban notificaciones en su canal de WhatsApp cuando ocurra una transferencia de control en los chats de Instagram, cerrando la brecha con el flujo ya existente en WhatsApp.
+
+### 1. Notificación Unificada vía Evolution API
+- **Reutilización de Credenciales**: Implementamos el uso de las variables de entorno de WhatsApp (`EVOLUTION_API_URL`, `EVOLUTION_API_KEY`, `EVOLUTION_INSTANCE`, `NOTIFICATIONS_GROUP_ID`) dentro de `instagramAgent.js`.
+- **Estructura del Mensaje de Alerta**: Cuando un bot de Instagram se pausa (por guardrail anti-bucle, petición explícita del cliente o comando `[TRANSFER]` de la IA), se envía una notificación detallada a WhatsApp:
+  - Canal: `INSTAGRAM`.
+  - Cliente: Nombre y `@username` del usuario (consultado en base de datos desde la tabla `instagram_customers`).
+  - Mensaje exacto de entrada que causó la derivación.
+  - Enlaces directos: Acceso al chat en el panel de control (`[baseUrl]/instagram/[sessionId]`) y enlace al perfil de Instagram del usuario.
+
+### 2. Optimización en el Simulador de Pruebas (test-bot)
+- **Bypass de Url Base**: Modificamos el endpoint del simulador (`src/app/api/test-bot/route.js`) para capturar el protocolo y host (`baseUrl`) desde los headers de la petición HTTP. De esta forma, las pruebas hechas desde el simulador de chat en el panel también generan alertas con enlaces directos correctos (sea en local o producción).
+
+---
+**Estado Actual**: Canal de Instagram totalmente integrado con el sistema de alertas de WhatsApp. Asistentes notificados al instante sobre derivaciones en ambos canales. 💎🚀
