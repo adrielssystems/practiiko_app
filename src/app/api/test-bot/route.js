@@ -39,11 +39,15 @@ export async function POST(req) {
     // Simular el tiempo de espera de 5 segundos acordado en el simulador
     await new Promise(resolve => setTimeout(resolve, 5000));
     
+    const protocol = req.headers.get("x-forwarded-proto") || "https";
+    const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "localhost:3000";
+    const baseUrl = `${protocol}://${host}`;
+
     const aiResponse = await processInstagramMessage(
       message, 
       resolvedSessionId, 
       resolvedName,
-      "",
+      baseUrl,
       'dm',
       null
     );

@@ -303,6 +303,54 @@ async function buildResponse(message, customerName, inventory, historyMessages, 
   }
 }
 
+// Función auxiliar para enviar alertas de Instagram a WhatsApp
+async function notifyAdvisorsOfInstagramTransfer(sessionId, customerName, message, motivo, baseUrl) {
+  let username = "";
+  try {
+    const customerRes = await query("SELECT username FROM instagram_customers WHERE id = $1", [sessionId]);
+    username = customerRes.rows[0]?.username || "";
+  } catch (e) {
+    console.error("Error al obtener username de instagram_customers:", e.message);
+  }
+
+  const userRef = username ? `@${username}` : sessionId;
+  const dashboardLink = baseUrl ? `${baseUrl}/instagram/${sessionId}` : "";
+  const instagramLink = username ? `https://instagram.com/${username}` : "";
+
+  let linksText = "";
+  if (dashboardLink) linksText += `\n*Panel:* ${dashboardLink}`;
+  if (instagramLink) linksText += `\n*Instagram:* ${instagramLink}`;
+
+  const notifyText = `${motivo}\n\n*Canal:* INSTAGRAM\n*Cliente:* ${customerName} (${userRef})\n*Mensaje:* "${message}"\n${linksText}`;
+
+  const EVO_URL = process.env.EVOLUTION_API_URL;
+  const EVO_KEY = process.env.EVOLUTION_API_KEY;
+  const EVO_INSTANCE = process.env.EVOLUTION_INSTANCE || "Practiiko";
+  const adminPhone = "584248068515";
+  const groupId = process.env.NOTIFICATIONS_GROUP_ID;
+
+  if (EVO_URL) {
+    try {
+      // Notificar al admin personal
+      await fetch(`${EVO_URL}/message/sendText/${EVO_INSTANCE}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': EVO_KEY },
+        body: JSON.stringify({ number: adminPhone, text: notifyText })
+      });
+      // Notificar al grupo de WhatsApp
+      if (groupId) {
+        await fetch(`${EVO_URL}/message/sendText/${EVO_INSTANCE}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'apikey': EVO_KEY },
+          body: JSON.stringify({ number: groupId, text: notifyText })
+        });
+      }
+    } catch(e) {
+      console.error("Error en flujo de notificaciones de Instagram hacia WhatsApp:", e);
+    }
+  }
+}
+
 export async function processInstagramMessage(message, sessionId, customerName = "Cliente", baseUrl = "", source = "instagram", commentId = null) {
   try {
     // 1. Verificar si el bot está pausado para este cliente
@@ -453,6 +501,9 @@ Deja tu consulta detallada y en breve le atenderemos. ¡Gracias por tu paciencia
       console.log(`[INSTAGRAM AGENT] Guardrail Anti-Bucle activado para ${sessionId}. Forzando transferencia.`);
       const loopResponse = "¡Entendido perfectamente! Veo que no logramos identificar el modelo exacto que busca por este medio automático. No se preocupe en lo absoluto: en este mismo instante le estoy transfiriendo con uno de nuestros asesores de ventas especializados para que le atienda de forma personalizada por este mismo chat en breve. ¡Muchas gracias por su paciencia!";
 
+      const motivo = "🚨 GUARDRAIL ANTI-BUCLE (TRANSFERENCIA) (INSTAGRAM)";
+      await notifyAdvisorsOfInstagramTransfer(sessionId, customerName, message, motivo, baseUrl);
+
       try {
         await query("UPDATE instagram_customers SET ai_enabled = false, requires_human = true WHERE id = $1", [sessionId]);
       } catch(e) {
@@ -486,6 +537,9 @@ Deja tu consulta detallada y en breve le atenderemos. ¡Gracias por tu paciencia
       if (currentIntent === "AD_OR_NEW_MODEL_QUERY") {
         response = "¡Entiendo perfectamente! A veces publicamos adelantos de temporada, preventas exclusivas o campañas de nuevos modelos que aún no están subidos a nuestro catálogo web. Para brindarle todos los detalles y confirmar disponibilidad de esa publicidad, le transferiré de inmediato con uno de nuestros asesores por este chat. Le atenderá en breve.";
       }
+
+      const motivo = currentIntent === "AD_OR_NEW_MODEL_QUERY" ? "📢 CONSULTA PUBLICIDAD/PREVENTA (INSTAGRAM)" : "🚨 SOLICITUD HUMANA (INSTAGRAM)";
+      await notifyAdvisorsOfInstagramTransfer(sessionId, customerName, message, motivo, baseUrl);
 
       // Solo marcamos en DB para el panel de monitoreo interno
       try {
@@ -536,8 +590,9 @@ Deja tu consulta detallada y en breve le atenderemos. ¡Gracias por tu paciencia
     }
 
     if (shouldTransfer) {
-      // Instagram: solo actualizamos DB para el panel de monitoreo interno.
-      // NO se envían notificaciones al grupo de WhatsApp desde Instagram.
+      const motivo = "🚨 SOLICITUD HUMANA (IA) (INSTAGRAM)";
+      await notifyAdvisorsOfInstagramTransfer(sessionId, customerName, message, motivo, baseUrl);
+
       try {
         await query("UPDATE instagram_customers SET ai_enabled = false, requires_human = true WHERE id = $1", [sessionId]);
       } catch(e) {
