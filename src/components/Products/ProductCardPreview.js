@@ -57,7 +57,7 @@ export default function ProductCardPreview({ product }) {
         <img 
           src={mainImage} 
           alt={name} 
-          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          style={{ width: '100%', height: '100%', objectFit: 'contain', mixBlendMode: 'multiply', padding: '16px', boxSizing: 'border-box' }}
         />
         
         {/* LIFESTYLE BADGE (MEDALLA DORADA) */}
