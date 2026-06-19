@@ -4,6 +4,7 @@ import { Heart, Eye, ShoppingBag, Info, ChevronRight, X } from "lucide-react";
 
 export default function ProductCardPreview({ product }) {
   const [activeBadge, setActiveBadge] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Default values to prevent errors
   const name = product?.name || "SOFÁ MODULAR ZEN";
@@ -11,9 +12,9 @@ export default function ProductCardPreview({ product }) {
   const price = product?.price_cash || 0;
   const technicalSummary = product?.technical_summary || "Espuma de alta densidad / Tela premium antimanchas";
   const badgeText = product?.badge_text || "Diseño Inteligente: Llega a tu puerta";
-  const likes = product?.likes_count || 124;
-  const views = product?.views_count || 1580;
-  const sales = product?.sales_count || 42;
+  const likes = product?.likes_count || 0;
+  const views = product?.views_count || 0;
+  const sales = product?.sales_count || 0;
   
   // Example interactive badges if none provided
   const interactiveBadges = product?.interactive_badges || [
@@ -98,20 +99,23 @@ export default function ProductCardPreview({ product }) {
             background: 'rgba(255,255,255,0.2)',
             backdropFilter: 'blur(4px)',
             border: 'none',
-            borderRadius: '50%',
-            width: '32px',
+            borderRadius: '100px',
+            padding: '0 12px',
             height: '32px',
             display: 'flex',
             alignItems: 'center',
+            gap: '6px',
             justifyContent: 'center',
             color: 'white',
             cursor: 'pointer',
             transition: 'background 0.2s'
           }}
+          onClick={() => {}}
           onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.4)'}
           onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
           >
             <Heart size={16} />
+            <span style={{ fontSize: '11px', fontWeight: 800 }}>{likes}</span>
           </button>
         </div>
       </div>
@@ -222,7 +226,6 @@ export default function ProductCardPreview({ product }) {
             Comprar
           </button>
           
-          {/* CTA PRIMARIO: DETALLES */}
           <button style={{
             background: '#0f172a',
             border: 'none',
@@ -239,6 +242,7 @@ export default function ProductCardPreview({ product }) {
             transition: 'all 0.2s',
             boxShadow: '0 8px 16px rgba(15, 23, 42, 0.2)'
           }}
+          onClick={() => setIsModalOpen(true)}
           onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 20px rgba(15, 23, 42, 0.3)' }}
           onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 8px 16px rgba(15, 23, 42, 0.2)' }}>
             Transformar mi espacio <ChevronRight size={16} />
@@ -246,6 +250,53 @@ export default function ProductCardPreview({ product }) {
         </div>
 
       </div>
+
+      {/* MODAL DEL PRODUCTO (SIMULADO EN EL GESTOR) */}
+      {isModalOpen && (
+        <div 
+          onClick={() => setIsModalOpen(false)}
+          style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}>
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            style={{ background: 'white', borderRadius: '16px', width: '100%', maxWidth: '500px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', overflow: 'hidden' }}>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderBottom: '1px solid #f1f5f9' }}>
+              <h3 style={{ margin: 0, fontWeight: 900, textTransform: 'uppercase', color: '#0f172a' }}>{name}</h3>
+              <button onClick={() => setIsModalOpen(false)} style={{ background: '#f1f5f9', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748b' }}>
+                <X size={16} />
+              </button>
+            </div>
+            
+            <div style={{ overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <div style={{ display: 'flex', gap: '16px', overflowX: 'auto', scrollSnapType: 'x mandatory' }}>
+                <img src={mainImage} alt={name} style={{ width: '80%', aspectRatio: '1/1', objectFit: 'cover', borderRadius: '12px', flexShrink: 0, scrollSnapAlign: 'center', border: '1px solid #f1f5f9' }} />
+              </div>
+              
+              <div>
+                {product?.aspirational_copy && (
+                  <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#334155', fontStyle: 'italic', borderLeft: '4px solid #34d399', paddingLeft: '12px', margin: '0 0 16px 0' }}>
+                    "{product.aspirational_copy}"
+                  </p>
+                )}
+                <h4 style={{ fontWeight: 700, color: '#0f172a', marginBottom: '8px', textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.05em', margin: '0 0 8px 0' }}>Descripción del Producto</h4>
+                <p style={{ fontSize: '0.875rem', color: '#475569', lineHeight: 1.6, whiteSpace: 'pre-wrap', margin: 0 }}>
+                  {product?.description || "Sin descripción detallada."}
+                </p>
+              </div>
+            </div>
+            
+            <div style={{ padding: '16px', borderTop: '1px solid #f1f5f9', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '1.5rem', fontWeight: 900, color: '#d97706', lineHeight: 1 }}>
+                <small style={{ fontSize: '0.875rem', verticalAlign: 'top', opacity: 0.8, marginRight: '4px' }}>Ref</small>
+                {parseFloat(price).toLocaleString('es-VE')}
+              </span>
+              <button style={{ background: '#10b981', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '12px', fontWeight: 700, fontSize: '0.875rem', textTransform: 'uppercase', cursor: 'pointer' }}>
+                ¡Lo quiero!
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
