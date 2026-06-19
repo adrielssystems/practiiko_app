@@ -6,6 +6,7 @@ import { Heart, Eye, ShoppingBag, Info, ChevronRight, X } from "lucide-react";
 export default function ProductCardPreview({ product }) {
   const [activeBadge, setActiveBadge] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalImageIdx, setModalImageIdx] = useState(0);
   const [mounted, setMounted] = useState(false);
   
   useEffect(() => {
@@ -270,41 +271,76 @@ export default function ProductCardPreview({ product }) {
           style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}>
           <div 
             onClick={(e) => e.stopPropagation()}
-            style={{ background: 'white', borderRadius: '16px', width: '100%', maxWidth: '500px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', overflow: 'hidden' }}>
+            style={{ background: 'white', borderRadius: '16px', width: '100%', maxWidth: '900px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', overflow: 'hidden' }}>
             
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderBottom: '1px solid #f1f5f9' }}>
-              <h3 style={{ margin: 0, fontWeight: 900, textTransform: 'uppercase', color: '#0f172a' }}>{name}</h3>
+            {/* Header / Cerrar */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '16px 16px 0 16px' }}>
               <button onClick={() => setIsModalOpen(false)} style={{ background: '#f1f5f9', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748b' }}>
                 <X size={16} />
               </button>
             </div>
             
-            <div style={{ overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              <div style={{ display: 'flex', gap: '16px', overflowX: 'auto', scrollSnapType: 'x mandatory' }}>
-                <img src={mainImage} alt={name} style={{ width: '80%', aspectRatio: '1/1', objectFit: 'cover', borderRadius: '12px', flexShrink: 0, scrollSnapAlign: 'center', border: '1px solid #f1f5f9' }} />
-              </div>
+            {/* Contenido (2 columnas) */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', gap: '32px', flexDirection: 'row', flexWrap: 'wrap' }}>
               
-              <div>
-                {product?.aspirational_copy && (
-                  <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#334155', fontStyle: 'italic', borderLeft: '4px solid #34d399', paddingLeft: '12px', margin: '0 0 16px 0' }}>
-                    "{product.aspirational_copy}"
-                  </p>
-                )}
-                <h4 style={{ fontWeight: 700, color: '#0f172a', marginBottom: '8px', textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.05em', margin: '0 0 8px 0' }}>Descripción del Producto</h4>
-                <p style={{ fontSize: '0.875rem', color: '#475569', lineHeight: 1.6, whiteSpace: 'pre-wrap', margin: 0 }}>
-                  {product?.description || "Sin descripción detallada."}
-                </p>
+              {/* Columna Izquierda: Galería */}
+              <div style={{ flex: '1 1 50%', minWidth: '300px', display: 'flex', gap: '16px' }}>
+                {/* Thumbnails (verticales) */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '80px', flexShrink: 0, maxHeight: '400px', overflowY: 'auto' }}>
+                  <img 
+                    src={mainImage} 
+                    alt={name} 
+                    style={{ width: '100%', aspectRatio: '1/1', objectFit: 'cover', borderRadius: '8px', border: '2px solid #F28705', cursor: 'pointer' }} 
+                  />
+                </div>
+                
+                {/* Imagen Principal */}
+                <div style={{ flex: 1, background: '#f8fafc', borderRadius: '12px', overflow: 'hidden', aspectRatio: '4/3', position: 'relative' }}>
+                  <img src={mainImage} alt={name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', mixBlendMode: 'multiply' }} />
+                </div>
               </div>
-            </div>
-            
-            <div style={{ padding: '16px', borderTop: '1px solid #f1f5f9', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '1.5rem', fontWeight: 900, color: '#d97706', lineHeight: 1 }}>
-                <small style={{ fontSize: '0.875rem', verticalAlign: 'top', opacity: 0.8, marginRight: '4px' }}>Ref</small>
-                {parseFloat(price).toLocaleString('es-VE')}
-              </span>
-              <button style={{ background: '#10b981', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '12px', fontWeight: 700, fontSize: '0.875rem', textTransform: 'uppercase', cursor: 'pointer' }}>
-                ¡Lo quiero!
-              </button>
+
+              {/* Columna Derecha: Detalles */}
+              <div style={{ flex: '1 1 40%', minWidth: '300px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <div>
+                  <h2 style={{ fontSize: '1.75rem', fontWeight: 900, color: '#0f172a', textTransform: 'uppercase', margin: '0 0 8px 0', lineHeight: 1.2 }}>
+                    {name}
+                  </h2>
+                  <p style={{ fontSize: '0.875rem', color: '#64748b', fontWeight: 500, margin: 0 }}>
+                    {technicalSummary}
+                  </p>
+                </div>
+                
+                <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#F28705', borderBottom: '1px solid #f1f5f9', paddingBottom: '16px' }}>
+                  <small style={{ fontSize: '1.25rem', verticalAlign: 'top', opacity: 0.8, marginRight: '4px' }}>Ref</small>
+                  {parseFloat(price).toLocaleString('es-VE')}
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {product?.aspirational_copy && (
+                    <div style={{ background: '#ecfdf5', borderRadius: '12px', padding: '16px', border: '1px solid #d1fae5' }}>
+                      <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#064e3b', fontStyle: 'italic', margin: 0 }}>
+                        "{product.aspirational_copy}"
+                      </p>
+                    </div>
+                  )}
+
+                  <div>
+                    <h4 style={{ fontWeight: 700, color: '#0f172a', marginBottom: '8px', textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.05em', margin: '0 0 8px 0' }}>Detalles Adicionales</h4>
+                    <p style={{ fontSize: '0.875rem', color: '#475569', lineHeight: 1.6, whiteSpace: 'pre-wrap', margin: 0 }}>
+                      {product?.description || "Consulta con nuestro asesor para conocer las opciones de color, dimensiones exactas y tiempos de entrega."}
+                    </p>
+                  </div>
+                </div>
+
+                {/* CTA */}
+                <div style={{ marginTop: 'auto', paddingTop: '16px' }}>
+                  <button style={{ width: '100%', background: '#F28705', color: 'white', border: 'none', padding: '16px', borderRadius: '12px', fontWeight: 900, fontSize: '0.875rem', textTransform: 'uppercase', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', boxShadow: '0 10px 15px -3px rgba(242, 135, 5, 0.3)' }}>
+                    ¡Comprar por WhatsApp! <ShoppingBag size={18} />
+                  </button>
+                  <p style={{ textAlign: 'center', fontSize: '0.75rem', color: '#94a3b8', marginTop: '12px', fontWeight: 500 }}>Asesoramiento personalizado e inmediato</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
