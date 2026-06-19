@@ -39,7 +39,7 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
     pseudonimo: initialData.pseudonimo || "",
     technical_summary: initialData.technical_summary || "",
     badge_text: initialData.badge_text || "",
-    show_badge: initialData.show_badge !== undefined ? initialData.show_badge : true,
+    show_badge: initialData.show_badge !== undefined ? initialData.show_badge : false,
     likes_count: initialData.likes_count || 0,
     views_count: initialData.views_count || 0,
     sales_count: initialData.sales_count || 0,

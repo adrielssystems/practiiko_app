@@ -92,22 +92,22 @@ export default function ProductCardPreview({ product }) {
         )}
 
         {/* SOCIAL STATS OVERLAY (Bottom of image) */}
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '32px 16px 12px', background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 100%)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'white', zIndex: 20 }}>
-          <div style={{ display: 'flex', gap: '12px', fontSize: '11px', fontWeight: 700, letterSpacing: '0.025em' }}>
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '32px 16px 12px', background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 100%)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 20 }}>
+          <div style={{ display: 'flex', gap: '12px', fontSize: '12px', fontWeight: 900, letterSpacing: '0.025em', color: '#F28705', filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.8))' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Eye size={14} color="#F28705" /> {views}
+              <Eye size={14} color="currentColor" /> {views}
             </span>
             <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <ShoppingBag size={14} color="#F28705" /> {sales}
+              <ShoppingBag size={14} color="currentColor" /> {sales}
             </span>
           </div>
-          <button style={{ background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(4px)', border: 'none', borderRadius: '100px', padding: '0 12px', height: '32px', display: 'flex', alignItems: 'center', gap: '6px', color: 'white', cursor: 'pointer', transition: 'background 0.2s' }}
+          <button style={{ background: 'rgba(0,0,0,0.2)', backdropFilter: 'blur(4px)', border: 'none', borderRadius: '100px', padding: '0 12px', height: '32px', display: 'flex', alignItems: 'center', gap: '6px', color: '#F28705', filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.8))', cursor: 'pointer', transition: 'background 0.2s' }}
           onClick={() => {}}
-          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.4)'}
-          onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
+          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.4)'}
+          onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.2)'}
           >
-            <Heart size={14} color="#F28705" />
-            <span style={{ fontSize: '11px', fontWeight: 700 }}>{likes}</span>
+            <Heart size={14} color="currentColor" />
+            <span style={{ fontSize: '12px', fontWeight: 900 }}>{likes}</span>
           </button>
         </div>
       </div>
