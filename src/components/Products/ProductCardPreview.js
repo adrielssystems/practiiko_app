@@ -1,10 +1,16 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Heart, Eye, ShoppingBag, Info, ChevronRight, X } from "lucide-react";
 
 export default function ProductCardPreview({ product }) {
   const [activeBadge, setActiveBadge] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Default values to prevent errors
   const name = product?.name || "SOFÁ MODULAR ZEN";
@@ -211,8 +217,8 @@ export default function ProductCardPreview({ product }) {
           {/* CTA SECUNDARIO: WHATSAPP */}
           <button style={{
             background: 'white',
-            border: '2px solid #0f172a',
-            color: '#0f172a',
+            border: '2px solid #F28705',
+            color: '#F28705',
             padding: '14px',
             borderRadius: '12px',
             fontWeight: 800,
@@ -221,13 +227,13 @@ export default function ProductCardPreview({ product }) {
             cursor: 'pointer',
             transition: 'all 0.2s'
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = '#f8fafc' }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = '#fff7ed' }}
           onMouseLeave={(e) => { e.currentTarget.style.background = 'white' }}>
             Comprar
           </button>
           
           <button style={{
-            background: '#0f172a',
+            background: '#F28705',
             border: 'none',
             color: 'white',
             padding: '14px',
@@ -240,11 +246,11 @@ export default function ProductCardPreview({ product }) {
             gap: '8px',
             cursor: 'pointer',
             transition: 'all 0.2s',
-            boxShadow: '0 8px 16px rgba(15, 23, 42, 0.2)'
+            boxShadow: '0 8px 16px rgba(242, 135, 5, 0.3)'
           }}
           onClick={() => setIsModalOpen(true)}
-          onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 20px rgba(15, 23, 42, 0.3)' }}
-          onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 8px 16px rgba(15, 23, 42, 0.2)' }}>
+          onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 20px rgba(242, 135, 5, 0.4)' }}
+          onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 8px 16px rgba(242, 135, 5, 0.3)' }}>
             Transformar mi espacio <ChevronRight size={16} />
           </button>
         </div>
@@ -252,7 +258,7 @@ export default function ProductCardPreview({ product }) {
       </div>
 
       {/* MODAL DEL PRODUCTO (SIMULADO EN EL GESTOR) */}
-      {isModalOpen && (
+      {isModalOpen && mounted && createPortal(
         <div 
           onClick={() => setIsModalOpen(false)}
           style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}>
@@ -296,7 +302,7 @@ export default function ProductCardPreview({ product }) {
             </div>
           </div>
         </div>
-      )}
+      , document.body)}
     </div>
   );
 }
