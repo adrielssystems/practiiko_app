@@ -24,7 +24,7 @@ export default function ProductCardPreview({ product }) {
   const sales = product?.sales_count || 0;
   
   // Example interactive badges if none provided
-  const interactiveBadges = product?.interactive_badges !== undefined ? product.interactive_badges : [
+  const interactiveBadges = Array.isArray(product?.interactive_badges) ? product.interactive_badges : [
     { title: "Garantía", text: "5 años de garantía sobre defectos estructurales." },
     { title: "Cuidado", text: "Fundas lavables en máquina con agua fría." }
   ];
