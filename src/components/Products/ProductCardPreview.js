@@ -91,6 +91,15 @@ export default function ProductCardPreview({ product }) {
           </div>
         )}
 
+        {/* STATUS TAGS (TOP RIGHT) */}
+        <div style={{ position: 'absolute', top: '16px', right: '16px', display: 'flex', flexDirection: 'column', gap: '8px', zIndex: 20, alignItems: 'flex-end' }}>
+          {product?.is_featured && <span style={{ background: '#0f172a', color: 'white', fontSize: '10px', fontWeight: 900, padding: '4px 12px', borderRadius: '100px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Best Sellers</span>}
+          {product?.is_new && <span style={{ background: '#0477BF', color: 'white', fontSize: '10px', fontWeight: 900, padding: '4px 12px', borderRadius: '100px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Nuevo</span>}
+          {product?.is_promotion && <span style={{ background: '#ef4444', color: 'white', fontSize: '10px', fontWeight: 900, padding: '4px 12px', borderRadius: '100px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>En Promoción</span>}
+          {product?.is_clearance && <span style={{ background: '#6b7280', color: 'white', fontSize: '10px', fontWeight: 900, padding: '4px 12px', borderRadius: '100px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Liquidación</span>}
+          {product?.is_coming_soon && <span style={{ background: '#7c3aed', color: 'white', fontSize: '10px', fontWeight: 900, padding: '4px 12px', borderRadius: '100px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Próximamente</span>}
+        </div>
+
         {/* SOCIAL STATS OVERLAY (Bottom of image) */}
         <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '32px 16px 12px', background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 100%)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 20 }}>
           <div style={{ display: 'flex', gap: '12px', fontSize: '12px', fontWeight: 900, letterSpacing: '0.025em', color: '#F28705', filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.8))' }}>
@@ -153,11 +162,12 @@ export default function ProductCardPreview({ product }) {
         </div>
 
         {/* INTERACTIVE BADGES */}
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', position: 'relative' }}>
           {interactiveBadges.map((badge, idx) => (
             <button 
               key={idx}
-              onClick={() => setActiveBadge(activeBadge === idx ? null : idx)}
+              onMouseEnter={() => setActiveBadge(idx)}
+              onMouseLeave={() => setActiveBadge(null)}
               style={{
                 background: activeBadge === idx ? '#0f172a' : '#f1f5f9',
                 color: activeBadge === idx ? 'white' : '#475569',
@@ -177,26 +187,32 @@ export default function ProductCardPreview({ product }) {
               <Info size={12} /> {badge.title}
             </button>
           ))}
-        </div>
-
-        {/* POPOVER TOOLTIP */}
-        {activeBadge !== null && (
-          <div style={{
-            background: '#0f172a',
-            color: 'white',
-            padding: '12px',
-            borderRadius: '12px',
-            fontSize: '0.75rem',
-            position: 'relative',
-            animation: 'fadeIn 0.2s ease-out'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-              <strong style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>{interactiveBadges[activeBadge].title}</strong>
-              <X size={14} style={{ cursor: 'pointer', opacity: 0.7 }} onClick={() => setActiveBadge(null)}/>
+          
+          {/* POPOVER TOOLTIP */}
+          {activeBadge !== null && (
+            <div style={{
+              position: 'absolute',
+              top: '110%',
+              left: 0,
+              zIndex: 30,
+              background: '#0f172a',
+              color: 'white',
+              padding: '12px',
+              borderRadius: '12px',
+              fontSize: '0.75rem',
+              width: '100%',
+              boxSizing: 'border-box',
+              pointerEvents: 'none',
+              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+              animation: 'fadeIn 0.2s ease-out'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                <strong style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>{interactiveBadges[activeBadge].title}</strong>
+              </div>
+              <p style={{ margin: 0, opacity: 0.9, lineHeight: 1.4 }}>{interactiveBadges[activeBadge].text}</p>
             </div>
-            <p style={{ margin: 0, opacity: 0.9, lineHeight: 1.4 }}>{interactiveBadges[activeBadge].text}</p>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* CTAs */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '12px', marginTop: '8px' }}>
