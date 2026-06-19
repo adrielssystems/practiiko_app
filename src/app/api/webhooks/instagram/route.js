@@ -142,16 +142,58 @@ export async function POST(req) {
               }
 
               // 2. Verificar si el bot está pausado para este cliente
-              const customerRes = await query("SELECT ai_enabled FROM instagram_customers WHERE id = $1", [senderId]);
+              const customerRes = await query("SELECT ai_enabled, followup_status FROM instagram_customers WHERE id = $1", [senderId]);
               const isAiEnabled = customerRes.rows[0]?.ai_enabled ?? true;
+              const followupStatus = customerRes.rows[0]?.followup_status ?? 'none';
 
               if (!isAiEnabled) {
                 console.log(`[INSTAGRAM DM] Bot pausado para ${senderId}. No se generará respuesta automática.`);
                 return NextResponse.json({ status: "bot_paused" });
               }
 
-              // 2. Procesar con IA si está habilitado (con debounce de 5 segundos)
               const customerName = userInfo?.name || userInfo?.username || 'Cliente';
+
+              // --- INTERCEPCIÓN DE RESPUESTA A SEGUIMIENTO ---
+              if (followupStatus === 'sent') {
+                console.log(`[INSTAGRAM DM] Cliente ${senderId} respondió al seguimiento. Pausando bot y alertando.`);
+                
+                await query(
+                  "UPDATE instagram_customers SET followup_status = 'replied', ai_enabled = false, requires_human = true WHERE id = $1",
+                  [senderId]
+                );
+
+                const usernameInfo = userInfo?.username ? `@${userInfo.username}` : senderId;
+                const notifyText = `🚨 RESPUESTA A SEGUIMIENTO\n\n*Canal:* INSTAGRAM\n*Cliente:* ${customerName} (${usernameInfo})\n*Mensaje:* "${userMessage}"\n\n👇 Panel:\nhttps://auto.practiiko.com/instagram/${senderId}`;
+                const adminPhone = "584248068515";
+                const groupId = process.env.NOTIFICATIONS_GROUP_ID;
+
+                try {
+                  const EVO_URL = process.env.EVOLUTION_API_URL;
+                  const EVO_KEY = process.env.EVOLUTION_API_KEY;
+                  const EVO_INSTANCE = process.env.EVOLUTION_INSTANCE || "Practiiko";
+
+                  if (EVO_URL) {
+                    await fetch(`${EVO_URL}/message/sendText/${EVO_INSTANCE}`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json', 'apikey': EVO_KEY },
+                      body: JSON.stringify({ number: adminPhone, text: notifyText })
+                    });
+                    if (groupId) {
+                      await fetch(`${EVO_URL}/message/sendText/${EVO_INSTANCE}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'apikey': EVO_KEY },
+                        body: JSON.stringify({ number: groupId, text: notifyText })
+                      });
+                    }
+                  }
+                } catch (e) {
+                  console.error("Error notificando respuesta a seguimiento IG:", e);
+                }
+
+                return NextResponse.json({ status: "followup_replied_takeover" });
+              }
+
+              // 2. Procesar con IA si está habilitado (con debounce de 5 segundos)
               let debounceState = instagramDebounceMap.get(senderId);
               if (debounceState) {
                 clearTimeout(debounceState.timer);

@@ -387,6 +387,17 @@ export async function processInstagramMessage(message, sessionId, customerName =
     if (intent === "GREETING" && !hasChatHistory) {
       const greetingResponse = `¡Con gusto le ayudo! ⭐\n📖 Mire nuestra coleccion completa y precios en el siguiente enlace para guiarlo mejor por su espacio🛋️🛏️\n\n👉 https://www.practiiko.com/catalogo 👈`;
 
+      if (source === 'dm') {
+        const scheduledAt = new Date();
+        scheduledAt.setHours(scheduledAt.getHours() + 24);
+        
+        try {
+          await query(`UPDATE instagram_customers SET followup_status = 'pending', followup_scheduled_at = $1 WHERE id = $2`, [scheduledAt.toISOString(), sessionId]);
+        } catch (e) {
+          console.error("Error setting followup_status in instagram_customers:", e.message);
+        }
+      }
+
       await query(`INSERT INTO instagram_messages (session_id, message, source, comment_id) VALUES ($1, $2, $3, $4)`,
         [sessionId, JSON.stringify({ role: 'assistant', content: greetingResponse }), source, commentId]);
 

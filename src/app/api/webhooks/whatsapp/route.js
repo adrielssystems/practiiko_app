@@ -224,12 +224,48 @@ export async function POST(req) {
       }
 
       // 6. Verificar si el bot está pausado para este cliente individual
-      const customerRes = await query("SELECT ai_enabled FROM whatsapp_customers WHERE id = $1", [senderNumber]);
+      const customerRes = await query("SELECT ai_enabled, followup_status FROM whatsapp_customers WHERE id = $1", [senderNumber]);
       const isAiEnabled = customerRes.rows[0]?.ai_enabled ?? true;
+      const followupStatus = customerRes.rows[0]?.followup_status ?? 'none';
 
       if (!isAiEnabled) {
         console.log(`[WHATSAPP] Bot pausado para ${senderNumber}. No se generará respuesta automática.`);
         return NextResponse.json({ status: "bot_paused" });
+      }
+
+      // --- INTERCEPCIÓN DE RESPUESTA A SEGUIMIENTO ---
+      if (followupStatus === 'sent') {
+        console.log(`[WHATSAPP] Cliente ${senderNumber} respondió al seguimiento. Pausando bot y alertando.`);
+        
+        await query(
+          "UPDATE whatsapp_customers SET followup_status = 'replied', ai_enabled = false, requires_human = true WHERE id = $1",
+          [senderNumber]
+        );
+
+        const notifyText = `🚨 RESPUESTA A SEGUIMIENTO\n\n*Canal:* WHATSAPP\n*Cliente:* ${pushName} (+${senderNumber})\n*Mensaje:* "${userMessage}"\n\n👇 Responde aquí:\nhttps://wa.me/${senderNumber}`;
+        const adminPhone = "584248068515";
+        const groupId = process.env.NOTIFICATIONS_GROUP_ID;
+
+        try {
+          if (EVO_URL) {
+            await fetch(`${EVO_URL}/message/sendText/${EVO_INSTANCE}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'apikey': EVO_KEY },
+              body: JSON.stringify({ number: adminPhone, text: notifyText })
+            });
+            if (groupId) {
+              await fetch(`${EVO_URL}/message/sendText/${EVO_INSTANCE}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'apikey': EVO_KEY },
+                body: JSON.stringify({ number: groupId, text: notifyText })
+              });
+            }
+          }
+        } catch (e) {
+          console.error("Error notificando respuesta a seguimiento WA:", e);
+        }
+
+        return NextResponse.json({ status: "followup_replied_takeover" });
       }
 
       const protocol = req.headers.get("x-forwarded-proto") || "https";

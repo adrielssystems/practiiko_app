@@ -334,6 +334,18 @@ export async function processWhatsappMessage(message, sessionId, customerName = 
     if (intent === "GREETING" && !hasChatHistory) {
       const greetingResponse = `¡Con gusto le ayudo! ⭐\n📖 Mire nuestra coleccion completa y precios en el siguiente enlace para guiarlo mejor por su espacio🛋️🛏️\n\n👉 https://www.practiiko.com/catalogo 👈`;
 
+      const scheduledAt = new Date();
+      scheduledAt.setHours(scheduledAt.getHours() + 24);
+      if (scheduledAt.getDay() === 0) {
+        scheduledAt.setHours(scheduledAt.getHours() + 24);
+      }
+
+      try {
+        await query(`UPDATE whatsapp_customers SET followup_status = 'pending', followup_scheduled_at = $1 WHERE id = $2`, [scheduledAt.toISOString(), sessionId]);
+      } catch (e) {
+        console.error("Error setting followup_status in whatsapp_customers:", e.message);
+      }
+
       await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`,
         [sessionId, JSON.stringify({ role: 'assistant', content: greetingResponse })]);
 
