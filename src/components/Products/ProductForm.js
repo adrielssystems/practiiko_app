@@ -39,12 +39,19 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
     pseudonimo: initialData.pseudonimo || "",
     technical_summary: initialData.technical_summary || "",
     badge_text: initialData.badge_text || "",
-    aspirational_copy: initialData.aspirational_copy || "",
+    show_badge: initialData.show_badge !== undefined ? initialData.show_badge : true,
     likes_count: initialData.likes_count || 0,
     views_count: initialData.views_count || 0,
     sales_count: initialData.sales_count || 0,
     price_valid_until: initialData.price_valid_until ? new Date(initialData.price_valid_until).toISOString().split('T')[0] : ""
   });
+
+  const [interactiveBadges, setInteractiveBadges] = useState(
+    initialData.interactive_badges || [
+      { title: "Garantía", text: "5 años de garantía sobre defectos estructurales." },
+      { title: "Cuidado", text: "Fundas lavables en máquina con agua fría." }
+    ]
+  );
 
   const [isFlipped, setIsFlipped] = useState(false);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
@@ -119,6 +126,11 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
     
     // Validación de exclusividad para estados especiales (máximo 2 a la vez)
     const exclusiveFlags = ["is_new", "is_promotion", "is_clearance", "is_coming_soon"];
+    
+    if (name === "is_featured" || name === "is_promotion" || name === "is_new" || name === "is_clearance" || name === "is_coming_soon" || name === "show_badge") {
+        setFormValues(prev => ({ ...prev, [name]: checked }));
+    }
+    
     if (type === "checkbox" && checked && exclusiveFlags.includes(name)) {
       const activeCount = exclusiveFlags.filter(f => f !== name && formValues[f]).length;
       if (activeCount >= 2) {
@@ -152,6 +164,7 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
     setIsSaving(true);
 
     const formData = new FormData(e.target);
+    formData.append("interactive_badges_json", JSON.stringify(interactiveBadges));
     
     try {
       const result = await onSubmitAction(formData);
@@ -271,19 +284,64 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
               style={{ borderRadius: '12px' }}
             />
           </div>
+          <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '1rem' }}>
+            <div className="checkbox-wrapper" style={{ margin: 0 }}>
+              <input type="checkbox" name="show_badge" checked={formValues.show_badge} onChange={handleInputChange} id="show_badge" />
+              <div className="checkbox-custom"></div>
+            </div>
+            <label htmlFor="show_badge" className="label" style={{ margin: 0, cursor: 'pointer' }}>Activar Medalla Flotante</label>
+          </div>
         </div>
 
-        <div className="form-group" style={{ marginBottom: '2rem' }}>
-          <label className="label">Texto Aspiracional (Bloque Femenino)</label>
-          <textarea 
-            name="aspirational_copy" 
-            className="input-field" 
-            style={{ minHeight: '80px', resize: 'vertical', borderRadius: '12px' }} 
-            value={formValues.aspirational_copy} 
-            placeholder="Ej: Imagina tus tardes de descanso absoluto..."
-            onChange={handleInputChange}
-          ></textarea>
+        {/* BENEFICIOS INTERACTIVOS */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem', marginTop: '1.5rem' }}>
+          <Tag size={20} color="var(--primary)" />
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0 }}>Beneficios Interactivos (Garantía, Cuidado, etc.)</h2>
         </div>
+        
+        {interactiveBadges.map((badge, idx) => (
+          <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 2fr auto', gap: '1rem', marginBottom: '1rem', alignItems: 'end' }}>
+            <div className="form-group">
+              <label className="label">Título (Ej: Garantía)</label>
+              <input 
+                type="text" className="input-field" 
+                value={badge.title} 
+                onChange={(e) => {
+                  const newBadges = [...interactiveBadges];
+                  newBadges[idx].title = e.target.value;
+                  setInteractiveBadges(newBadges);
+                }}
+              />
+            </div>
+            <div className="form-group">
+              <label className="label">Descripción</label>
+              <input 
+                type="text" className="input-field" 
+                value={badge.text} 
+                onChange={(e) => {
+                  const newBadges = [...interactiveBadges];
+                  newBadges[idx].text = e.target.value;
+                  setInteractiveBadges(newBadges);
+                }}
+              />
+            </div>
+            <button 
+              type="button" 
+              onClick={() => setInteractiveBadges(interactiveBadges.filter((_, i) => i !== idx))}
+              style={{ background: '#fee2e2', color: '#ef4444', border: 'none', borderRadius: '12px', padding: '12px', cursor: 'pointer', marginBottom: '0.5rem' }}
+            >
+              <Trash2 size={20} />
+            </button>
+          </div>
+        ))}
+        
+        <button 
+          type="button" 
+          onClick={() => setInteractiveBadges([...interactiveBadges, { title: "", text: "" }])}
+          style={{ background: '#f1f5f9', color: '#0f172a', border: 'none', borderRadius: '12px', padding: '12px 24px', fontWeight: 700, cursor: 'pointer', marginBottom: '2.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}
+        >
+          <Plus size={16} /> Añadir Beneficio
+        </button>
 
         {/* SECCIÓN NUEVA: ESTADÍSTICAS (Social Proof) */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
@@ -473,6 +531,7 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
             images: media.images.length > 0 ? [media.localPreviews[media.images[0]] || media.images[0]] : [],
             main_image: mediaList[0]?.url,
             price_cash: getPreviewPrice(),
+            interactive_badges: interactiveBadges,
             likes_count: formValues.likes_count,
             views_count: formValues.views_count,
             sales_count: formValues.sales_count

@@ -24,7 +24,7 @@ export default function ProductCardPreview({ product }) {
   const sales = product?.sales_count || 0;
   
   // Example interactive badges if none provided
-  const interactiveBadges = product?.interactive_badges || [
+  const interactiveBadges = product?.interactive_badges !== undefined ? product.interactive_badges : [
     { title: "Garantía", text: "5 años de garantía sobre defectos estructurales." },
     { title: "Cuidado", text: "Fundas lavables en máquina con agua fría." }
   ];
@@ -61,7 +61,7 @@ export default function ProductCardPreview({ product }) {
         />
         
         {/* LIFESTYLE BADGE (MEDALLA DORADA) */}
-        {badgeText && (
+        {product?.show_badge !== false && badgeText && (
           <div style={{
             position: 'absolute',
             top: '16px',
@@ -92,43 +92,22 @@ export default function ProductCardPreview({ product }) {
         )}
 
         {/* SOCIAL STATS OVERLAY (Bottom of image) */}
-        <div style={{
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          background: 'linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 100%)',
-          padding: '24px 16px 12px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          color: 'white'
-        }}>
-          <div style={{ display: 'flex', gap: '12px', fontSize: '0.75rem', fontWeight: 600 }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Eye size={14}/> {views}</span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><ShoppingBag size={14}/> {sales}</span>
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '32px 16px 12px', background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 100%)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'white', zIndex: 20 }}>
+          <div style={{ display: 'flex', gap: '12px', fontSize: '11px', fontWeight: 700, letterSpacing: '0.025em' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Eye size={14} color="#F28705" /> {views}
+            </span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <ShoppingBag size={14} color="#F28705" /> {sales}
+            </span>
           </div>
-          <button style={{
-            background: 'rgba(255,255,255,0.2)',
-            backdropFilter: 'blur(4px)',
-            border: 'none',
-            borderRadius: '100px',
-            padding: '0 12px',
-            height: '32px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            justifyContent: 'center',
-            color: 'white',
-            cursor: 'pointer',
-            transition: 'background 0.2s'
-          }}
+          <button style={{ background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(4px)', border: 'none', borderRadius: '100px', padding: '0 12px', height: '32px', display: 'flex', alignItems: 'center', gap: '6px', color: 'white', cursor: 'pointer', transition: 'background 0.2s' }}
           onClick={() => {}}
           onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.4)'}
           onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
           >
-            <Heart size={16} />
-            <span style={{ fontSize: '11px', fontWeight: 800 }}>{likes}</span>
+            <Heart size={14} color="#F28705" />
+            <span style={{ fontSize: '11px', fontWeight: 700 }}>{likes}</span>
           </button>
         </div>
       </div>
@@ -317,14 +296,6 @@ export default function ProductCardPreview({ product }) {
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  {product?.aspirational_copy && (
-                    <div style={{ background: '#ecfdf5', borderRadius: '12px', padding: '16px', border: '1px solid #d1fae5' }}>
-                      <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#064e3b', fontStyle: 'italic', margin: 0 }}>
-                        "{product.aspirational_copy}"
-                      </p>
-                    </div>
-                  )}
-
                   <div>
                     <h4 style={{ fontWeight: 700, color: '#0f172a', marginBottom: '8px', textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.05em', margin: '0 0 8px 0' }}>Detalles Adicionales</h4>
                     <p style={{ fontSize: '0.875rem', color: '#475569', lineHeight: 1.6, whiteSpace: 'pre-wrap', margin: 0 }}>

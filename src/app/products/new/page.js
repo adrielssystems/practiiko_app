@@ -44,7 +44,6 @@ export default async function NewProductPage() {
         // Campos Experiencia Practiiko
         const technical_summary = formData.get("technical_summary") || null;
         const badge_text = formData.get("badge_text") || null;
-        const aspirational_copy = formData.get("aspirational_copy") || null;
         
         // Métricas de Social Proof
         const likes_count = parseInt(formData.get("likes_count") || 0);
@@ -56,7 +55,12 @@ export default async function NewProductPage() {
         const is_promotion = formData.get("is_promotion") === "on" || String(formData.get("is_promotion")) === "true";
         const is_new = formData.get("is_new") === "on" || String(formData.get("is_new")) === "true";
         const is_clearance = formData.get("is_clearance") === "on" || String(formData.get("is_clearance")) === "true";
+        const show_badge = formData.get("show_badge") === "on" || String(formData.get("show_badge")) === "true";
+
         const price_valid_until = formData.get("price_valid_until") || null;
+        
+        // Interactive Badges
+        const interactive_badges = formData.get("interactive_badges_json") || "[]";
 
         try {
             const catIdNum = category_id ? parseInt(category_id) : null;
@@ -71,18 +75,18 @@ export default async function NewProductPage() {
                     stock, category_id, status, video_url,
                     tags, features, pricing_matrix, 
                     is_featured, is_promotion, price_valid_until, pseudonimo,
-                    is_new, is_clearance, technical_summary, badge_text, aspirational_copy,
-                    likes_count, views_count, sales_count
+                    is_new, is_clearance, technical_summary, badge_text, show_badge,
+                    interactive_badges, likes_count, views_count, sales_count
                 )
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)
                 RETURNING id
             `, [
                 name, code, description, price_bcv, price_cash,
                 stockNum, catIdNum, status, video_url,
                 tags, features, pricing_matrix,
                 is_featured, is_promotion, price_valid_until,
-                pseudonimo, is_new, is_clearance, technical_summary, badge_text, aspirational_copy,
-                likes_count, views_count, sales_count
+                pseudonimo, is_new, is_clearance, technical_summary, badge_text, show_badge,
+                interactive_badges, likes_count, views_count, sales_count
             ]);
 
             const productId = productRes.rows[0].id;

@@ -65,7 +65,6 @@ export default async function EditProductPage({ params }) {
         // Campos Experiencia Practiiko
         const technical_summary = formData.get("technical_summary") || null;
         const badge_text = formData.get("badge_text") || null;
-        const aspirational_copy = formData.get("aspirational_copy") || null;
         
         // Métricas de Social Proof
         const likes_count = parseInt(formData.get("likes_count") || 0);
@@ -78,7 +77,12 @@ export default async function EditProductPage({ params }) {
         const is_new = formData.get("is_new") === "on" || String(formData.get("is_new")) === "true";
         const is_clearance = formData.get("is_clearance") === "on" || String(formData.get("is_clearance")) === "true";
         const is_coming_soon = formData.get("is_coming_soon") === "on" || String(formData.get("is_coming_soon")) === "true";
+        const show_badge = formData.get("show_badge") === "on" || String(formData.get("show_badge")) === "true";
+
         const price_valid_until = formData.get("price_valid_until") || null;
+
+        // Interactive Badges
+        const interactive_badges = formData.get("interactive_badges_json") || "[]";
 
         try {
             const catIdNum = category_id ? parseInt(category_id) : null;
@@ -94,9 +98,9 @@ export default async function EditProductPage({ params }) {
                     tags = $10, features = $11, pricing_matrix = $12, 
                     is_featured = $13, is_promotion = $14, price_valid_until = $15,
                     pseudonimo = $16, is_new = $17, is_clearance = $18, is_coming_soon = $19,
-                    technical_summary = $20, badge_text = $21, aspirational_copy = $22,
-                    likes_count = $23, views_count = $24, sales_count = $25
-                WHERE id = $26
+                    technical_summary = $20, badge_text = $21, show_badge = $22,
+                    interactive_badges = $23, likes_count = $24, views_count = $25, sales_count = $26
+                WHERE id = $27
                 RETURNING id
             `, [
                 name, code, description, price_bcv, price_cash, 
@@ -104,8 +108,8 @@ export default async function EditProductPage({ params }) {
                 tags, features, pricing_matrix,
                 is_featured, is_promotion, price_valid_until,
                 pseudonimo, is_new, is_clearance, is_coming_soon,
-                technical_summary, badge_text, aspirational_copy, 
-                likes_count, views_count, sales_count, id
+                technical_summary, badge_text, show_badge,
+                interactive_badges, likes_count, views_count, sales_count, id
             ]);
 
             if (updateRes.rowCount === 0) {
