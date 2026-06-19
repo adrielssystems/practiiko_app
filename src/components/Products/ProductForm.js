@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { 
   Save, Eye, Package, Tag, CreditCard, ChevronLeft, 
-  LayoutDashboard, Layers, Box, Plus, X, ArrowLeft 
+  LayoutDashboard, Layers, Box, Plus, X, ArrowLeft, Trash2 
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
