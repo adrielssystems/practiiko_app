@@ -276,20 +276,47 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
             />
           </div>
           <div className="form-group">
-            <label className="label">Texto del Badge Flotante</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+              <label className="label" style={{ margin: 0 }}>Texto del Badge Flotante</label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 800, color: formValues.show_badge ? '#F28705' : '#94a3b8', textTransform: 'uppercase' }}>
+                <span style={{ position: 'relative', display: 'inline-block', width: '40px', height: '22px' }}>
+                  <input 
+                    type="checkbox" 
+                    name="show_badge" 
+                    checked={formValues.show_badge} 
+                    onChange={handleInputChange} 
+                    style={{ opacity: 0, width: 0, height: 0, position: 'absolute' }} 
+                  />
+                  <span style={{ 
+                    position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, 
+                    backgroundColor: formValues.show_badge ? '#F28705' : '#e2e8f0', 
+                    transition: '.3s', borderRadius: '34px',
+                    boxShadow: formValues.show_badge ? 'inset 0 2px 4px rgba(0,0,0,0.1)' : 'inset 0 2px 4px rgba(0,0,0,0.05)'
+                  }}>
+                    <span style={{ 
+                      position: 'absolute', height: '18px', width: '18px', left: '2px', bottom: '2px', 
+                      backgroundColor: 'white', transition: '.3s', borderRadius: '50%',
+                      transform: formValues.show_badge ? 'translateX(18px)' : 'translateX(0)',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                    }}></span>
+                  </span>
+                </span>
+                {formValues.show_badge ? 'Activado' : 'Desactivado'}
+              </label>
+            </div>
             <input 
               name="badge_text" type="text" className="input-field" 
               value={formValues.badge_text} placeholder="Ej: Diseño Inteligente: Llega a tu puerta" 
               onChange={handleInputChange}
-              style={{ borderRadius: '12px' }}
+              disabled={!formValues.show_badge}
+              style={{ 
+                borderRadius: '12px', 
+                opacity: formValues.show_badge ? 1 : 0.6,
+                background: formValues.show_badge ? 'white' : '#f8fafc',
+                cursor: formValues.show_badge ? 'text' : 'not-allowed',
+                transition: 'all 0.3s'
+              }}
             />
-          </div>
-          <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '1rem' }}>
-            <div className="checkbox-wrapper" style={{ margin: 0 }}>
-              <input type="checkbox" name="show_badge" checked={formValues.show_badge} onChange={handleInputChange} id="show_badge" />
-              <div className="checkbox-custom"></div>
-            </div>
-            <label htmlFor="show_badge" className="label" style={{ margin: 0, cursor: 'pointer' }}>Activar Medalla Flotante</label>
           </div>
         </div>
 
