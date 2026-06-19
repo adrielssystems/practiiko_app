@@ -40,6 +40,9 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
     technical_summary: initialData.technical_summary || "",
     badge_text: initialData.badge_text || "",
     aspirational_copy: initialData.aspirational_copy || "",
+    likes_count: initialData.likes_count || 0,
+    views_count: initialData.views_count || 0,
+    sales_count: initialData.sales_count || 0,
     price_valid_until: initialData.price_valid_until ? new Date(initialData.price_valid_until).toISOString().split('T')[0] : ""
   });
 
@@ -282,6 +285,42 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
           ></textarea>
         </div>
 
+        {/* SECCIÓN NUEVA: ESTADÍSTICAS (Social Proof) */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
+          <Eye size={20} color="var(--primary)" />
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0 }}>Estadísticas (Social Proof)</h2>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1.5rem', marginBottom: '2.5rem' }}>
+          <div className="form-group">
+            <label className="label">Cantidad de Vistas</label>
+            <input 
+              name="views_count" type="number" className="input-field" 
+              value={formValues.views_count} placeholder="Ej: 1500" 
+              onChange={handleInputChange}
+              style={{ borderRadius: '12px' }}
+            />
+          </div>
+          <div className="form-group">
+            <label className="label">Cantidad de Likes</label>
+            <input 
+              name="likes_count" type="number" className="input-field" 
+              value={formValues.likes_count} placeholder="Ej: 450" 
+              onChange={handleInputChange}
+              style={{ borderRadius: '12px' }}
+            />
+          </div>
+          <div className="form-group">
+            <label className="label">Cantidad de Ventas</label>
+            <input 
+              name="sales_count" type="number" className="input-field" 
+              value={formValues.sales_count} placeholder="Ej: 45" 
+              onChange={handleInputChange}
+              style={{ borderRadius: '12px' }}
+            />
+          </div>
+        </div>
+
         {/* SECCIÓN 2: PRECIOS */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
           <CreditCard size={20} color="var(--primary)" />
@@ -434,10 +473,9 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
             images: media.images.length > 0 ? [media.localPreviews[media.images[0]] || media.images[0]] : [],
             main_image: mediaList[0]?.url,
             price_cash: getPreviewPrice(),
-            // Simular estadisticas o cargar reales si las hay
-            likes_count: initialData.likes_count || Math.floor(Math.random() * 500) + 50,
-            views_count: initialData.views_count || Math.floor(Math.random() * 2000) + 100,
-            sales_count: initialData.sales_count || Math.floor(Math.random() * 100) + 10
+            likes_count: formValues.likes_count,
+            views_count: formValues.views_count,
+            sales_count: formValues.sales_count
           }}
         />
       </div>
