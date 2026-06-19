@@ -289,9 +289,31 @@ export default function ProductCardPreview({ product }) {
                   />
                 </div>
                 
-                {/* Imagen Principal */}
-                <div style={{ flex: 1, background: '#f8fafc', borderRadius: '12px', overflow: 'hidden', aspectRatio: '4/3', position: 'relative' }}>
-                  <img src={mainImage} alt={name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', mixBlendMode: 'multiply' }} />
+                {/* Imagen Principal y Colores */}
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  <div style={{ width: '100%', background: '#f8fafc', borderRadius: '12px', overflow: 'hidden', aspectRatio: '4/3', position: 'relative' }}>
+                    <img src={mainImage} alt={name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', mixBlendMode: 'multiply' }} />
+                  </div>
+                  
+                  {/* COLORES (Si existen) */}
+                  {Array.isArray(product?.colors) && product.colors.length > 0 && (
+                    <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                      {product.colors.map((color, idx) => (
+                        <div key={idx} style={{ position: 'relative', cursor: 'pointer' }}>
+                          <div 
+                            style={{ 
+                              width: '36px', height: '36px', borderRadius: '50%', border: '2px solid white', 
+                              backgroundColor: color.hex, 
+                              boxShadow: '0 0 0 2px #cbd5e1, 0 4px 6px -1px rgba(0,0,0,0.1)',
+                              transition: 'transform 0.2s'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+                            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 

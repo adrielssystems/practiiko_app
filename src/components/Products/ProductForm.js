@@ -53,6 +53,7 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
     ]
   );
 
+  const [colors, setColors] = useState(initialData.colors || []);
   const [isFlipped, setIsFlipped] = useState(false);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -370,6 +371,82 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
           <Plus size={16} /> Añadir Beneficio
         </button>
 
+        {/* SECCIÓN DE COLORES Y VARIANTES */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem', marginTop: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '8px', background: '#e0e7ff', color: '#4f46e5' }}>
+            <Layers size={18} />
+          </div>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#0f172a' }}>Variantes de Color</h2>
+        </div>
+        
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2.5rem' }}>
+          {colors.map((color, idx) => (
+            <div key={idx} style={{ display: 'flex', gap: '1rem', alignItems: 'center', background: '#f8fafc', padding: '1rem', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b' }}>Color</label>
+                <input 
+                  type="color" 
+                  value={color.hex} 
+                  onChange={(e) => {
+                    const newColors = [...colors];
+                    newColors[idx].hex = e.target.value;
+                    setColors(newColors);
+                  }}
+                  style={{ width: '40px', height: '40px', padding: 0, border: 'none', borderRadius: '8px', cursor: 'pointer' }}
+                />
+              </div>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b' }}>Nombre del color</label>
+                <input 
+                  type="text" 
+                  value={color.name} 
+                  onChange={(e) => {
+                    const newColors = [...colors];
+                    newColors[idx].name = e.target.value;
+                    setColors(newColors);
+                  }}
+                  placeholder="Ej: Gris Azabache"
+                  style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '0.9rem', outline: 'none' }}
+                />
+              </div>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b' }}>Foto vinculada</label>
+                <select 
+                  value={color.image_url} 
+                  onChange={(e) => {
+                    const newColors = [...colors];
+                    newColors[idx].image_url = e.target.value;
+                    setColors(newColors);
+                  }}
+                  style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '0.9rem', outline: 'none', backgroundColor: 'white' }}
+                >
+                  <option value="">(Sin foto específica)</option>
+                  {media.images.map((img, i) => (
+                    <option key={i} value={img}>Foto {i + 1}</option>
+                  ))}
+                </select>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setColors(colors.filter((_, i) => i !== idx))}
+                style={{ background: '#fee2e2', color: '#ef4444', border: 'none', borderRadius: '12px', padding: '12px', cursor: 'pointer', marginTop: '1.25rem' }}
+              >
+                <Trash2 size={20} />
+              </button>
+            </div>
+          ))}
+          
+          <button 
+            type="button" 
+            onClick={() => setColors([...colors, { name: "", hex: "#000000", image_url: "" }])}
+            style={{ alignSelf: 'flex-start', background: '#f1f5f9', color: '#0f172a', border: 'none', borderRadius: '12px', padding: '10px 20px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'background 0.2s' }}
+            onMouseEnter={(e) => e.currentTarget.style.background = '#e2e8f0'}
+            onMouseLeave={(e) => e.currentTarget.style.background = '#f1f5f9'}
+          >
+            <Plus size={16} /> Añadir Variante de Color
+          </button>
+        </div>
+
         {/* SECCIÓN NUEVA: ESTADÍSTICAS (Social Proof) */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
           <Eye size={20} color="var(--primary)" />
@@ -552,9 +629,12 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
           </div>
         </div>
 
+        <input type="hidden" name="colors_json" value={JSON.stringify(colors)} />
+
         <ProductCardPreview 
           product={{
             ...formValues,
+            colors: colors,
             images: media.images.length > 0 ? [media.localPreviews[media.images[0]] || media.images[0]] : [],
             main_image: mediaList[0]?.url,
             price_cash: getPreviewPrice(),
