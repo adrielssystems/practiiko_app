@@ -36,15 +36,30 @@ export async function POST(request) {
       category_id, 
       status, 
       stock, 
-      images 
+      images,
+      technical_summary,
+      badge_text,
+      interactive_badges,
+      aspirational_copy,
+      technical_features
     } = body;
 
     // 1. Insert Product
     const productRes = await query(
-      `INSERT INTO products (name, code, slug, description, price_bcv, price_cash, category_id, status, stock) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
+      `INSERT INTO products (
+        name, code, slug, description, price_bcv, price_cash, category_id, status, stock,
+        technical_summary, badge_text, interactive_badges, aspirational_copy, technical_features
+       ) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) 
        RETURNING id`,
-      [name, code, slug, description, price_bcv, price_cash, category_id || null, status, stock]
+      [
+        name, code, slug, description, price_bcv, price_cash, category_id || null, status, stock,
+        technical_summary || null, 
+        badge_text || null, 
+        interactive_badges ? JSON.stringify(interactive_badges) : null,
+        aspirational_copy || null,
+        technical_features ? JSON.stringify(technical_features) : null
+      ]
     );
 
     const productId = productRes.rows[0].id;

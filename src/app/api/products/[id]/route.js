@@ -55,15 +55,30 @@ export async function PUT(request, { params }) {
       category_id, 
       status, 
       stock, 
-      images 
+      images,
+      technical_summary,
+      badge_text,
+      interactive_badges,
+      aspirational_copy,
+      technical_features
     } = body;
 
     // 1. Update Product
     await query(
       `UPDATE products 
-       SET name = $1, code = $2, slug = $3, description = $4, price_bcv = $5, price_cash = $6, category_id = $7, status = $8, stock = $9, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $10`,
-      [name, code, slug, description, price_bcv, price_cash, category_id || null, status, stock, id]
+       SET name = $1, code = $2, slug = $3, description = $4, price_bcv = $5, price_cash = $6, category_id = $7, status = $8, stock = $9, 
+           technical_summary = $10, badge_text = $11, interactive_badges = $12, aspirational_copy = $13, technical_features = $14,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $15`,
+      [
+        name, code, slug, description, price_bcv, price_cash, category_id || null, status, stock,
+        technical_summary || null, 
+        badge_text || null, 
+        interactive_badges ? JSON.stringify(interactive_badges) : null,
+        aspirational_copy || null,
+        technical_features ? JSON.stringify(technical_features) : null,
+        id
+      ]
     );
 
     // 2. Update Images

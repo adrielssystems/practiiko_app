@@ -40,6 +40,11 @@ export default async function NewProductPage() {
         const tags = formData.get("tags_json") || "[]";
         const features = formData.get("features_json") || "[]";
         const pricing_matrix = formData.get("pricing_matrix_json") || "[]";
+        
+        // Campos Experiencia Practiiko
+        const technical_summary = formData.get("technical_summary") || null;
+        const badge_text = formData.get("badge_text") || null;
+        const aspirational_copy = formData.get("aspirational_copy") || null;
 
         // Manejar checkbox: puede venir como 'on' (nativo) o 'true' (manual)
         const is_featured = formData.get("is_featured") === "on" || String(formData.get("is_featured")) === "true";
@@ -61,16 +66,16 @@ export default async function NewProductPage() {
                     stock, category_id, status, video_url,
                     tags, features, pricing_matrix, 
                     is_featured, is_promotion, price_valid_until, pseudonimo,
-                    is_new, is_clearance
+                    is_new, is_clearance, technical_summary, badge_text, aspirational_copy
                 )
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
                 RETURNING id
             `, [
                 name, code, description, price_bcv, price_cash,
                 stockNum, catIdNum, status, video_url,
                 tags, features, pricing_matrix,
                 is_featured, is_promotion, price_valid_until,
-                pseudonimo, is_new, is_clearance
+                pseudonimo, is_new, is_clearance, technical_summary, badge_text, aspirational_copy
             ]);
 
             const productId = productRes.rows[0].id;

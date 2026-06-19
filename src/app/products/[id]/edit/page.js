@@ -62,6 +62,11 @@ export default async function EditProductPage({ params }) {
         const features = formData.get("features_json") || "[]";
         const pricing_matrix = formData.get("pricing_matrix_json") || "[]";
         
+        // Campos Experiencia Practiiko
+        const technical_summary = formData.get("technical_summary") || null;
+        const badge_text = formData.get("badge_text") || null;
+        const aspirational_copy = formData.get("aspirational_copy") || null;
+        
          // Manejar checkbox: puede venir como 'on' (nativo) o 'true' (manual)
         const is_featured = formData.get("is_featured") === "on" || String(formData.get("is_featured")) === "true";
         const is_promotion = formData.get("is_promotion") === "on" || String(formData.get("is_promotion")) === "true";
@@ -83,15 +88,17 @@ export default async function EditProductPage({ params }) {
                     stock = $6, category_id = $7, status = $8, video_url = $9,
                     tags = $10, features = $11, pricing_matrix = $12, 
                     is_featured = $13, is_promotion = $14, price_valid_until = $15,
-                    pseudonimo = $16, is_new = $17, is_clearance = $18, is_coming_soon = $19
-                WHERE id = $20
+                    pseudonimo = $16, is_new = $17, is_clearance = $18, is_coming_soon = $19,
+                    technical_summary = $20, badge_text = $21, aspirational_copy = $22
+                WHERE id = $23
                 RETURNING id
             `, [
                 name, code, description, price_bcv, price_cash, 
                 stockNum, catIdNum, status, video_url,
                 tags, features, pricing_matrix,
                 is_featured, is_promotion, price_valid_until,
-                pseudonimo, is_new, is_clearance, is_coming_soon, id
+                pseudonimo, is_new, is_clearance, is_coming_soon,
+                technical_summary, badge_text, aspirational_copy, id
             ]);
 
             if (updateRes.rowCount === 0) {

@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import MediaUpload from "./MediaUpload";
 import { useToast } from "@/components/Toast";
+import ProductCardPreview from "./ProductCardPreview";
 
 export default function ProductForm({ categories, onSubmitAction, initialData = {} }) {
   const router = useRouter();
@@ -36,6 +37,9 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
     is_clearance: initialData.is_clearance || false,
     is_coming_soon: initialData.is_coming_soon || false,
     pseudonimo: initialData.pseudonimo || "",
+    technical_summary: initialData.technical_summary || "",
+    badge_text: initialData.badge_text || "",
+    aspirational_copy: initialData.aspirational_copy || "",
     price_valid_until: initialData.price_valid_until ? new Date(initialData.price_valid_until).toISOString().split('T')[0] : ""
   });
 
@@ -228,13 +232,52 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
         </div>
 
         <div className="form-group" style={{ marginBottom: '2rem' }}>
-          <label className="label">Descripción Detallada</label>
+          <label className="label">Descripción Detallada (Gestor Original)</label>
           <textarea 
             name="description" 
             className="input-field" 
             style={{ minHeight: '100px', resize: 'vertical', borderRadius: '12px' }} 
             value={formValues.description} 
             placeholder="Describe materiales, estilo y dimensiones..."
+            onChange={handleInputChange}
+          ></textarea>
+        </div>
+
+        {/* SECCIÓN NUEVA: EXPERIENCIA PRACTIIKO (Copywriting) */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
+          <Tag size={20} color="var(--primary)" />
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0 }}>Textos Experiencia Practiiko</h2>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+          <div className="form-group">
+            <label className="label">Resumen Técnico (Debajo del Título)</label>
+            <input 
+              name="technical_summary" type="text" className="input-field" 
+              value={formValues.technical_summary} placeholder="Ej: Espuma de alta densidad / Tela premium" 
+              onChange={handleInputChange}
+              style={{ borderRadius: '12px' }}
+            />
+          </div>
+          <div className="form-group">
+            <label className="label">Texto del Badge Flotante</label>
+            <input 
+              name="badge_text" type="text" className="input-field" 
+              value={formValues.badge_text} placeholder="Ej: Diseño Inteligente: Llega a tu puerta" 
+              onChange={handleInputChange}
+              style={{ borderRadius: '12px' }}
+            />
+          </div>
+        </div>
+
+        <div className="form-group" style={{ marginBottom: '2rem' }}>
+          <label className="label">Texto Aspiracional (Bloque Femenino)</label>
+          <textarea 
+            name="aspirational_copy" 
+            className="input-field" 
+            style={{ minHeight: '80px', resize: 'vertical', borderRadius: '12px' }} 
+            value={formValues.aspirational_copy} 
+            placeholder="Ej: Imagina tus tardes de descanso absoluto..."
             onChange={handleInputChange}
           ></textarea>
         </div>
@@ -381,309 +424,22 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', fontWeight: 900, fontSize: '0.85rem' }}>
             <Eye size={18} />
-            <span>VISTA PREVIA EN VIVO (Toca para girar)</span>
+            <span>VISTA PREVIA DE TARJETA WEB</span>
           </div>
         </div>
 
-        <div 
-          className={`flip-card-container ${isFlipped ? 'is-flipped' : ''}`}
-        >
-          <div className="flip-card-inner">
-            
-            {/* FRONT SIDE (ESTILO MARCA) */}
-            <div className="flip-card-front" style={{ 
-               background: 'white', 
-               borderRadius: '40px', 
-               display: 'flex', 
-               flexDirection: 'column',
-               border: '2px solid rgba(242, 135, 5, 0.2)',
-               boxShadow: '0 15px 40px rgba(242, 135, 5, 0.04)',
-               overflow: 'hidden'
-             }}>
-              {/* Media Preview Container */}
-              <div 
-                className="group-media-preview"
-                style={{ 
-                  width: '100%', 
-                  flex: 1, 
-                  minHeight: '200px',
-                  background: 'white', 
-                  position: 'relative',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderBottom: '1px solid #f3f4f6',
-                  overflow: 'hidden'
-                }}
-              >
-                {/* Badges Preview */}
-                <div style={{ position: 'absolute', top: '12px', left: '12px', zIndex: 20, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  {formValues.is_new && (
-                    <span style={{ background: '#0477BF', color: 'white', fontSize: '8px', fontWeight: 900, padding: '4px 10px', borderRadius: '100px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Nuevo</span>
-                  )}
-                  {formValues.is_promotion && (
-                    <span style={{ background: '#ef4444', color: 'white', fontSize: '8px', fontWeight: 900, padding: '4px 10px', borderRadius: '100px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Promoción</span>
-                  )}
-                  {formValues.is_clearance && (
-                    <span style={{ background: '#1e293b', color: 'white', fontSize: '8px', fontWeight: 900, padding: '4px 10px', borderRadius: '100px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Liquidación</span>
-                  )}
-                  {formValues.is_coming_soon && (
-                    <span style={{ background: '#7c3aed', color: 'white', fontSize: '8px', fontWeight: 900, padding: '4px 10px', borderRadius: '100px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Próximamente</span>
-                  )}
-                </div>
-
-                {/* Renderizado de Media (Imágenes / Video) */}
-                <div 
-                  style={{ width: '100%', height: '100%', position: 'relative', cursor: 'pointer' }}
-                  onClick={() => setIsPreviewModalOpen(true)}
-                >
-                  {mediaList.map((item, idx) => (
-                    <div 
-                      key={idx} 
-                      style={{
-                        position: 'absolute',
-                        inset: 0,
-                        transition: 'opacity 0.5s',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        opacity: idx === activeIndex ? 1 : 0,
-                        zIndex: idx === activeIndex ? 10 : 0,
-                        pointerEvents: idx === activeIndex ? 'auto' : 'none'
-                      }}
-                    >
-                      {item.type === 'video' ? (
-                        <video 
-                          ref={previewVideoRef}
-                          src={item.url}
-                          muted 
-                          playsInline
-                          loop
-                          style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                        />
-                      ) : (
-                        <img 
-                          alt={`${formValues.name} - ${idx + 1}`}
-                          style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
-                          src={item.url}
-                        />
-                      )}
-                    </div>
-                  ))}
-                </div>
-
-                {/* Flechas de Navegación del Carrusel */}
-                {mediaList.length > 1 && (
-                  <>
-                    <button 
-                      type="button"
-                      onClick={handlePrev}
-                      className="carousel-btn-preview"
-                      style={{
-                        position: 'absolute',
-                        left: '12px',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        width: '32px',
-                        height: '32px',
-                        borderRadius: '50%',
-                        background: 'rgba(0,0,0,0.4)',
-                        color: 'white',
-                        border: 'none',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        zIndex: 30,
-                        cursor: 'pointer',
-                        transition: 'background 0.3s'
-                      }}
-                      title="Anterior"
-                    >
-                      <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>chevron_left</span>
-                    </button>
-                    <button 
-                      type="button"
-                      onClick={handleNext}
-                      className="carousel-btn-preview"
-                      style={{
-                        position: 'absolute',
-                        right: '12px',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        width: '32px',
-                        height: '32px',
-                        borderRadius: '50%',
-                        background: 'rgba(0,0,0,0.4)',
-                        color: 'white',
-                        border: 'none',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        zIndex: 30,
-                        cursor: 'pointer',
-                        transition: 'background 0.3s'
-                      }}
-                      title="Siguiente"
-                    >
-                      <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>chevron_right</span>
-                    </button>
-                  </>
-                )}
-
-                {/* Puntos de Navegación del Carrusel (Dots) */}
-                {mediaList.length > 1 && (
-                  <div style={{
-                    position: 'absolute',
-                    bottom: '12px',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    display: 'flex',
-                    gap: '6px',
-                    zIndex: 30,
-                    background: 'rgba(0,0,0,0.35)',
-                    padding: '4px 10px',
-                    borderRadius: '100px',
-                    backdropFilter: 'blur(4px)'
-                  }}>
-                    {mediaList.map((item, idx) => (
-                      <button 
-                        key={idx}
-                        type="button"
-                        onClick={(e) => handleDotClick(e, idx)}
-                        style={{
-                          height: '6px',
-                          borderRadius: '100px',
-                          border: 'none',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          position: 'relative',
-                          transition: 'all 0.3s',
-                          width: idx === activeIndex ? '16px' : '6px',
-                          background: idx === activeIndex ? '#F28705' : 'rgba(255,255,255,0.6)'
-                        }}
-                        title={item.type === 'video' ? 'Ver Video' : `Ver Imagen ${idx + 1}`}
-                      >
-                        {item.type === 'video' && idx === activeIndex && (
-                          <span style={{ position: 'absolute', fontSize: '6px', fontWeight: 900, color: 'white' }}>▶</span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div style={{ flex: 'none', display: 'flex', flexDirection: 'column', padding: '1.25rem 1.5rem 1.5rem 1.5rem', height: '170px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
-                   <div style={{ fontSize: '9px', color: '#0477BF', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.2em' }}>{formValues.category_name || "Muebles"}</div>
-                </div>
-                <h3 style={{ 
-                  margin: '0 0 1rem 0', 
-                  fontSize: '1.25rem', 
-                  fontWeight: 800, 
-                  color: '#111827', 
-                  lineHeight: '1.2',
-                  display: '-webkit-box',
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: 'vertical',
-                  overflow: 'hidden'
-                }}>
-                  {formValues.name || "Nombre del Producto"}
-                </h3>
-                
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto', marginBottom: '1rem' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0477BF', lineHeight: 1 }}>
-                      ${getPreviewPrice().toLocaleString('es-VE')}
-                    </span>
-                    <span style={{ fontSize: '8px', color: '#9ca3af', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Ref.</span>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '1rem', borderTop: '1px solid rgba(242, 135, 5, 0.1)' }}>
-                   <span style={{ fontSize: '9px', color: '#6b7280', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Ver Características</span>
-                   <div 
-                     className="sync-btn-preview" 
-                     onClick={handleFlip}
-                     style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(242, 135, 5, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#F28705', transition: 'all 0.5s', cursor: 'pointer' }}
-                   >
-                      <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>sync_alt</span>
-                   </div>
-                </div>
-              </div>
-            </div>
-
-            {/* BACK SIDE (ESTILO MARCA) */}
-            <div className="flip-card-back" style={{ 
-              background: '#0477BF', 
-              color: 'white', 
-              borderRadius: '40px', 
-              padding: '2.5rem', 
-              display: 'flex', 
-              flexDirection: 'column',
-              justifyContent: 'center',
-              alignItems: 'center',
-              textAlign: 'center'
-            }}>
-               <div style={{ marginTop: '0.5rem', marginBottom: '1rem', position: 'relative', flexShrink: 0 }}>
-                 <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.2)', filter: 'blur(24px)', borderRadius: '50%', transform: 'scale(1.5)' }}></div>
-                 <img 
-                   src="/logo-p.jpeg" 
-                   alt="Practiiko Logo" 
-                   style={{ width: '4rem', height: '4rem', objectFit: 'contain', position: 'relative', zIndex: 10, filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.15))' }}
-                 />
-               </div>
-               
-               <div style={{ flexShrink: 0 }}>
-                 <p style={{ fontSize: '9px', fontWeight: 900, opacity: 0.6, letterSpacing: '0.3em', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Más información</p>
-                 <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0 0 0.75rem 0', lineHeight: 1.2 }}>{formValues.name || "Nombre del Producto"}</h3>
-               </div>
-
-               <div className="description-scroll-preview" style={{ flex: 1, width: '100%', margin: '0.75rem 0', overflowY: 'auto', paddingRight: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                 <p style={{ 
-                   fontWeight: 500, 
-                   lineHeight: 1.6, 
-                   opacity: 0.9, 
-                   textAlign: 'center',
-                   fontSize: (formValues.description || "").length > 250 
-                     ? '0.75rem' 
-                     : (formValues.description || "").length > 120 
-                       ? '13px' 
-                       : '0.875rem'
-                 }}>
-                   {formValues.description || "Esta pieza exclusiva de Practiiko combina ergonomía de vanguardia con un diseño minimalista pensado para espacios modernos."}
-                 </p>
-               </div>
-
-               <div style={{ marginTop: '1rem', width: '100%', flexShrink: 0, cursor: 'pointer' }} onClick={handleFlip}>
-                  <div style={{ 
-                    padding: '0.65rem', 
-                    borderRadius: '100px', 
-                    background: '#F28705', 
-                    fontSize: '11px', 
-                    fontWeight: 900,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.1em',
-                    boxShadow: '0 10px 20px rgba(242, 135, 5, 0.2)',
-                    display: 'inline-block',
-                    width: 'auto',
-                    paddingLeft: '2.5rem',
-                    paddingRight: '2.5rem',
-                    marginBottom: '0.75rem'
-                  }}>
-                    Comprar Ahora
-                  </div>
-                  <p style={{ fontSize: '8px', opacity: 0.4, margin: 0, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.2em' }}>Toca para volver</p>
-               </div>
-               
-               <div style={{ position: 'absolute', bottom: '1.5rem', right: '1.5rem', opacity: 0.1, pointerEvents: 'none' }}>
-                 <img src="/logo-white.png" alt="" style={{ height: '2.5rem', width: 'auto', filter: 'grayscale(100%)' }} />
-               </div>
-            </div>
-
-          </div>
-        </div>
+        <ProductCardPreview 
+          product={{
+            ...formValues,
+            images: media.images.length > 0 ? [media.localPreviews[media.images[0]] || media.images[0]] : [],
+            main_image: mediaList[0]?.url,
+            price_cash: getPreviewPrice(),
+            // Simular estadisticas o cargar reales si las hay
+            likes_count: initialData.likes_count || Math.floor(Math.random() * 500) + 50,
+            views_count: initialData.views_count || Math.floor(Math.random() * 2000) + 100,
+            sales_count: initialData.sales_count || Math.floor(Math.random() * 100) + 10
+          }}
+        />
       </div>
       
       {/* MODAL DE VISTA PREVIA (PANTALLA COMPLETA) */}
