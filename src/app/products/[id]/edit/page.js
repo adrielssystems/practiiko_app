@@ -81,8 +81,9 @@ export default async function EditProductPage({ params }) {
 
         const price_valid_until = formData.get("price_valid_until") || null;
 
-        // Interactive Badges
+        // Interactive Badges and Colors
         const interactive_badges = formData.get("interactive_badges_json") || "[]";
+        const colors = formData.get("colors_json") || "[]";
 
         try {
             const catIdNum = category_id ? parseInt(category_id) : null;
@@ -99,8 +100,8 @@ export default async function EditProductPage({ params }) {
                     is_featured = $13, is_promotion = $14, price_valid_until = $15,
                     pseudonimo = $16, is_new = $17, is_clearance = $18, is_coming_soon = $19,
                     technical_summary = $20, badge_text = $21, show_badge = $22,
-                    interactive_badges = $23, likes_count = $24, views_count = $25, sales_count = $26
-                WHERE id = $27
+                    interactive_badges = $23, likes_count = $24, views_count = $25, sales_count = $26, colors = $27
+                WHERE id = $28
                 RETURNING id
             `, [
                 name, code, description, price_bcv, price_cash, 
@@ -109,7 +110,7 @@ export default async function EditProductPage({ params }) {
                 is_featured, is_promotion, price_valid_until,
                 pseudonimo, is_new, is_clearance, is_coming_soon,
                 technical_summary, badge_text, show_badge,
-                interactive_badges, likes_count, views_count, sales_count, id
+                interactive_badges, likes_count, views_count, sales_count, colors, id
             ]);
 
             if (updateRes.rowCount === 0) {

@@ -29,6 +29,13 @@ export default function ProductCardPreview({ product }) {
     { title: "Cuidado", text: "Fundas lavables en máquina con agua fría." }
   ];
 
+  let parsedColors = [];
+  if (Array.isArray(product?.colors)) {
+    parsedColors = product.colors;
+  } else if (typeof product?.colors === 'string') {
+    try { parsedColors = JSON.parse(product.colors); } catch(e) { parsedColors = []; }
+  }
+
   return (
     <div style={{
       width: '100%',
@@ -296,9 +303,9 @@ export default function ProductCardPreview({ product }) {
                   </div>
                   
                   {/* COLORES (Si existen) */}
-                  {Array.isArray(product?.colors) && product.colors.length > 0 && (
+                  {parsedColors.length > 0 && (
                     <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                      {product.colors.map((color, idx) => (
+                      {parsedColors.map((color, idx) => (
                         <div key={idx} style={{ position: 'relative', cursor: 'pointer' }}>
                           <div 
                             style={{ 

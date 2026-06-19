@@ -59,8 +59,9 @@ export default async function NewProductPage() {
 
         const price_valid_until = formData.get("price_valid_until") || null;
         
-        // Interactive Badges
+        // Interactive Badges and Colors
         const interactive_badges = formData.get("interactive_badges_json") || "[]";
+        const colors = formData.get("colors_json") || "[]";
 
         try {
             const catIdNum = category_id ? parseInt(category_id) : null;
@@ -76,9 +77,9 @@ export default async function NewProductPage() {
                     tags, features, pricing_matrix, 
                     is_featured, is_promotion, price_valid_until, pseudonimo,
                     is_new, is_clearance, technical_summary, badge_text, show_badge,
-                    interactive_badges, likes_count, views_count, sales_count
+                    interactive_badges, likes_count, views_count, sales_count, colors
                 )
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26)
                 RETURNING id
             `, [
                 name, code, description, price_bcv, price_cash,
@@ -86,7 +87,7 @@ export default async function NewProductPage() {
                 tags, features, pricing_matrix,
                 is_featured, is_promotion, price_valid_until,
                 pseudonimo, is_new, is_clearance, technical_summary, badge_text, show_badge,
-                interactive_badges, likes_count, views_count, sales_count
+                interactive_badges, likes_count, views_count, sales_count, colors
             ]);
 
             const productId = productRes.rows[0].id;

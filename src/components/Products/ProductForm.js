@@ -53,7 +53,13 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
     ]
   );
 
-  const [colors, setColors] = useState(initialData.colors || []);
+  const [colors, setColors] = useState(() => {
+    if (Array.isArray(initialData.colors)) return initialData.colors;
+    if (typeof initialData.colors === 'string') {
+      try { return JSON.parse(initialData.colors); } catch(e) { return []; }
+    }
+    return [];
+  });
   const [isFlipped, setIsFlipped] = useState(false);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
