@@ -59,28 +59,34 @@ export default function ProductCardPreview({ product }) {
           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
         />
         
-        {/* LIFESTYLE BADGE */}
+        {/* LIFESTYLE BADGE (MEDALLA DORADA) */}
         {badgeText && (
           <div style={{
             position: 'absolute',
             top: '16px',
-            right: '16px',
-            background: 'rgba(255,255,255,0.95)',
-            backdropFilter: 'blur(4px)',
-            color: '#0f172a',
-            padding: '8px 14px',
-            borderRadius: '100px',
-            fontSize: '0.65rem',
-            fontWeight: 800,
-            textTransform: 'uppercase',
-            letterSpacing: '0.05em',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+            left: '16px',
+            width: '86px',
+            height: '86px',
+            borderRadius: '50%',
+            background: 'linear-gradient(135deg, #FFE77A 0%, #E5B13A 50%, #B88012 100%)',
+            border: '2px solid #FFDF73',
+            boxShadow: '0 6px 12px rgba(0,0,0,0.3), inset 0 2px 4px rgba(255,255,255,0.5)',
             display: 'flex',
             alignItems: 'center',
-            gap: '6px'
+            justifyContent: 'center',
+            padding: '8px',
+            zIndex: 20
           }}>
-            <span style={{ width: 6, height: 6, background: '#10b981', borderRadius: '50%' }}></span>
-            {badgeText}
+            <span style={{
+              fontSize: '10px',
+              fontWeight: 900,
+              color: '#3E2723',
+              lineHeight: 1.1,
+              textAlign: 'center',
+              textShadow: '0 1px 1px rgba(255,255,255,0.4)'
+            }}>
+              {badgeText}
+            </span>
           </div>
         )}
 
