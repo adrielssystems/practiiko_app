@@ -385,13 +385,7 @@ export async function processInstagramMessage(message, sessionId, customerName =
     // Si detectamos saludo ("hola", "buenas"), solo enviamos el mensaje duro de bienvenida si NO hay historial de chat previo.
     // Si ya hay conversación, dejamos que la IA responda de forma natural y respetuosa.
     if (intent === "GREETING" && !hasChatHistory) {
-      const greetingResponse = `¡Hola! Gracias por comunicarte con nosotros.
-
-Te invitamos a visitar nuestra pagina web www.practiiko.com con información de interes para usted. Puede consultar nuestro catálogo de muebles y colchones en el siguiente enlace: 
-
-www.practiiko.com/catalogo
-
-Deja tu consulta detallada y en breve le atenderemos. ¡Gracias por tu paciencia!`;
+      const greetingResponse = `¡Con gusto le ayudo! ⭐\n📖 Mire nuestra coleccion completa y precios en el siguiente enlace para guiarlo mejor por su espacio🛋️🛏️\n\n👉 https://www.practiiko.com/catalogo 👈`;
 
       await query(`INSERT INTO instagram_messages (session_id, message, source, comment_id) VALUES ($1, $2, $3, $4)`,
         [sessionId, JSON.stringify({ role: 'assistant', content: greetingResponse }), source, commentId]);
