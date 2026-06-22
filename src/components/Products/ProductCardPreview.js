@@ -16,7 +16,7 @@ export default function ProductCardPreview({ product }) {
   // Default values to prevent errors
   const name = product?.name || "SOFÁ MODULAR ZEN";
   const mainImage = product?.images?.[0] || product?.main_image || "https://placehold.co/600x600/e2e8f0/64748b?text=Foto+1x1";
-  const price = product?.price_cash || 0;
+  const price = product?.price_bcv || 0;
   const technicalSummary = product?.technical_summary || "Espuma de alta densidad / Tela premium antimanchas";
   const badgeText = product?.badge_text || "Diseño Inteligente: Llega a tu puerta";
   const likes = product?.likes_count || 0;
