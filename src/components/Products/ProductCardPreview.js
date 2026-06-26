@@ -307,14 +307,57 @@ export default function ProductCardPreview({ product }) {
               
               {/* Columna Izquierda: Galería */}
               <div style={{ flex: '1 1 50%', minWidth: '300px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {/* Imagen Principal */}
-                <div style={{ width: '100%', background: 'white', borderRadius: '12px', overflow: 'hidden', aspectRatio: '4/3', position: 'relative', border: '1px solid #f1f5f9' }}>
-                  <img 
-                    src={rawImages && rawImages[modalImageIdx] ? rawImages[modalImageIdx] : mainImage} 
-                    alt={name} 
-                    key={modalImageIdx}
-                    style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', transition: 'opacity 0.3s' }} 
-                  />
+                {/* Galería: Thumbnails + Imagen Principal */}
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  {/* Thumbnails verticales */}
+                  {rawImages && rawImages.length > 1 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '64px', flexShrink: 0, maxHeight: '380px', overflowY: 'auto' }}
+                         className="no-scrollbar">
+                      {rawImages.map((img, i) => (
+                        <img
+                          key={i}
+                          src={img}
+                          alt={`${name} thumb ${i}`}
+                          onClick={() => setModalImageIdx(i)}
+                          style={{
+                            width: '100%',
+                            aspectRatio: '1/1',
+                            objectFit: 'cover',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            border: modalImageIdx === i ? '2px solid #F28705' : '2px solid transparent',
+                            boxShadow: modalImageIdx === i ? '0 2px 8px rgba(242,135,5,0.3)' : 'none',
+                            transition: 'all 0.2s'
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Imagen Principal — Carrusel deslizable */}
+                  <div
+                    ref={carouselRef}
+                    className="no-scrollbar"
+                    style={{ flex: 1, background: 'white', borderRadius: '12px', overflowX: 'auto', display: 'flex', scrollSnapType: 'x mandatory', aspectRatio: '4/3', position: 'relative', border: '1px solid #f1f5f9' }}
+                    onScroll={(e) => {
+                      if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
+                      scrollTimeout.current = setTimeout(() => {
+                        const el = e.target;
+                        const idx = Math.round(el.scrollLeft / el.clientWidth);
+                        if (idx !== modalImageIdx) setModalImageIdx(idx);
+                      }, 50);
+                    }}
+                  >
+                    {rawImages && rawImages.length > 0 ? rawImages.map((img, i) => (
+                      <div key={i} style={{ flex: 'none', width: '100%', height: '100%', position: 'relative', scrollSnapAlign: 'center' }}>
+                        <img src={img} alt={`${name} ${i}`} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }} />
+                      </div>
+                    )) : (
+                      <div style={{ flex: 'none', width: '100%', height: '100%', position: 'relative', scrollSnapAlign: 'center' }}>
+                        <img src={mainImage} alt={name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }} />
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* COLORES (Si existen) - Debajo de la imagen principal */}
@@ -330,19 +373,19 @@ export default function ProductCardPreview({ product }) {
                         }
                         const isSelected = modalImageIdx === linkedIdx;
                         return (
-                          <div 
-                            key={idx} 
+                          <div
+                            key={idx}
                             onClick={() => setModalImageIdx(linkedIdx)}
                             style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
                           >
-                            <div style={{ 
-                              width: '44px', 
-                              height: '44px', 
-                              borderRadius: '50%', 
-                              backgroundColor: color.hex, 
+                            <div style={{
+                              width: '44px',
+                              height: '44px',
+                              borderRadius: '50%',
+                              backgroundColor: color.hex,
                               border: isSelected ? '3px solid #F28705' : '3px solid white',
-                              boxShadow: isSelected 
-                                ? '0 0 0 2px #F28705, 0 4px 8px rgba(0,0,0,0.15)' 
+                              boxShadow: isSelected
+                                ? '0 0 0 2px #F28705, 0 4px 8px rgba(0,0,0,0.15)'
                                 : '0 0 0 2px #cbd5e1, 0 4px 6px rgba(0,0,0,0.08)',
                               transition: 'all 0.2s ease',
                               transform: isSelected ? 'scale(1.1)' : 'scale(1)'
