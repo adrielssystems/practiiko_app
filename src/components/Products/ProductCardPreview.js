@@ -54,7 +54,6 @@ export default function ProductCardPreview({ product }) {
       margin: '0 auto',
       background: 'white',
       borderRadius: '24px',
-      overflow: 'hidden',
       boxShadow: '0 20px 40px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.05)',
       fontFamily: '"Inter", sans-serif',
       position: 'relative',
@@ -71,7 +70,7 @@ export default function ProductCardPreview({ product }) {
     }}>
       
       {/* HEADER IMAGE SECTION (1x1) */}
-      <div style={{ position: 'relative', width: '100%', aspectRatio: '1/1', background: 'white', overflow: 'hidden' }}>
+      <div style={{ position: 'relative', width: '100%', aspectRatio: '1/1', background: 'white', overflow: 'hidden', borderTopLeftRadius: '24px', borderTopRightRadius: '24px' }}>
         <img 
           src={mainImage} 
           alt={name} 
@@ -165,20 +164,6 @@ export default function ProductCardPreview({ product }) {
           </p>
         </div>
 
-        {/* PRICE */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', marginTop: '4px' }}>
-          <span style={{ 
-            fontSize: '2rem', 
-            fontWeight: 900, 
-            color: '#d97706', // Naranja/Dorado elegante
-            lineHeight: 1,
-            textShadow: '2px 2px 4px rgba(0,0,0,0.25)' // Sombra negra con desplazamiento derecho
-          }}>
-            <small style={{ fontSize: '1rem', verticalAlign: 'top', opacity: 0.8, marginRight: '4px', textShadow: 'none' }}>Ref</small>
-            {parseFloat(price).toLocaleString('es-VE')}
-          </span>
-        </div>
-
         {/* INTERACTIVE BADGES */}
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', position: 'relative' }}>
           {interactiveBadges.map((badge, idx) => (
@@ -230,6 +215,20 @@ export default function ProductCardPreview({ product }) {
               <p style={{ margin: 0, opacity: 0.9, lineHeight: 1.4 }}>{interactiveBadges[activeBadge].text}</p>
             </div>
           )}
+        </div>
+
+        {/* PRICE */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', marginTop: '4px' }}>
+          <span style={{ 
+            fontSize: '2rem', 
+            fontWeight: 900, 
+            color: '#d97706', // Naranja/Dorado elegante
+            lineHeight: 1,
+            textShadow: '2px 2px 4px rgba(0,0,0,0.25)' // Sombra negra con desplazamiento derecho
+          }}>
+            <small style={{ fontSize: '1rem', verticalAlign: 'top', opacity: 0.8, marginRight: '4px', textShadow: 'none' }}>Ref</small>
+            {parseFloat(price).toLocaleString('es-VE')}
+          </span>
         </div>
 
         {/* CTAs */}
@@ -307,62 +306,56 @@ export default function ProductCardPreview({ product }) {
             <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', gap: '32px', flexDirection: 'row', flexWrap: 'wrap' }}>
               
               {/* Columna Izquierda: Galería */}
-              <div style={{ flex: '1 1 50%', minWidth: '300px', display: 'flex', gap: '16px' }}>
-                {/* Thumbnails (verticales) */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '80px', flexShrink: 0, maxHeight: '400px', overflowY: 'auto' }}>
+              <div style={{ flex: '1 1 50%', minWidth: '300px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {/* Imagen Principal */}
+                <div style={{ width: '100%', background: 'white', borderRadius: '12px', overflow: 'hidden', aspectRatio: '4/3', position: 'relative', border: '1px solid #f1f5f9' }}>
                   <img 
-                    src={mainImage} 
+                    src={rawImages && rawImages[modalImageIdx] ? rawImages[modalImageIdx] : mainImage} 
                     alt={name} 
-                    style={{ width: '100%', aspectRatio: '1/1', objectFit: 'cover', borderRadius: '8px', border: '2px solid #F28705', cursor: 'pointer' }} 
+                    key={modalImageIdx}
+                    style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', transition: 'opacity 0.3s' }} 
                   />
                 </div>
-                
-                {/* Imagen Principal y Colores */}
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  <div 
-                    ref={carouselRef}
-                    className="no-scrollbar"
-                    style={{ width: '100%', background: 'white', borderRadius: '12px', overflowX: 'auto', display: 'flex', scrollSnapType: 'x mandatory', aspectRatio: '4/3', position: 'relative' }}
-                    onScroll={(e) => {
-                      if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
-                      scrollTimeout.current = setTimeout(() => {
-                        const el = e.target;
-                        const idx = Math.round(el.scrollLeft / el.clientWidth);
-                        if (idx !== modalImageIdx) setModalImageIdx(idx);
-                      }, 50);
-                    }}
-                  >
-                    {rawImages && rawImages.length > 0 ? rawImages.map((img, i) => (
-                      <div key={i} style={{ flex: 'none', width: '100%', height: '100%', position: 'relative', scrollSnapAlign: 'center' }}>
-                        <img src={img} alt={`${name} ${i}`} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }} />
-                      </div>
-                    )) : (
-                      <div style={{ flex: 'none', width: '100%', height: '100%', position: 'relative', scrollSnapAlign: 'center' }}>
-                        <img src={mainImage} alt={name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }} />
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* COLORES (Si existen) */}
-                  {parsedColors.length > 0 && (
-                    <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                      {parsedColors.map((color, idx) => (
-                        <div key={idx} style={{ position: 'relative', cursor: 'pointer' }}>
+
+                {/* COLORES (Si existen) - Debajo de la imagen principal */}
+                {parsedColors.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <p style={{ fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>Elige tu color</p>
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                      {parsedColors.map((color, idx) => {
+                        let linkedIdx = 0;
+                        if (color.image_url && rawImages) {
+                          const exactIdx = rawImages.findIndex(img => img === color.image_url);
+                          if (exactIdx !== -1) linkedIdx = exactIdx;
+                        }
+                        const isSelected = modalImageIdx === linkedIdx;
+                        return (
                           <div 
-                            style={{ 
-                              width: '36px', height: '36px', borderRadius: '50%', border: '2px solid white', 
+                            key={idx} 
+                            onClick={() => setModalImageIdx(linkedIdx)}
+                            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+                          >
+                            <div style={{ 
+                              width: '44px', 
+                              height: '44px', 
+                              borderRadius: '50%', 
                               backgroundColor: color.hex, 
-                              boxShadow: '0 0 0 2px #cbd5e1, 0 4px 6px -1px rgba(0,0,0,0.1)',
-                              transition: 'transform 0.2s'
-                            }}
-                            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
-                            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                          />
-                        </div>
-                      ))}
+                              border: isSelected ? '3px solid #F28705' : '3px solid white',
+                              boxShadow: isSelected 
+                                ? '0 0 0 2px #F28705, 0 4px 8px rgba(0,0,0,0.15)' 
+                                : '0 0 0 2px #cbd5e1, 0 4px 6px rgba(0,0,0,0.08)',
+                              transition: 'all 0.2s ease',
+                              transform: isSelected ? 'scale(1.1)' : 'scale(1)'
+                            }} />
+                            <span style={{ fontSize: '10px', fontWeight: 700, color: isSelected ? '#F28705' : '#64748b', textAlign: 'center', maxWidth: '52px', lineHeight: 1.2 }}>
+                              {color.name}
+                            </span>
+                          </div>
+                        );
+                      })}
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
 
               {/* Columna Derecha: Detalles */}
