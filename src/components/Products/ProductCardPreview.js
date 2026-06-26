@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Heart, Eye, ShoppingBag, Info, ChevronRight, X } from "lucide-react";
 
@@ -8,10 +8,21 @@ export default function ProductCardPreview({ product }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalImageIdx, setModalImageIdx] = useState(0);
   const [mounted, setMounted] = useState(false);
+  const carouselRef = useRef(null);
+  const scrollTimeout = useRef(null);
   
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (carouselRef.current) {
+      const targetScroll = modalImageIdx * carouselRef.current.clientWidth;
+      if (Math.abs(carouselRef.current.scrollLeft - targetScroll) > 10) {
+        carouselRef.current.scrollTo({ left: targetScroll, behavior: 'smooth' });
+      }
+    }
+  }, [modalImageIdx]);
 
   // Default values to prevent errors
   const name = product?.name || "SOFÁ MODULAR ZEN";
@@ -282,6 +293,16 @@ export default function ProductCardPreview({ product }) {
               </button>
             </div>
             
+            <style>{`
+              .no-scrollbar::-webkit-scrollbar {
+                display: none;
+              }
+              .no-scrollbar {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+              }
+            `}</style>
+            
             {/* Contenido (2 columnas) */}
             <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', gap: '32px', flexDirection: 'row', flexWrap: 'wrap' }}>
               
@@ -298,8 +319,28 @@ export default function ProductCardPreview({ product }) {
                 
                 {/* Imagen Principal y Colores */}
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  <div style={{ width: '100%', background: 'white', borderRadius: '12px', overflow: 'hidden', aspectRatio: '4/3', position: 'relative' }}>
-                    <img src={mainImage} alt={name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }} />
+                  <div 
+                    ref={carouselRef}
+                    className="no-scrollbar"
+                    style={{ width: '100%', background: 'white', borderRadius: '12px', overflowX: 'auto', display: 'flex', scrollSnapType: 'x mandatory', aspectRatio: '4/3', position: 'relative' }}
+                    onScroll={(e) => {
+                      if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
+                      scrollTimeout.current = setTimeout(() => {
+                        const el = e.target;
+                        const idx = Math.round(el.scrollLeft / el.clientWidth);
+                        if (idx !== modalImageIdx) setModalImageIdx(idx);
+                      }, 50);
+                    }}
+                  >
+                    {rawImages && rawImages.length > 0 ? rawImages.map((img, i) => (
+                      <div key={i} style={{ flex: 'none', width: '100%', height: '100%', position: 'relative', scrollSnapAlign: 'center' }}>
+                        <img src={img} alt={`${name} ${i}`} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }} />
+                      </div>
+                    )) : (
+                      <div style={{ flex: 'none', width: '100%', height: '100%', position: 'relative', scrollSnapAlign: 'center' }}>
+                        <img src={mainImage} alt={name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }} />
+                      </div>
+                    )}
                   </div>
                   
                   {/* COLORES (Si existen) */}
