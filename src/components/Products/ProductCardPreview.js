@@ -60,11 +60,11 @@ export default function ProductCardPreview({ product }) {
     }}>
       
       {/* HEADER IMAGE SECTION (1x1) */}
-      <div style={{ position: 'relative', width: '100%', aspectRatio: '1/1', background: '#f8fafc', overflow: 'hidden' }}>
+      <div style={{ position: 'relative', width: '100%', aspectRatio: '1/1', background: 'white', overflow: 'hidden' }}>
         <img 
           src={mainImage} 
           alt={name} 
-          style={{ width: '100%', height: '100%', objectFit: 'contain', mixBlendMode: 'multiply', padding: '16px', boxSizing: 'border-box' }}
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
         />
         
         {/* LIFESTYLE BADGE (MEDALLA DORADA) */}
@@ -298,8 +298,8 @@ export default function ProductCardPreview({ product }) {
                 
                 {/* Imagen Principal y Colores */}
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  <div style={{ width: '100%', background: '#f8fafc', borderRadius: '12px', overflow: 'hidden', aspectRatio: '4/3', position: 'relative' }}>
-                    <img src={mainImage} alt={name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', mixBlendMode: 'multiply' }} />
+                  <div style={{ width: '100%', background: 'white', borderRadius: '12px', overflow: 'hidden', aspectRatio: '4/3', position: 'relative' }}>
+                    <img src={mainImage} alt={name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }} />
                   </div>
                   
                   {/* COLORES (Si existen) */}
