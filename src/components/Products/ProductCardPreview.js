@@ -470,8 +470,6 @@ export default function ProductCardPreview({ product }) {
               </div>
             </div>
           </div>
-            </div>
-          </div>
         </div>
       )}
     </>
