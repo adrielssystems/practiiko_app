@@ -12,6 +12,7 @@ export default function ProductCardPreview({ product }) {
   const scrollTimeout = useRef(null);
   
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 
@@ -307,8 +308,8 @@ export default function ProductCardPreview({ product }) {
             Galería de colores
           </button>
         </div>
-
       </div>
+    </div>
 
       {/* MODAL DEL PRODUCTO (SIMULADO EN EL GESTOR) */}
       {isModalOpen && mounted && (
@@ -468,8 +469,6 @@ export default function ProductCardPreview({ product }) {
                   <p style={{ textAlign: 'center', fontSize: '0.75rem', color: '#94a3b8', marginTop: '12px', fontWeight: 500 }}>Asesoramiento personalizado e inmediato</p>
                 </div>
               </div>
-            </div>
-          </div>
             </div>
           </div>
         </div>
