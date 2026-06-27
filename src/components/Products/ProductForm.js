@@ -172,6 +172,7 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
 
     const formData = new FormData(e.target);
     formData.append("interactive_badges_json", JSON.stringify(interactiveBadges));
+    formData.append("colors_json", JSON.stringify(colors));
     
     try {
       const result = await onSubmitAction(formData);
@@ -634,8 +635,6 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
             <span>VISTA PREVIA DE TARJETA WEB</span>
           </div>
         </div>
-
-        <input type="hidden" name="colors_json" value={JSON.stringify(colors)} />
 
         <ProductCardPreview 
           product={{
