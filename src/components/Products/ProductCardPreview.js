@@ -48,6 +48,7 @@ export default function ProductCardPreview({ product }) {
   }
 
   return (
+    <>
     <div style={{
       width: '100%',
       maxWidth: '380px',
@@ -271,6 +272,7 @@ export default function ProductCardPreview({ product }) {
           
           {/* CTA PRIMARIO: DETALLES */}
           <button 
+            type="button"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -309,7 +311,7 @@ export default function ProductCardPreview({ product }) {
       </div>
 
       {/* MODAL DEL PRODUCTO (SIMULADO EN EL GESTOR) */}
-      {isModalOpen && mounted && createPortal(
+      {isModalOpen && mounted && (
         <div 
           onClick={() => setIsModalOpen(false)}
           style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}>
@@ -468,8 +470,10 @@ export default function ProductCardPreview({ product }) {
               </div>
             </div>
           </div>
+            </div>
+          </div>
         </div>
-      , document.body)}
-    </div>
+      )}
+    </>
   );
 }
