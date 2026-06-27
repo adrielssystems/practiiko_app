@@ -191,7 +191,7 @@ export default async function EditProductPage({ params }) {
                 </div>
             </header>
 
-            <ProductForm categories={categories} initialData={product} onSubmitAction={updateProduct} />
+            <ProductForm categories={categories} initialData={JSON.parse(JSON.stringify(product))} onSubmitAction={updateProduct} />
         </div>
     );
 }
