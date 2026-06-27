@@ -277,6 +277,7 @@ export default function ProductCardPreview({ product }) {
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
+              console.log("[DEBUG] Galería de colores clickeada en Preview. Abriendo modal...");
               setIsModalOpen(true);
             }}
             style={{
@@ -312,7 +313,7 @@ export default function ProductCardPreview({ product }) {
     </div>
 
       {/* MODAL DEL PRODUCTO (SIMULADO EN EL GESTOR) */}
-      {isModalOpen && mounted && (
+      {isModalOpen && mounted && typeof document !== 'undefined' && createPortal(
         <div 
           onClick={() => setIsModalOpen(false)}
           style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}>
@@ -472,7 +473,7 @@ export default function ProductCardPreview({ product }) {
             </div>
           </div>
         </div>
-      )}
+      , document.body)}
     </>
   );
 }
