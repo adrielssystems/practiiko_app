@@ -271,7 +271,11 @@ export default function ProductCardPreview({ product }) {
           
           {/* CTA PRIMARIO: DETALLES */}
           <button 
-            onClick={() => setIsModalOpen(true)}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsModalOpen(true);
+            }}
             style={{
               background: '#F28705',
               color: 'white',
@@ -298,7 +302,7 @@ export default function ProductCardPreview({ product }) {
               e.currentTarget.style.boxShadow = '0 8px 16px rgba(242,135,5,0.3)';
             }}
           >
-            Transformar mi espacio
+            Galería de colores
           </button>
         </div>
 
