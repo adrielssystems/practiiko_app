@@ -8,6 +8,7 @@ export default function ProductCardPreview({ product }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalImageIdx, setModalImageIdx] = useState(0);
   const [mounted, setMounted] = useState(false);
+  const [debugClicks, setDebugClicks] = useState(0);
   const carouselRef = useRef(null);
   const scrollTimeout = useRef(null);
   
@@ -277,6 +278,7 @@ export default function ProductCardPreview({ product }) {
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
+              setDebugClicks(prev => prev + 1);
               console.log("[DEBUG] Galería de colores clickeada en Preview. Abriendo modal...");
               setIsModalOpen(true);
             }}
@@ -311,6 +313,15 @@ export default function ProductCardPreview({ product }) {
         </div>
       </div>
     </div>
+
+      {/* DEBUG VISUAL OVERLAY */}
+      <div style={{ position: 'absolute', top: 0, left: 0, background: 'rgba(255,0,0,0.8)', color: 'white', padding: '10px', zIndex: 100000, fontSize: '12px', fontWeight: 'bold' }}>
+        DEBUG INFO:<br/>
+        mounted: {mounted ? 'TRUE' : 'FALSE'}<br/>
+        isModalOpen: {isModalOpen ? 'TRUE' : 'FALSE'}<br/>
+        clicks: {debugClicks}<br/>
+        typeof document: {typeof document}
+      </div>
 
       {/* MODAL DEL PRODUCTO (SIMULADO EN EL GESTOR) */}
       {isModalOpen && mounted && typeof document !== 'undefined' && createPortal(
