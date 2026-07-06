@@ -7,6 +7,7 @@ export default function ProductCardPreview({ product }) {
   const [activeBadge, setActiveBadge] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalImageIdx, setModalImageIdx] = useState(0);
+  const [selectedColorIdx, setSelectedColorIdx] = useState(0);
   const [mounted, setMounted] = useState(false);
   const [debugClicks, setDebugClicks] = useState(0);
   const carouselRef = useRef(null);
@@ -29,6 +30,7 @@ export default function ProductCardPreview({ product }) {
   // Default values to prevent errors
   const name = product?.name || "SOFÁ MODULAR ZEN";
   const mainImage = product?.images?.[0] || product?.main_image || "https://placehold.co/600x600/e2e8f0/64748b?text=Foto+1x1";
+  const rawImages = product?.images || [mainImage];
   const price = product?.price_bcv || 0;
   const technicalSummary = product?.technical_summary || "Espuma de alta densidad / Tela premium antimanchas";
   const badgeText = product?.badge_text || "Diseño Inteligente: Llega a tu puerta";
@@ -48,6 +50,8 @@ export default function ProductCardPreview({ product }) {
   } else if (typeof product?.colors === 'string') {
     try { parsedColors = JSON.parse(product.colors); } catch(e) { parsedColors = []; }
   }
+
+  const getImageUrl = (img) => (typeof img === 'string' ? img : img?.url || "");
 
   return (
     <>
@@ -281,8 +285,6 @@ export default function ProductCardPreview({ product }) {
               e.preventDefault();
               e.stopPropagation();
               setDebugClicks(prev => prev + 1);
-              console.log("[DEBUG] Galería de colores clickeada en Preview. Abriendo modal...");
-              alert("Botón clickeado!");
               setIsModalOpen(true);
             }}
             style={{
@@ -364,9 +366,16 @@ export default function ProductCardPreview({ product }) {
                       {rawImages.map((img, i) => (
                         <img
                           key={i}
-                          src={img}
+                          src={getImageUrl(img)}
                           alt={`${name} thumb ${i}`}
-                          onClick={() => setModalImageIdx(i)}
+                          onClick={() => {
+                            setModalImageIdx(i);
+                            const matchingColorIdx = parsedColors.findIndex(c => {
+                                if (!c.image_url) return false;
+                                return getImageUrl(img) === c.image_url;
+                            });
+                            if (matchingColorIdx !== -1) setSelectedColorIdx(matchingColorIdx);
+                          }}
                           style={{
                             width: '100%',
                             aspectRatio: '1/1',
@@ -392,13 +401,20 @@ export default function ProductCardPreview({ product }) {
                       scrollTimeout.current = setTimeout(() => {
                         const el = e.target;
                         const idx = Math.round(el.scrollLeft / el.clientWidth);
-                        if (idx !== modalImageIdx) setModalImageIdx(idx);
+                        if (idx !== modalImageIdx) {
+                          setModalImageIdx(idx);
+                          const matchingColorIdx = parsedColors.findIndex(c => {
+                              if (!c.image_url) return false;
+                              return getImageUrl(rawImages[idx]) === c.image_url;
+                          });
+                          if (matchingColorIdx !== -1) setSelectedColorIdx(matchingColorIdx);
+                        }
                       }, 50);
                     }}
                   >
                     {rawImages && rawImages.length > 0 ? rawImages.map((img, i) => (
                       <div key={i} style={{ flex: 'none', width: '100%', height: '100%', position: 'relative', scrollSnapAlign: 'center' }}>
-                        <img src={img} alt={`${name} ${i}`} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }} />
+                        <img src={getImageUrl(img)} alt={`${name} ${i}`} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }} />
                       </div>
                     )) : (
                       <div style={{ flex: 'none', width: '100%', height: '100%', position: 'relative', scrollSnapAlign: 'center' }}>
@@ -416,14 +432,17 @@ export default function ProductCardPreview({ product }) {
                       {parsedColors.map((color, idx) => {
                         let linkedIdx = 0;
                         if (color.image_url && rawImages) {
-                          const exactIdx = rawImages.findIndex(img => img === color.image_url);
+                          const exactIdx = rawImages.findIndex(img => getImageUrl(img) === color.image_url);
                           if (exactIdx !== -1) linkedIdx = exactIdx;
                         }
-                        const isSelected = modalImageIdx === linkedIdx;
+                        const isSelected = selectedColorIdx === idx;
                         return (
                           <div
                             key={idx}
-                            onClick={() => setModalImageIdx(linkedIdx)}
+                            onClick={() => {
+                              setSelectedColorIdx(idx);
+                              setModalImageIdx(linkedIdx);
+                            }}
                             style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
                           >
                             <div style={{
