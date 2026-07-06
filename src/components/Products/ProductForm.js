@@ -640,7 +640,9 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
           product={{
             ...formValues,
             colors: colors,
-            images: media.images.length > 0 ? [media.localPreviews[media.images[0]] || media.images[0]] : [],
+            images: media.images.length > 0 
+              ? media.images.map(imgKey => media.localPreviews[imgKey] || imgKey)
+              : (mediaList.length > 0 ? mediaList.map(m => m.url) : []),
             main_image: mediaList[0]?.url,
             price_cash: getPreviewPrice(),
             interactive_badges: interactiveBadges,
