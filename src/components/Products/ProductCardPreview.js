@@ -401,14 +401,13 @@ export default function ProductCardPreview({ product }) {
                       scrollTimeout.current = setTimeout(() => {
                         const el = e.target;
                         const idx = Math.round(el.scrollLeft / el.clientWidth);
-                          if (idx !== modalImageIdx) {
+                        if (idx !== modalImageIdx) {
                           setModalImageIdx(idx);
                           const matchingColorIdx = parsedColors.findIndex(c => {
-                              if (!c.image_url) return false;
-                              return getImageUrl(rawImages[idx]) === c.image_url;
+                            if (!c.image_url) return false;
+                            return getImageUrl(rawImages[idx]) === c.image_url;
                           });
                           if (matchingColorIdx !== -1) setSelectedColorIdx(matchingColorIdx);
-                        }
                         }
                       }, 50);
                     }}
