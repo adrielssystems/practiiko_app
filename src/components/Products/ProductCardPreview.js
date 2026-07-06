@@ -391,83 +391,87 @@ export default function ProductCardPreview({ product }) {
                     </div>
                   )}
 
-                  {/* Imagen Principal — Carrusel deslizable */}
-                  <div
-                    ref={carouselRef}
-                    className="no-scrollbar"
-                    style={{ flex: 1, background: 'white', borderRadius: '12px', overflowX: 'auto', display: 'flex', scrollSnapType: 'x mandatory', aspectRatio: '4/3', position: 'relative', border: '1px solid #f1f5f9' }}
-                    onScroll={(e) => {
-                      if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
-                      scrollTimeout.current = setTimeout(() => {
-                        const el = e.target;
-                        const idx = Math.round(el.scrollLeft / el.clientWidth);
-                        if (idx !== modalImageIdx) {
-                          setModalImageIdx(idx);
-                          const matchingColorIdx = parsedColors.findIndex(c => {
-                            if (!c.image_url) return false;
-                            return getImageUrl(rawImages[idx]) === c.image_url;
-                          });
-                          if (matchingColorIdx !== -1) setSelectedColorIdx(matchingColorIdx);
-                        }
-                      }, 50);
-                    }}
-                  >
-                    {rawImages && rawImages.length > 0 ? rawImages.map((img, i) => (
-                      <div key={i} style={{ flex: 'none', width: '100%', height: '100%', position: 'relative', scrollSnapAlign: 'center' }}>
-                        <img src={getImageUrl(img)} alt={`${name} ${i}`} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }} />
-                      </div>
-                    )) : (
-                      <div style={{ flex: 'none', width: '100%', height: '100%', position: 'relative', scrollSnapAlign: 'center' }}>
-                        <img src={mainImage} alt={name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }} />
+                  {/* Columna derecha: Imagen Principal + Colores */}
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {/* Imagen Principal — Carrusel deslizable */}
+                    <div
+                      ref={carouselRef}
+                      className="no-scrollbar"
+                      style={{ flex: 1, background: 'white', borderRadius: '12px', overflowX: 'auto', display: 'flex', scrollSnapType: 'x mandatory', aspectRatio: '1/1', position: 'relative', border: '1px solid #f1f5f9' }}
+                      onScroll={(e) => {
+                        if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
+                        scrollTimeout.current = setTimeout(() => {
+                          const el = e.target;
+                          const idx = Math.round(el.scrollLeft / el.clientWidth);
+                          if (idx !== modalImageIdx) {
+                            setModalImageIdx(idx);
+                            const matchingColorIdx = parsedColors.findIndex(c => {
+                              if (!c.image_url) return false;
+                              return getImageUrl(rawImages[idx]) === c.image_url;
+                            });
+                            if (matchingColorIdx !== -1) setSelectedColorIdx(matchingColorIdx);
+                          }
+                        }, 50);
+                      }}
+                    >
+                      {rawImages && rawImages.length > 0 ? rawImages.map((img, i) => (
+                        <div key={i} style={{ flex: 'none', width: '100%', height: '100%', position: 'relative', scrollSnapAlign: 'center' }}>
+                          <img src={getImageUrl(img)} alt={`${name} ${i}`} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }} />
+                        </div>
+                      )) : (
+                        <div style={{ flex: 'none', width: '100%', height: '100%', position: 'relative', scrollSnapAlign: 'center' }}>
+                          <img src={mainImage} alt={name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }} />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* COLORES (Si existen) - Debajo de la imagen principal, alineado con ella */}
+                    {parsedColors.length > 0 && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <p style={{ fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>Elige tu color</p>
+                        <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                          {parsedColors.map((color, idx) => {
+                            let linkedIdx = -1;
+                            if (color.image_url && rawImages) {
+                              const exactIdx = rawImages.findIndex(img => getImageUrl(img) === color.image_url);
+                              if (exactIdx !== -1) linkedIdx = exactIdx;
+                            }
+                            const isSelected = selectedColorIdx === idx;
+                            return (
+                              <div
+                                key={idx}
+                                onClick={() => {
+                                  setSelectedColorIdx(idx);
+                                  if (linkedIdx !== -1) setModalImageIdx(linkedIdx);
+                                }}
+                                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+                              >
+                                <div style={{
+                                  width: '36px',
+                                  height: '36px',
+                                  borderRadius: '50%',
+                                  backgroundColor: color.hex,
+                                  border: isSelected ? '3px solid #F28705' : '3px solid white',
+                                  boxShadow: isSelected
+                                    ? '0 0 0 2px #F28705, 0 4px 8px rgba(0,0,0,0.15)'
+                                    : '0 0 0 2px #cbd5e1, 0 4px 6px rgba(0,0,0,0.08)',
+                                  transition: 'all 0.2s ease',
+                                  transform: isSelected ? 'scale(1.1)' : 'scale(1)'
+                                }} />
+                                <span style={{ fontSize: '10px', fontWeight: 700, color: isSelected ? '#F28705' : '#64748b', textAlign: 'center', maxWidth: '52px', lineHeight: 1.2 }}>
+                                  {color.name}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
                     )}
                   </div>
                 </div>
 
-                {/* COLORES (Si existen) - Debajo de la imagen principal */}
-                {parsedColors.length > 0 && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    <p style={{ fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>Elige tu color</p>
-                    <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-                      {parsedColors.map((color, idx) => {
-                        // Solo navegar a imagen si el color tiene image_url asignado
-                        let linkedIdx = -1;
-                        if (color.image_url && rawImages) {
-                          const exactIdx = rawImages.findIndex(img => getImageUrl(img) === color.image_url);
-                          if (exactIdx !== -1) linkedIdx = exactIdx;
-                        }
-                        const isSelected = selectedColorIdx === idx;
-                        return (
-                          <div
-                            key={idx}
-                            onClick={() => {
-                              setSelectedColorIdx(idx);
-                              if (linkedIdx !== -1) setModalImageIdx(linkedIdx);
-                            }}
-                            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
-                          >
-                            <div style={{
-                              width: '44px',
-                              height: '44px',
-                              borderRadius: '50%',
-                              backgroundColor: color.hex,
-                              border: isSelected ? '3px solid #F28705' : '3px solid white',
-                              boxShadow: isSelected
-                                ? '0 0 0 2px #F28705, 0 4px 8px rgba(0,0,0,0.15)'
-                                : '0 0 0 2px #cbd5e1, 0 4px 6px rgba(0,0,0,0.08)',
-                              transition: 'all 0.2s ease',
-                              transform: isSelected ? 'scale(1.1)' : 'scale(1)'
-                            }} />
-                            <span style={{ fontSize: '10px', fontWeight: 700, color: isSelected ? '#F28705' : '#64748b', textAlign: 'center', maxWidth: '52px', lineHeight: 1.2 }}>
-                              {color.name}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
               </div>
+
 
               {/* Columna Derecha: Detalles */}
               <div style={{ flex: '1 1 40%', minWidth: '300px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
