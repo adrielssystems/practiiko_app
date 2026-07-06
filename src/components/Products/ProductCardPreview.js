@@ -401,13 +401,14 @@ export default function ProductCardPreview({ product }) {
                       scrollTimeout.current = setTimeout(() => {
                         const el = e.target;
                         const idx = Math.round(el.scrollLeft / el.clientWidth);
-                        if (idx !== modalImageIdx) {
+                          if (idx !== modalImageIdx) {
                           setModalImageIdx(idx);
                           const matchingColorIdx = parsedColors.findIndex(c => {
                               if (!c.image_url) return false;
                               return getImageUrl(rawImages[idx]) === c.image_url;
                           });
                           if (matchingColorIdx !== -1) setSelectedColorIdx(matchingColorIdx);
+                        }
                         }
                       }, 50);
                     }}
@@ -430,7 +431,8 @@ export default function ProductCardPreview({ product }) {
                     <p style={{ fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>Elige tu color</p>
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
                       {parsedColors.map((color, idx) => {
-                        let linkedIdx = 0;
+                        // Solo navegar a imagen si el color tiene image_url asignado
+                        let linkedIdx = -1;
                         if (color.image_url && rawImages) {
                           const exactIdx = rawImages.findIndex(img => getImageUrl(img) === color.image_url);
                           if (exactIdx !== -1) linkedIdx = exactIdx;
@@ -441,7 +443,7 @@ export default function ProductCardPreview({ product }) {
                             key={idx}
                             onClick={() => {
                               setSelectedColorIdx(idx);
-                              setModalImageIdx(linkedIdx);
+                              if (linkedIdx !== -1) setModalImageIdx(linkedIdx);
                             }}
                             style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
                           >
