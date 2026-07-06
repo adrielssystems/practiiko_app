@@ -282,6 +282,7 @@ export default function ProductCardPreview({ product }) {
               e.stopPropagation();
               setDebugClicks(prev => prev + 1);
               console.log("[DEBUG] Galería de colores clickeada en Preview. Abriendo modal...");
+              alert("Botón clickeado!");
               setIsModalOpen(true);
             }}
             style={{
@@ -299,7 +300,10 @@ export default function ProductCardPreview({ product }) {
               width: '100%',
               display: 'flex',
               justifyContent: 'center',
-              alignItems: 'center'
+              alignItems: 'center',
+              position: 'relative',
+              zIndex: 50,
+              pointerEvents: 'auto'
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = 'translateY(-2px)';
