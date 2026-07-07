@@ -484,8 +484,7 @@ export default function ProductCardPreview({ product }) {
                   );
                 })()}
 
-              </div>         </div>
-
+              </div>
 
               {/* Columna Derecha: Detalles */}
               <div style={{ flex: '1 1 40%', minWidth: '300px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
