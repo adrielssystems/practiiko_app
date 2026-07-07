@@ -367,125 +367,124 @@ export default function ProductCardPreview({ product }) {
             
             {/* Contenido (2 columnas) */}
             <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', gap: '32px', flexDirection: 'row', flexWrap: 'wrap' }}>
-              
-              {/* Columna Izquierda: Galería */}
+                  {/* Columna Izquierda: Galería */}
               <div style={{ flex: '1 1 50%', minWidth: '300px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {/* Galería: Thumbnails + Imagen Principal */}
-                <div style={{ display: 'flex', gap: '12px' }}>
-                  {/* Thumbnails verticales */}
-                  {rawImages && rawImages.length > 1 && (
-                    <div style={{ position: 'relative', width: '64px', flexShrink: 0 }}>
-                      <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', gap: '8px', overflowY: 'auto', paddingBottom: '4px' }} className="no-scrollbar">
-                      {rawImages.map((img, i) => (
-                        <img
-                          key={i}
-                          src={getImageUrl(img)}
-                          alt={`${name} thumb ${i}`}
-                          onClick={() => {
-                            setModalImageIdx(i);
-                            const matchingColorIdx = parsedColors.findIndex(c => {
-                                if (!c.image_url) return false;
-                                return getImageUrl(img) === c.image_url;
-                            });
-                            if (matchingColorIdx !== -1) setSelectedColorIdx(matchingColorIdx);
-                          }}
-                          style={{
-                            width: '100%',
-                            aspectRatio: '1/1',
-                            objectFit: 'cover',
-                            borderRadius: '8px',
-                            cursor: 'pointer',
-                            border: modalImageIdx === i ? '2px solid #F28705' : '2px solid transparent',
-                            boxShadow: modalImageIdx === i ? '0 2px 8px rgba(242,135,5,0.3)' : 'none',
-                            transition: 'all 0.2s',
-                            flexShrink: 0
-                          }}
-                        />
-                      ))}
-                      </div>
-                    </div>
-                  )}
+                
+                {(() => {
+                  const allColorImageUrls = parsedColors.map(c => c.image_url ? getImageUrl(c.image_url) : null).filter(Boolean);
+                  const activeColorUrl = parsedColors[selectedColorIdx]?.image_url ? getImageUrl(parsedColors[selectedColorIdx].image_url) : null;
+                  
+                  const displayImages = rawImages.filter(img => {
+                    const url = getImageUrl(img);
+                    if (allColorImageUrls.includes(url)) {
+                      return url === activeColorUrl;
+                    }
+                    return true;
+                  });
 
-                  {/* Columna derecha: Imagen Principal + Colores */}
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    {/* Imagen Principal — Carrusel deslizable */}
-                    <div
-                      ref={carouselRef}
-                      className="no-scrollbar"
-                      style={{ flex: 1, background: 'white', borderRadius: '12px', overflowX: 'auto', display: 'flex', scrollSnapType: 'x mandatory', aspectRatio: '1/1', position: 'relative', border: '1px solid #f1f5f9' }}
-                      onScroll={(e) => {
-                        if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
-                        scrollTimeout.current = setTimeout(() => {
-                          const el = e.target;
-                          const idx = Math.round(el.scrollLeft / el.clientWidth);
-                          if (idx !== modalImageIdx) {
-                            setModalImageIdx(idx);
-                            const matchingColorIdx = parsedColors.findIndex(c => {
-                              if (!c.image_url) return false;
-                              return getImageUrl(rawImages[idx]) === c.image_url;
-                            });
-                            if (matchingColorIdx !== -1) setSelectedColorIdx(matchingColorIdx);
-                          }
-                        }, 50);
-                      }}
-                    >
-                      {rawImages && rawImages.length > 0 ? rawImages.map((img, i) => (
-                        <div key={i} style={{ flex: 'none', width: '100%', height: '100%', position: 'relative', scrollSnapAlign: 'center' }}>
-                          <img src={getImageUrl(img)} alt={`${name} ${i}`} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }} />
-                        </div>
-                      )) : (
-                        <div style={{ flex: 'none', width: '100%', height: '100%', position: 'relative', scrollSnapAlign: 'center' }}>
-                          <img src={mainImage} alt={name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }} />
+                  return (
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                      {/* Thumbnails verticales */}
+                      {displayImages && displayImages.length > 1 && (
+                        <div style={{ position: 'relative', width: '64px', flexShrink: 0 }}>
+                          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', gap: '8px', overflowY: 'auto', paddingBottom: '4px' }} className="no-scrollbar">
+                          {displayImages.map((img, i) => (
+                            <img
+                              key={i}
+                              src={getImageUrl(img)}
+                              alt={`${name} thumb ${i}`}
+                              onClick={() => {
+                                setModalImageIdx(i);
+                              }}
+                              style={{
+                                width: '100%',
+                                aspectRatio: '1/1',
+                                objectFit: 'cover',
+                                borderRadius: '8px',
+                                cursor: 'pointer',
+                                border: modalImageIdx === i ? '2px solid #F28705' : '2px solid transparent',
+                                boxShadow: modalImageIdx === i ? '0 2px 8px rgba(242,135,5,0.3)' : 'none',
+                                transition: 'all 0.2s',
+                                flexShrink: 0
+                              }}
+                            />
+                          ))}
+                          </div>
                         </div>
                       )}
-                    </div>
 
-                    {/* COLORES (Si existen) - Debajo de la imagen principal, alineado con ella */}
-                    {parsedColors.length > 0 && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        <p style={{ fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>Elige tu color</p>
-                        <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-                          {parsedColors.map((color, idx) => {
-                            let linkedIdx = -1;
-                            if (color.image_url && rawImages) {
-                              const exactIdx = rawImages.findIndex(img => getImageUrl(img) === color.image_url);
-                              if (exactIdx !== -1) linkedIdx = exactIdx;
-                            }
-                            const isSelected = selectedColorIdx === idx;
-                            return (
-                              <div
-                                key={idx}
-                                onClick={() => {
-                                  setSelectedColorIdx(idx);
-                                  if (linkedIdx !== -1) setModalImageIdx(linkedIdx);
-                                }}
-                                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
-                              >
-                                <div style={{
-                                  width: '36px',
-                                  height: '36px',
-                                  borderRadius: '50%',
-                                  backgroundColor: color.hex,
-                                  border: isSelected ? '3px solid #F28705' : '3px solid white',
-                                  boxShadow: isSelected
-                                    ? '0 0 0 2px #F28705, 0 4px 8px rgba(0,0,0,0.15)'
-                                    : '0 0 0 2px #cbd5e1, 0 4px 6px rgba(0,0,0,0.08)',
-                                  transition: 'all 0.2s ease',
-                                  transform: isSelected ? 'scale(1.1)' : 'scale(1)'
-                                }} />
-                                <span style={{ fontSize: '10px', fontWeight: 700, color: isSelected ? '#F28705' : '#64748b', textAlign: 'center', maxWidth: '52px', lineHeight: 1.2 }}>
-                                  {color.name}
-                                </span>
-                              </div>
-                            );
-                          })}
+                      {/* Columna derecha: Imagen Principal + Colores */}
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        {/* Imagen Principal — Carrusel deslizable */}
+                        <div
+                          ref={carouselRef}
+                          className="no-scrollbar"
+                          style={{ flex: 1, background: 'white', borderRadius: '12px', overflowX: 'auto', display: 'flex', scrollSnapType: 'x mandatory', aspectRatio: '1/1', position: 'relative', border: '1px solid #f1f5f9' }}
+                          onScroll={(e) => {
+                            if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
+                            scrollTimeout.current = setTimeout(() => {
+                              const el = e.target;
+                              const idx = Math.round(el.scrollLeft / el.clientWidth);
+                              if (idx !== modalImageIdx && idx >= 0 && idx < displayImages.length) {
+                                setModalImageIdx(idx);
+                              }
+                            }, 50);
+                          }}
+                        >
+                          {displayImages && displayImages.length > 0 ? displayImages.map((img, i) => (
+                            <div key={i} style={{ flex: 'none', width: '100%', height: '100%', position: 'relative', scrollSnapAlign: 'center' }}>
+                              <img src={getImageUrl(img)} alt={`${name} ${i}`} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }} />
+                            </div>
+                          )) : (
+                            <div style={{ flex: 'none', width: '100%', height: '100%', position: 'relative', scrollSnapAlign: 'center' }}>
+                              <img src={mainImage} alt={name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }} />
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
 
-              </div>
+                        {/* COLORES (Si existen) - Debajo de la imagen principal, alineado con ella */}
+                        {parsedColors.length > 0 && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <p style={{ fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>Elige tu color</p>
+                            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                              {parsedColors.map((color, idx) => {
+                                const isSelected = selectedColorIdx === idx;
+                                return (
+                                  <div
+                                    key={idx}
+                                    onClick={() => {
+                                      setSelectedColorIdx(idx);
+                                      setModalImageIdx(0); // Volver al inicio de la galería para ese color
+                                    }}
+                                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+                                  >
+                                    <div style={{
+                                      width: '36px',
+                                      height: '36px',
+                                      borderRadius: '50%',
+                                      backgroundColor: color.hex,
+                                      border: isSelected ? '3px solid #F28705' : '3px solid white',
+                                      boxShadow: isSelected
+                                        ? '0 0 0 2px #F28705, 0 4px 8px rgba(0,0,0,0.15)'
+                                        : '0 0 0 2px #cbd5e1, 0 4px 6px rgba(0,0,0,0.08)',
+                                      transition: 'all 0.2s ease',
+                                      transform: isSelected ? 'scale(1.1)' : 'scale(1)'
+                                    }} />
+                                    <span style={{ fontSize: '10px', fontWeight: 700, color: isSelected ? '#F28705' : '#64748b', textAlign: 'center', maxWidth: '52px', lineHeight: 1.2 }}>
+                                      {color.name}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+              </div>         </div>
 
 
               {/* Columna Derecha: Detalles */}
