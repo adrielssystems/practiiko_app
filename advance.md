@@ -20,5 +20,28 @@
 ### 3. Página de Inicio (`page.js`)
 - **Cintillos Promocionales:** Se actualizó el texto del segundo banner naranja del Home. Ahora muestra el mensaje: *"¡Contamos con planes de financiamiento que se ajustan a sus POSIBILIDADES!"*, junto con un subtítulo que anima a los usuarios a consultar facilidades de pago, reemplazando el texto duplicado de envío gratuito.
 
+## Tareas Realizadas (07 de Julio de 2026)
+
+### 1. Interfaz de Ficha de Producto (Modal)
+- **Cuadrícula Uniforme de Etiquetas:** Las etiquetas de beneficios (Best Seller, Nuevo, etc.) ahora se presentan de 2 en 2 mediante una cuadrícula perfecta, con altura unificada y texto alineado a la izquierda para garantizar coherencia visual.
+- **Galería Vertical Responsiva:** Se eliminó la altura fija del contenedor de miniaturas (thumbnails) y se implementó un formato relativo-absoluto. Esto garantiza que la columna de miniaturas se extienda fluidamente hasta la altura total del contenido derecho (foto + botones de colores) sin cortes abruptos, incluso si el producto tiene 10 fotos.
+- **Dinámica de Selección de Color (Premium UX):** 
+  - La galería (tanto miniaturas como carrusel) oculta automáticamente las fotos asociadas a los colores inactivos. Solo se muestran las del color seleccionado junto a las fotos genéricas de detalles.
+  - Al hacer clic en un color, la imagen principal se actualiza dinámicamente, proporcionando una experiencia más limpia.
+
+### 2. Autogestor (`ProductForm.js` y `MediaUpload.js`)
+- **Aumento de Límites Multimedia:** 
+  - Se incrementó el máximo de imágenes permitidas de 5 a **10**.
+  - Se incrementó el límite de videos de 1 a **2**.
+  - El backend (a través del campo `video_url`) fue adaptado de forma transparente para guardar y leer un arreglo JSON en caso de recibir más de un video, mientras mantiene el código retrocompatible con productos que solo tienen un video simple.
+
+### 3. Ordenamiento del Catálogo (`catalogo/page.js`)
+- **Filtro Principal ("Todos"):** Se implementó una lógica de prioridad para ordenar los productos según sus etiquetas (antes de ordenarse por categoría):
+  1. Best Seller (`is_featured`)
+  2. Nuevo (`is_new`)
+  3. Próximamente (`is_coming_soon`)
+  4. En Promoción (`is_promotion`)
+  5. Liquidación (`is_clearance`)
+
 ## Próximos Pasos
 - [ ] Mantenimiento general y desarrollo continuo según requerimientos.

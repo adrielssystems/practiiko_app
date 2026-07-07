@@ -88,23 +88,24 @@ export default async function EditProductPage({ params }) {
         try {
             const catIdNum = category_id ? parseInt(category_id) : null;
             const stockNum = stock ? parseInt(stock) : 0;
+            const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
 
             console.log(`DEBUG: Updating product ${id}`, { images, tags, is_featured, is_coming_soon });
 
             // 1. Actualizar datos base
             const updateRes = await query(`
                 UPDATE products 
-                SET name = $1, code = $2, description = $3, price_bcv = $4, price_cash = $5, 
-                    stock = $6, category_id = $7, status = $8, video_url = $9,
-                    tags = $10, features = $11, pricing_matrix = $12, 
-                    is_featured = $13, is_promotion = $14, price_valid_until = $15,
-                    pseudonimo = $16, is_new = $17, is_clearance = $18, is_coming_soon = $19,
-                    technical_summary = $20, badge_text = $21, show_badge = $22,
-                    interactive_badges = $23, likes_count = $24, views_count = $25, sales_count = $26, colors = $27
-                WHERE id = $28
+                SET name = $1, code = $2, slug = $3, description = $4, price_bcv = $5, price_cash = $6, 
+                    stock = $7, category_id = $8, status = $9, video_url = $10,
+                    tags = $11, features = $12, pricing_matrix = $13, 
+                    is_featured = $14, is_promotion = $15, price_valid_until = $16,
+                    pseudonimo = $17, is_new = $18, is_clearance = $19, is_coming_soon = $20,
+                    technical_summary = $21, badge_text = $22, show_badge = $23,
+                    interactive_badges = $24, likes_count = $25, views_count = $26, sales_count = $27, colors = $28
+                WHERE id = $29
                 RETURNING id
             `, [
-                name, code, description, price_bcv, price_cash, 
+                name, code, slug, description, price_bcv, price_cash, 
                 stockNum, catIdNum, status, video_url,
                 tags, features, pricing_matrix,
                 is_featured, is_promotion, price_valid_until,
