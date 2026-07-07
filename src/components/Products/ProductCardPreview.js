@@ -374,8 +374,8 @@ export default function ProductCardPreview({ product }) {
                 <div style={{ display: 'flex', gap: '12px' }}>
                   {/* Thumbnails verticales */}
                   {rawImages && rawImages.length > 1 && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '64px', flexShrink: 0, maxHeight: '380px', overflowY: 'auto' }}
-                         className="no-scrollbar">
+                    <div style={{ position: 'relative', width: '64px', flexShrink: 0 }}>
+                      <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', gap: '8px', overflowY: 'auto', paddingBottom: '4px' }} className="no-scrollbar">
                       {rawImages.map((img, i) => (
                         <img
                           key={i}
@@ -397,10 +397,12 @@ export default function ProductCardPreview({ product }) {
                             cursor: 'pointer',
                             border: modalImageIdx === i ? '2px solid #F28705' : '2px solid transparent',
                             boxShadow: modalImageIdx === i ? '0 2px 8px rgba(242,135,5,0.3)' : 'none',
-                            transition: 'all 0.2s'
+                            transition: 'all 0.2s',
+                            flexShrink: 0
                           }}
                         />
                       ))}
+                      </div>
                     </div>
                   )}
 
