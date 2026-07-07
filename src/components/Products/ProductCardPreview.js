@@ -77,7 +77,15 @@ export default function ProductCardPreview({ product }) {
     }}>
       
       {/* HEADER IMAGE SECTION (1x1) */}
-      <div style={{ position: 'relative', width: '100%', aspectRatio: '1/1', background: 'white', overflow: 'hidden', borderTopLeftRadius: '24px', borderTopRightRadius: '24px' }}>
+      <div 
+        style={{ position: 'relative', width: '100%', aspectRatio: '1/1', background: 'white', overflow: 'hidden', borderTopLeftRadius: '24px', borderTopRightRadius: '24px', cursor: 'pointer' }}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setDebugClicks(prev => prev + 1);
+          setIsModalOpen(true);
+        }}
+      >
         <img 
           src={mainImage} 
           alt={name} 
@@ -172,7 +180,7 @@ export default function ProductCardPreview({ product }) {
         </div>
 
         {/* INTERACTIVE BADGES */}
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', position: 'relative' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', position: 'relative' }}>
           {interactiveBadges.map((badge, idx) => (
             <button 
               key={idx}
@@ -182,19 +190,24 @@ export default function ProductCardPreview({ product }) {
                 background: activeBadge === idx ? '#0f172a' : '#f1f5f9',
                 color: activeBadge === idx ? 'white' : '#475569',
                 border: 'none',
-                padding: '6px 12px',
+                padding: '6px 8px',
                 borderRadius: '8px',
-                fontSize: '0.7rem',
+                fontSize: '9.5px',
                 fontWeight: 700,
                 textTransform: 'uppercase',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '4px',
+                justifyContent: 'flex-start',
+                textAlign: 'left',
+                lineHeight: 1.2,
+                width: '100%',
+                minHeight: '34px',
+                gap: '6px',
                 cursor: 'pointer',
                 transition: 'all 0.2s'
               }}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F28705" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> {badge.title}
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F28705" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> {badge.title}
             </button>
           ))}
           
