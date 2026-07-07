@@ -5,10 +5,10 @@ import { useDropzone } from "react-dropzone";
 import { X, Upload, Film, Loader2, AlertCircle } from "lucide-react";
 import { useToast } from "@/components/Toast";
 
-export default function MediaUpload({ onMediaChange, initialMedia = { images: [], video: null } }) {
+export default function MediaUpload({ onMediaChange, initialMedia = { images: [], videos: [] } }) {
   const { addToast } = useToast();
   const [images, setImages] = useState(initialMedia.images || []);
-  const [video, setVideo] = useState(initialMedia.video || null);
+  const [videos, setVideos] = useState(initialMedia.videos || []);
   const [localPreviews, setLocalPreviews] = useState({});
   const [localSpecs, setLocalSpecs] = useState({});
   const [isUploading, setIsUploading] = useState(false);
@@ -48,8 +48,8 @@ export default function MediaUpload({ onMediaChange, initialMedia = { images: []
 
   // Sincronizar con el padre cada vez que cambie algo localmente
   useEffect(() => {
-    onMediaChange({ images, video, localPreviews });
-  }, [images, video, localPreviews, onMediaChange]);
+    onMediaChange({ images, videos, localPreviews });
+  }, [images, videos, localPreviews, onMediaChange]);
 
   const onDrop = useCallback(async (acceptedFiles) => {
     setIsUploading(true);
@@ -58,12 +58,12 @@ export default function MediaUpload({ onMediaChange, initialMedia = { images: []
       const isVideo = file.type.startsWith('video/');
       
       // Validaciones locales con Toast
-      if (isVideo && video) {
-        addToast("Solo se permite un video por producto.", "error");
+      if (isVideo && videos.length >= 2) {
+        addToast("Solo se permiten hasta 2 videos por producto.", "error");
         continue;
       }
-      if (!isVideo && images.length >= 5) {
-        addToast("Máximo 5 imágenes permitidas.", "error");
+      if (!isVideo && images.length >= 10) {
+        addToast("Máximo 10 imágenes permitidas.", "error");
         continue;
       }
 
@@ -108,7 +108,7 @@ export default function MediaUpload({ onMediaChange, initialMedia = { images: []
           }
 
           if (isVideo) {
-            setVideo(data.url);
+            setVideos(prev => [...prev, data.url]);
             addToast("Video subido con éxito", "success");
           } else {
             setImages(prev => [...prev, data.url]);
@@ -123,7 +123,7 @@ export default function MediaUpload({ onMediaChange, initialMedia = { images: []
     }
     
     setIsUploading(false);
-  }, [images, video, addToast]);
+  }, [images, videos, addToast]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
     onDrop,
@@ -139,8 +139,8 @@ export default function MediaUpload({ onMediaChange, initialMedia = { images: []
     addToast("Imagen eliminada", "success");
   };
 
-  const removeVideo = () => {
-    setVideo(null);
+  const removeVideo = (index) => {
+    setVideos(prev => prev.filter((_, i) => i !== index));
     addToast("Video eliminado", "success");
   };
 
@@ -207,8 +207,8 @@ export default function MediaUpload({ onMediaChange, initialMedia = { images: []
           <p style={{ fontWeight: 800, margin: '0 0 0.5rem 0', fontSize: '1rem', color: '#1e293b' }}>Arrastra tus archivos aquí</p>
           <p style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500 }}>Soporta imágenes (WebP, JPG) y Video (MP4)</p>
           <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', marginTop: '1rem' }}>
-            <span style={{ padding: '0.25rem 0.75rem', borderRadius: '20px', background: '#f1f5f9', fontSize: '0.65rem', fontWeight: 700, color: '#475569' }}>MAX 5 FOTOS</span>
-            <span style={{ padding: '0.25rem 0.75rem', borderRadius: '20px', background: '#f1f5f9', fontSize: '0.65rem', fontWeight: 700, color: '#475569' }}>1 VIDEO</span>
+            <span style={{ padding: '0.25rem 0.75rem', borderRadius: '20px', background: '#f1f5f9', fontSize: '0.65rem', fontWeight: 700, color: '#475569' }}>MAX 10 FOTOS</span>
+            <span style={{ padding: '0.25rem 0.75rem', borderRadius: '20px', background: '#f1f5f9', fontSize: '0.65rem', fontWeight: 700, color: '#475569' }}>MAX 2 VIDEOS</span>
           </div>
         </div>
       </div>
@@ -287,8 +287,8 @@ export default function MediaUpload({ onMediaChange, initialMedia = { images: []
           </div>
         ))}
 
-        {video && (
-          <div style={{ 
+        {videos.map((vid, index) => (
+          <div key={`vid-${index}`} style={{ 
             width: '110px', 
             height: '110px', 
             position: 'relative', 
@@ -302,13 +302,13 @@ export default function MediaUpload({ onMediaChange, initialMedia = { images: []
           onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
           onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
           >
-            <video src={localPreviews[video] || video} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6 }} />
+            <video src={localPreviews[vid] || vid} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6 }} />
             <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
               <Film size={24} color="white" />
             </div>
             <button 
               type="button"
-              onClick={removeVideo}
+              onClick={() => removeVideo(index)}
               style={{ 
                 position: 'absolute', 
                 top: '6px', 
@@ -339,9 +339,9 @@ export default function MediaUpload({ onMediaChange, initialMedia = { images: []
               textAlign: 'center', 
               padding: '4px 0', 
               fontWeight: 900 
-            }}>VIDEO</div>
+            }}>VIDEO {index + 1}</div>
           </div>
-        )}
+        ))}
       </div>
 
       <style jsx>{`

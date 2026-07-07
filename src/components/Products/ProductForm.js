@@ -17,7 +17,7 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
   
   const [media, setMedia] = useState({ 
     images: initialData.images || [], 
-    video: initialData.video_url || null,
+    videos: initialData.video_url ? (initialData.video_url.startsWith('[') ? JSON.parse(initialData.video_url) : [initialData.video_url]) : [],
     localPreviews: {}
   });
   
@@ -73,8 +73,10 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
       mediaList.push({ type: "image", url: media.localPreviews[img] || img });
     });
   }
-  if (media.video) {
-    mediaList.push({ type: "video", url: media.localPreviews[media.video] || media.video });
+  if (media.videos && media.videos.length > 0) {
+    media.videos.forEach(v => {
+      mediaList.push({ type: "video", url: media.localPreviews[v] || v });
+    });
   }
   if (mediaList.length === 0) {
     mediaList.push({ type: "image", url: "/hero-sofa.png" });
@@ -83,7 +85,7 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
   // Reiniciar index cuando cambian las imágenes o el video
   useEffect(() => {
     setActiveIndex(0);
-  }, [media.images, media.video]);
+  }, [media.images, media.videos]);
 
   // Autoplay del video al seleccionarse, y pausa al salirse
   useEffect(() => {
@@ -215,6 +217,7 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
         
         {/* CAMPOS OCULTOS PARA DATOS COMPLEJOS (JSON) */}
         <input type="hidden" name="images_json" value={JSON.stringify(media.images)} />
+        <input type="hidden" name="video_url" value={JSON.stringify(media.videos)} />
         <input type="hidden" name="tags_json" value="[]" />
         <input type="hidden" name="features_json" value="[]" />
         <input type="hidden" name="pricing_matrix_json" value="[]" />
@@ -602,7 +605,7 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
           </label>
         </div>
 
-        <MediaUpload onMediaChange={handleMediaChange} initialMedia={{ images: media.images, video: media.video }} />
+        <MediaUpload onMediaChange={handleMediaChange} initialMedia={{ images: media.images, videos: media.videos }} />
 
         <div style={{ 
           display: 'flex', 
