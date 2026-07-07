@@ -445,7 +445,15 @@ export default function ProductCardPreview({ product }) {
                         {/* COLORES (Si existen) - Debajo de la imagen principal, alineado con ella */}
                         {parsedColors.length > 0 && (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                            <p style={{ fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>Elige tu color</p>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px', animation: 'pulse 2s infinite' }}>
+                              <span style={{ position: 'relative', display: 'flex', height: '10px', width: '10px' }}>
+                                <span style={{ animation: 'ping 1s cubic-bezier(0, 0, 0.2, 1) infinite', position: 'absolute', display: 'inline-flex', height: '100%', width: '100%', borderRadius: '50%', backgroundColor: '#F28705', opacity: 0.75 }}></span>
+                                <span style={{ position: 'relative', display: 'inline-flex', borderRadius: '50%', height: '10px', width: '10px', backgroundColor: '#d97706' }}></span>
+                              </span>
+                              <p style={{ fontSize: '11px', fontWeight: 900, color: '#F28705', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0, textShadow: '0 1px 2px rgba(0,0,0,0.1)' }}>
+                                ¡Toca el color y Sorpréndete!
+                              </p>
+                            </div>
                             <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
                               {parsedColors.map((color, idx) => {
                                 const isSelected = selectedColorIdx === idx;
