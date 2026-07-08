@@ -43,5 +43,14 @@
   4. En Promoción (`is_promotion`)
   5. Liquidación (`is_clearance`)
 
+## Tareas Realizadas (08 de Julio de 2026)
+
+### 1. Corrección en Gestor de Productos
+- **Error Crítico de Base de Datos (`slug` nulo):** Se solucionó un error que impedía guardar o actualizar productos debido a que la columna `slug` requería un valor no nulo y no se estaba enviando. Se implementó la generación automática del `slug` a partir del nombre del producto antes de ejecutar las inserciones (INSERT) y actualizaciones (UPDATE) en la base de datos (`app/products/new/page.js` y `app/products/[id]/edit/page.js`).
+
+### 2. Mejora de UX (Interacción de Colores)
+- **Llamado a la Acción (Catálogo y Gestor):** Se rediseñó la indicación para la selección de color en los modales de productos. Se cambió el texto estático "Elige tu color" por un mensaje interactivo, vibrante y en mayúsculas: **"¡TOCA EL COLOR Y SORPRÉNDETE!"**.
+- **Animaciones:** Se incorporó una animación de "pulso" y un indicador dinámico tipo "ping" en color naranja/dorado para captar visualmente la atención del cliente hacia las variantes de colores (`ProductCard.jsx` y `ProductCardPreview.js`).
+
 ## Próximos Pasos
 - [ ] Mantenimiento general y desarrollo continuo según requerimientos.
