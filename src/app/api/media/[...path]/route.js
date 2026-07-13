@@ -35,21 +35,48 @@ export async function GET(req, { params }) {
     }
 
     const stat = fs.statSync(filePath);
-    const { Readable } = require('stream');
-    const stream = fs.createReadStream(filePath);
-    const webStream = Readable.toWeb(stream);
+    const fileSize = stat.size;
 
     let contentType = 'application/octet-stream';
     if (ext === '.webp') contentType = 'image/webp';
     else if (ext === '.png') contentType = 'image/png';
     else if (ext === '.jpg' || ext === '.jpeg') contentType = 'image/jpeg';
     else if (ext === '.mp4') contentType = 'video/mp4';
+    else if (ext === '.webm') contentType = 'video/webm';
+
+    const range = req.headers.get('range');
+    const { Readable } = require('stream');
+
+    if (range) {
+      const parts = range.replace(/bytes=/, "").split("-");
+      const start = parseInt(parts[0], 10);
+      const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+      const chunksize = (end - start) + 1;
+      
+      const stream = fs.createReadStream(filePath, { start, end });
+      const webStream = Readable.toWeb(stream);
+
+      return new NextResponse(webStream, {
+        status: 206,
+        headers: {
+          'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+          'Accept-Ranges': 'bytes',
+          'Content-Length': chunksize.toString(),
+          'Content-Type': contentType,
+          'Cache-Control': 'public, max-age=31536000, immutable',
+        },
+      });
+    }
+
+    const stream = fs.createReadStream(filePath);
+    const webStream = Readable.toWeb(stream);
 
     const res = new NextResponse(webStream, {
       status: 200,
       headers: {
+        'Accept-Ranges': 'bytes',
         'Content-Type': contentType,
-        'Content-Length': stat.size.toString(),
+        'Content-Length': fileSize.toString(),
         'Cache-Control': 'public, max-age=31536000, immutable',
       },
     });
