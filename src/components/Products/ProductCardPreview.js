@@ -25,7 +25,20 @@ export default function ProductCardPreview({ product }) {
         carouselRef.current.scrollTo({ left: targetScroll, behavior: 'smooth' });
       }
     }
-  }, [modalImageIdx]);
+    
+    // Auto-play videos when they become active in the modal
+    if (isModalOpen) {
+      const videos = document.querySelectorAll('.modal-video-element');
+      videos.forEach(vid => {
+        if (vid.dataset.index === String(modalImageIdx)) {
+          vid.currentTime = 0;
+          vid.play().catch(e => console.log('Autoplay blocked:', e));
+        } else {
+          vid.pause();
+        }
+      });
+    }
+  }, [modalImageIdx, isModalOpen]);
 
   // Default values to prevent errors
   const name = product?.name || "SOFÁ MODULAR ZEN";
@@ -96,11 +109,13 @@ export default function ProductCardPreview({ product }) {
           setDebugClicks(prev => prev + 1);
           setIsModalOpen(true);
         }}
+        onContextMenu={(e) => e.preventDefault()}
       >
         <img 
           src={mainImage} 
           alt={name} 
-          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          style={{ width: '100%', height: '100%', objectFit: 'cover', userSelect: 'none', pointerEvents: 'none' }}
+          onDragStart={(e) => e.preventDefault()}
         />
         
         {/* LIFESTYLE BADGE (MEDALLA DORADA) */}
@@ -406,6 +421,7 @@ export default function ProductCardPreview({ product }) {
                               <div
                                 key={i}
                                 onClick={() => setModalImageIdx(i)}
+                                onContextMenu={(e) => e.preventDefault()}
                                 style={{
                                   width: '100%',
                                   aspectRatio: '1/1',
@@ -423,8 +439,8 @@ export default function ProductCardPreview({ product }) {
                                   overflow: 'hidden'
                                 }}
                               >
-                                <svg style={{ width: '24px', height: '24px', color: 'white', position: 'absolute', zIndex: 10 }} fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                                <video src={media.url} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6 }} />
+                                <svg style={{ width: '24px', height: '24px', color: 'white', position: 'absolute', zIndex: 10, pointerEvents: 'none' }} fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                                <video src={media.url} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6, pointerEvents: 'none', userSelect: 'none' }} controlsList="nodownload" />
                               </div>
                             ) : (
                               <img
@@ -434,6 +450,8 @@ export default function ProductCardPreview({ product }) {
                                 onClick={() => {
                                   setModalImageIdx(i);
                                 }}
+                                onContextMenu={(e) => e.preventDefault()}
+                                onDragStart={(e) => e.preventDefault()}
                                 style={{
                                   width: '100%',
                                   aspectRatio: '1/1',
@@ -443,7 +461,8 @@ export default function ProductCardPreview({ product }) {
                                   border: modalImageIdx === i ? '2px solid #F28705' : '2px solid transparent',
                                   boxShadow: modalImageIdx === i ? '0 2px 8px rgba(242,135,5,0.3)' : 'none',
                                   transition: 'all 0.2s',
-                                  flexShrink: 0
+                                  flexShrink: 0,
+                                  userSelect: 'none'
                                 }}
                               />
                             )
@@ -471,16 +490,23 @@ export default function ProductCardPreview({ product }) {
                           }}
                         >
                           {displayMedia && displayMedia.length > 0 ? displayMedia.map((media, i) => (
-                            <div key={i} style={{ flex: 'none', width: '100%', height: '100%', position: 'relative', scrollSnapAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.02)' }}>
+                            <div key={i} style={{ flex: 'none', width: '100%', height: '100%', position: 'relative', scrollSnapAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.02)' }} onContextMenu={(e) => e.preventDefault()}>
                               {media.type === 'video' ? (
-                                <video src={media.url} controls style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }} />
+                                <video 
+                                  src={media.url} 
+                                  controls 
+                                  controlsList="nodownload"
+                                  data-index={i}
+                                  className="modal-video-element"
+                                  style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }} 
+                                />
                               ) : (
-                                <img src={media.url} alt={`${name} ${i}`} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }} />
+                                <img src={media.url} alt={`${name} ${i}`} onDragStart={(e) => e.preventDefault()} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', userSelect: 'none', pointerEvents: 'none' }} />
                               )}
                             </div>
                           )) : (
-                            <div style={{ flex: 'none', width: '100%', height: '100%', position: 'relative', scrollSnapAlign: 'center' }}>
-                              <img src={mainImage} alt={name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }} />
+                            <div style={{ flex: 'none', width: '100%', height: '100%', position: 'relative', scrollSnapAlign: 'center' }} onContextMenu={(e) => e.preventDefault()}>
+                              <img src={mainImage} alt={name} onDragStart={(e) => e.preventDefault()} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', userSelect: 'none', pointerEvents: 'none' }} />
                             </div>
                           )}
                         </div>
