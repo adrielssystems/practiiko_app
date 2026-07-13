@@ -51,6 +51,17 @@ export default function ProductCardPreview({ product }) {
     try { parsedColors = JSON.parse(product.colors); } catch(e) { parsedColors = []; }
   }
 
+  let parsedVideos = [];
+  if (Array.isArray(product?.video_url)) {
+    parsedVideos = product.video_url;
+  } else if (product?.video_url) {
+    try {
+      parsedVideos = typeof product.video_url === 'string' && product.video_url.startsWith('[') ? JSON.parse(product.video_url) : [product.video_url];
+    } catch (e) {
+      parsedVideos = [product.video_url];
+    }
+  }
+
   const getImageUrl = (img) => (typeof img === 'string' ? img : img?.url || "");
 
   return (
@@ -380,34 +391,62 @@ export default function ProductCardPreview({ product }) {
                       return url === activeColorUrl;
                     }
                     return true;
-                  });
+                  }).map(img => ({ type: 'image', url: getImageUrl(img) }));
+
+                  const displayMedia = [...displayImages, ...parsedVideos.map(v => ({ type: 'video', url: v }))];
 
                   return (
                     <div style={{ display: 'flex', gap: '12px' }}>
                       {/* Thumbnails verticales */}
-                      {displayImages && displayImages.length > 1 && (
+                      {displayMedia && displayMedia.length > 1 && (
                         <div style={{ position: 'relative', width: '64px', flexShrink: 0 }}>
                           <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', gap: '8px', overflowY: 'auto', paddingBottom: '4px' }} className="no-scrollbar">
-                          {displayImages.map((img, i) => (
-                            <img
-                              key={i}
-                              src={getImageUrl(img)}
-                              alt={`${name} thumb ${i}`}
-                              onClick={() => {
-                                setModalImageIdx(i);
-                              }}
-                              style={{
-                                width: '100%',
-                                aspectRatio: '1/1',
-                                objectFit: 'cover',
-                                borderRadius: '8px',
-                                cursor: 'pointer',
-                                border: modalImageIdx === i ? '2px solid #F28705' : '2px solid transparent',
-                                boxShadow: modalImageIdx === i ? '0 2px 8px rgba(242,135,5,0.3)' : 'none',
-                                transition: 'all 0.2s',
-                                flexShrink: 0
-                              }}
-                            />
+                          {displayMedia.map((media, i) => (
+                            media.type === 'video' ? (
+                              <div
+                                key={i}
+                                onClick={() => setModalImageIdx(i)}
+                                style={{
+                                  width: '100%',
+                                  aspectRatio: '1/1',
+                                  borderRadius: '8px',
+                                  cursor: 'pointer',
+                                  border: modalImageIdx === i ? '2px solid #F28705' : '2px solid transparent',
+                                  boxShadow: modalImageIdx === i ? '0 2px 8px rgba(242,135,5,0.3)' : 'none',
+                                  transition: 'all 0.2s',
+                                  flexShrink: 0,
+                                  position: 'relative',
+                                  backgroundColor: 'black',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  overflow: 'hidden'
+                                }}
+                              >
+                                <svg style={{ width: '24px', height: '24px', color: 'white', position: 'absolute', zIndex: 10 }} fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                                <video src={media.url} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6 }} />
+                              </div>
+                            ) : (
+                              <img
+                                key={i}
+                                src={media.url}
+                                alt={`${name} thumb ${i}`}
+                                onClick={() => {
+                                  setModalImageIdx(i);
+                                }}
+                                style={{
+                                  width: '100%',
+                                  aspectRatio: '1/1',
+                                  objectFit: 'cover',
+                                  borderRadius: '8px',
+                                  cursor: 'pointer',
+                                  border: modalImageIdx === i ? '2px solid #F28705' : '2px solid transparent',
+                                  boxShadow: modalImageIdx === i ? '0 2px 8px rgba(242,135,5,0.3)' : 'none',
+                                  transition: 'all 0.2s',
+                                  flexShrink: 0
+                                }}
+                              />
+                            )
                           ))}
                           </div>
                         </div>
@@ -425,15 +464,19 @@ export default function ProductCardPreview({ product }) {
                             scrollTimeout.current = setTimeout(() => {
                               const el = e.target;
                               const idx = Math.round(el.scrollLeft / el.clientWidth);
-                              if (idx !== modalImageIdx && idx >= 0 && idx < displayImages.length) {
+                              if (idx !== modalImageIdx && idx >= 0 && idx < displayMedia.length) {
                                 setModalImageIdx(idx);
                               }
                             }, 50);
                           }}
                         >
-                          {displayImages && displayImages.length > 0 ? displayImages.map((img, i) => (
-                            <div key={i} style={{ flex: 'none', width: '100%', height: '100%', position: 'relative', scrollSnapAlign: 'center' }}>
-                              <img src={getImageUrl(img)} alt={`${name} ${i}`} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }} />
+                          {displayMedia && displayMedia.length > 0 ? displayMedia.map((media, i) => (
+                            <div key={i} style={{ flex: 'none', width: '100%', height: '100%', position: 'relative', scrollSnapAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.02)' }}>
+                              {media.type === 'video' ? (
+                                <video src={media.url} controls style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }} />
+                              ) : (
+                                <img src={media.url} alt={`${name} ${i}`} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }} />
+                              )}
                             </div>
                           )) : (
                             <div style={{ flex: 'none', width: '100%', height: '100%', position: 'relative', scrollSnapAlign: 'center' }}>
