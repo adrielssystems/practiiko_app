@@ -52,5 +52,22 @@
 - **Llamado a la Acción (Catálogo y Gestor):** Se rediseñó la indicación para la selección de color en los modales de productos. Se cambió el texto estático "Elige tu color" por un mensaje interactivo, vibrante y en mayúsculas: **"¡TOCA EL COLOR Y SORPRÉNDETE!"**.
 - **Animaciones:** Se incorporó una animación de "pulso" y un indicador dinámico tipo "ping" en color naranja/dorado para captar visualmente la atención del cliente hacia las variantes de colores (`ProductCard.jsx` y `ProductCardPreview.js`).
 
+## Tareas Realizadas (13 de Julio de 2026)
+
+### 1. Visualización de Videos en Autogestor
+- **Conexión de Propiedades (`ProductForm.js`):** Se detectó y corrigió una desconexión en el formulario de edición de productos. Aunque el gestor subía los videos correctamente, no estaba enviando la propiedad `video_url` al componente de vista previa (`ProductCardPreview.js`). Ahora el video recién subido se renderiza exitosamente al instante dentro del modal de vista previa del gestor, del mismo modo que opera en el catálogo web.
+
+### 2. Seguridad Multimedia y UX (Catálogo y Gestor)
+- **Protección Antidescargas y Anticopia:**
+  - **Bloqueo de Clic Derecho:** Se implementó `onContextMenu` para desactivar el menú nativo y prevenir la opción "Guardar imagen/video como...".
+  - **Bloqueo de Arrastre (Drag-and-Drop):** Se implementó `onDragStart` para inhabilitar el arrastre de las imágenes hacia el escritorio.
+  - **Restricción de Selección:** Se aplicó CSS (`pointer-events-none`, `select-none`) en elementos clave para proteger el contenido visual de extracciones simples.
+  - **Ocultamiento de Descargas:** Se agregó `controlsList="nodownload"` al `<video>` para eliminar el botón de descarga del reproductor nativo del navegador.
+- **Autoreproducción Inteligente (Auto-Play):** Se desarrolló una lógica (`useEffect` en `ProductCard.jsx` y `ProductCardPreview.js`) que monitorea la selección del carrusel. Al desplazarse hacia un video, este se reproduce de forma automática desde el inicio; si se cambia a una imagen, el video previo se pausa en segundo plano para ahorrar recursos.
+- **Soporte y Fixes para Dispositivos Móviles (iOS / Safari):** 
+  - Se solucionó el error que causaba que los videos se mostraran como "URL Rota" en smartphones, al inyectar las propiedades `playsInline` y `preload="metadata"`. Esto evita bloqueos de carga iniciales y que los móviles fuercen el modo pantalla completa.
+  - Las miniaturas de video ahora se renderizan con la etiqueta `muted` de forma predeterminada, superando el bloqueo nativo de reproducción automática de iOS.
+  - Se implementó un filtro de seguridad que fuerza cualquier URL insegura (`http://`) de los recursos de video a `https://` para evitar bloqueos por CORS o App Transport Security en dispositivos móviles.
+
 ## Próximos Pasos
 - [ ] Mantenimiento general y desarrollo continuo según requerimientos.

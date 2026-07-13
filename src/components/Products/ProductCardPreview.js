@@ -493,15 +493,18 @@ export default function ProductCardPreview({ product }) {
                             <div key={i} style={{ flex: 'none', width: '100%', height: '100%', position: 'relative', scrollSnapAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.02)' }} onContextMenu={(e) => e.preventDefault()}>
                               {media.type === 'video' ? (
                                 <video 
-                                  src={typeof media.url === 'string' ? media.url.replace('http://', 'https://') : media.url} 
                                   controls 
                                   controlsList="nodownload"
                                   playsInline
-                                  preload="metadata"
+                                  preload="auto"
+                                  muted
                                   data-index={i}
                                   className="modal-video-element"
                                   style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }} 
-                                />
+                                >
+                                  <source src={typeof media.url === 'string' ? media.url.trim().replace('http://', 'https://') : media.url} type="video/mp4" />
+                                  Tu navegador no soporta el formato de video.
+                                </video>
                               ) : (
                                 <img src={media.url} alt={`${name} ${i}`} onDragStart={(e) => e.preventDefault()} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', userSelect: 'none', pointerEvents: 'none' }} />
                               )}

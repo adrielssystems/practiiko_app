@@ -129,7 +129,7 @@ export default function MediaUpload({ onMediaChange, initialMedia = { images: []
     onDrop,
     accept: {
       'image/*': ['.jpeg', '.jpg', '.png', '.webp'],
-      'video/*': ['.mp4', '.webm', '.mov']
+      'video/*': ['.mp4', '.webm']
     },
     disabled: isUploading
   });
