@@ -2,6 +2,10 @@ import sharp from 'sharp';
 import fs from 'fs/promises';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import ffmpeg from 'fluent-ffmpeg';
+import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
+
+ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 
 const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads', 'products');
 
@@ -45,21 +49,53 @@ export async function processImage(buffer) {
 }
 
 /**
- * Procesa un video (Placeholder para implementación con ffmpeg).
+ * Procesa un video: comprime a libx264, optimiza bitrate y formato web.
  */
 export async function processVideo(buffer, originalFilename) {
   await ensureUploadDir();
   
-  const ext = path.extname(originalFilename);
-  const filename = `${uuidv4()}${ext}`;
+  const ext = path.extname(originalFilename) || '.mp4';
+  const tempFilename = `temp_${uuidv4()}${ext}`;
+  const tempFilepath = path.join(UPLOAD_DIR, tempFilename);
+  
+  const filename = `${uuidv4()}.mp4`;
   const filepath = path.join(UPLOAD_DIR, filename);
   const relativeUrl = `/api/media/${filename}`;
 
-  // Por ahora, guardamos el archivo original optimizado para streaming.
-  await fs.writeFile(filepath, buffer);
+  // Guardar archivo temporal crudo
+  await fs.writeFile(tempFilepath, buffer);
 
-  return {
-    url: relativeUrl,
-    filename: filename
-  };
+  console.log(`[MEDIA]: Comprimiendo video... Destino: ${filepath}`);
+
+  return new Promise((resolve, reject) => {
+    ffmpeg(tempFilepath)
+      .videoCodec('libx264')
+      .audioCodec('aac')
+      .outputOptions([
+        '-preset veryfast',
+        '-crf 28',
+        '-movflags +faststart'
+      ])
+      .toFormat('mp4')
+      .on('end', async () => {
+        console.log(`[MEDIA]: Video comprimido con éxito: ${relativeUrl}`);
+        try {
+          await fs.unlink(tempFilepath);
+        } catch (e) {
+          console.error('[MEDIA]: Error eliminando temporal', e);
+        }
+        resolve({
+          url: relativeUrl,
+          filename: filename
+        });
+      })
+      .on('error', async (err) => {
+        console.error(`[MEDIA ERROR]: Falló la compresión del video: ${err.message}`);
+        try {
+          await fs.unlink(tempFilepath);
+        } catch (e) {}
+        reject(err);
+      })
+      .save(filepath);
+  });
 }
