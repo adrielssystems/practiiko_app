@@ -651,7 +651,8 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
             interactive_badges: interactiveBadges,
             likes_count: formValues.likes_count,
             views_count: formValues.views_count,
-            sales_count: formValues.sales_count
+            sales_count: formValues.sales_count,
+            video_url: media.videos
           }}
         />
       </div>
