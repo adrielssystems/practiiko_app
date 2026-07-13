@@ -440,7 +440,7 @@ export default function ProductCardPreview({ product }) {
                                 }}
                               >
                                 <svg style={{ width: '24px', height: '24px', color: 'white', position: 'absolute', zIndex: 10, pointerEvents: 'none' }} fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                                <video src={media.url} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6, pointerEvents: 'none', userSelect: 'none' }} controlsList="nodownload" />
+                                <video src={typeof media.url === 'string' ? media.url.replace('http://', 'https://') : media.url} preload="metadata" playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6, pointerEvents: 'none', userSelect: 'none' }} controlsList="nodownload" />
                               </div>
                             ) : (
                               <img
@@ -493,9 +493,11 @@ export default function ProductCardPreview({ product }) {
                             <div key={i} style={{ flex: 'none', width: '100%', height: '100%', position: 'relative', scrollSnapAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.02)' }} onContextMenu={(e) => e.preventDefault()}>
                               {media.type === 'video' ? (
                                 <video 
-                                  src={media.url} 
+                                  src={typeof media.url === 'string' ? media.url.replace('http://', 'https://') : media.url} 
                                   controls 
                                   controlsList="nodownload"
+                                  playsInline
+                                  preload="metadata"
                                   data-index={i}
                                   className="modal-video-element"
                                   style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }} 
