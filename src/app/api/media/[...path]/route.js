@@ -50,7 +50,15 @@ export async function GET(req, { params }) {
     if (range) {
       const parts = range.replace(/bytes=/, "").split("-");
       const start = parseInt(parts[0], 10);
-      const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+      
+      // Límite de chunk a 2MB para evitar saturación del buffer de red en móviles
+      const MAX_CHUNK_SIZE = 2 * 1024 * 1024;
+      let end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+      
+      if (end - start >= MAX_CHUNK_SIZE) {
+        end = start + MAX_CHUNK_SIZE - 1;
+      }
+      
       const chunksize = (end - start) + 1;
       
       const stream = fs.createReadStream(filePath, { start, end });
