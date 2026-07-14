@@ -69,5 +69,20 @@
   - Las miniaturas de video ahora se renderizan con la etiqueta `muted` de forma predeterminada, superando el bloqueo nativo de reproducción automática de iOS.
   - Se implementó un filtro de seguridad que fuerza cualquier URL insegura (`http://`) de los recursos de video a `https://` para evitar bloqueos por CORS o App Transport Security en dispositivos móviles.
 
+### 3. Optimización de Streaming de Video (HTTP Range)
+- **Soporte para Dispositivos Móviles:** Se solucionó el error de "icono roto" que ocurría en navegadores móviles (Android Chrome, iOS Safari) al cargar el video. Se implementó el soporte para *HTTP Range Requests* (`206 Partial Content`) en la ruta del servidor (`/api/media/[...path]/route.js`), requisito estricto de los dispositivos móviles para reproducir HTML5 Video.
+- **Límite de Chunk (Buffering):** Se configuró un tamaño máximo de fragmento (chunk) de 2MB. Esto evita que Node.js intente despachar archivos inmensos de una sola vez, previniendo el ahogamiento de la conexión de red y asegurando una reproducción fluida sin *buffering* excesivo.
+- **Resolución de Rutas:** Se envolvió la carga de los videos en la función `getImageUrl` dentro del catálogo (`ProductCard.jsx`) para asegurar que el frontend web se comunique correctamente con el backend, incluso si las rutas guardadas son relativas.
+
+### 4. Compresión Automática de Video en el Servidor (FFmpeg)
+- **Integración de Motor Nativo:** Se integraron las librerías `fluent-ffmpeg` y `@ffmpeg-installer/ffmpeg` en el Autogestor para dotar al backend de capacidades de transcodificación multimedia reales.
+- **Transcodificación al Vuelo:** Se reescribió la función `processVideo` (`src/lib/media.js`). Al subir un archivo crudo (ej. desde un iPhone), el servidor ahora ejecuta un proceso en segundo plano que:
+  - Lo re-codifica forzosamente al formato web universal **MP4 (H.264 / AAC)**, solucionando incompatibilidades como los archivos `.mov` en Android.
+  - Aplica un algoritmo agresivo de compresión (`-crf 28` y `-preset veryfast`) reduciendo hasta el 90% del tamaño original sin pérdida de calidad visual notable.
+  - Inyecta la bandera `-movflags +faststart` para mover el *moov atom* al inicio del archivo, permitiendo la reproducción instantánea antes de que el video se descargue por completo.
+
+### 5. Configuración de Construcción (Build Fixes)
+- **Exclusión de Empaquetado:** Se modificó el archivo `next.config.mjs` de `practiiko_app`, añadiendo `@ffmpeg-installer/ffmpeg` y `fluent-ffmpeg` a la lista de `serverExternalPackages`. Esto previno un fallo crítico durante el proceso de despliegue en el que *Turbopack* intentaba erróneamente compilar los binarios nativos del sistema operativo correspondientes al motor FFmpeg.
+
 ## Próximos Pasos
 - [ ] Mantenimiento general y desarrollo continuo según requerimientos.
