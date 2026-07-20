@@ -116,13 +116,13 @@ export async function GET(req) {
 async function sendInstagramMessage(recipientId, text) {
   const PAGE_ACCESS_TOKEN = process.env.INSTAGRAM_PAGE_ACCESS_TOKEN?.trim();
   if (!PAGE_ACCESS_TOKEN) return;
-  const url = \`https://graph.instagram.com/v21.0/me/messages\`;
+  const url = `https://graph.instagram.com/v21.0/me/messages`;
   try {
     await fetch(url, {
       method: "POST",
       headers: { 
         "Content-Type": "application/json",
-        "Authorization": \`Bearer \${PAGE_ACCESS_TOKEN}\`
+        "Authorization": `Bearer ${PAGE_ACCESS_TOKEN}`
       },
       body: JSON.stringify({ recipient: { id: recipientId }, message: { text: text } }),
     });
@@ -137,16 +137,16 @@ async function sendInstagramImage(recipientId, imageUrl) {
 
   let formattedUrl = imageUrl;
   if (formattedUrl && formattedUrl.endsWith(".webp")) {
-    formattedUrl = formattedUrl.replace(/\\.webp$/i, ".jpeg");
+    formattedUrl = formattedUrl.replace(/\.webp$/i, ".jpeg");
   }
 
-  const url = \`https://graph.instagram.com/v21.0/me/messages\`;
+  const url = `https://graph.instagram.com/v21.0/me/messages`;
   try {
     await fetch(url, {
       method: "POST",
       headers: { 
         "Content-Type": "application/json",
-        "Authorization": \`Bearer \${PAGE_ACCESS_TOKEN}\`
+        "Authorization": `Bearer ${PAGE_ACCESS_TOKEN}`
       },
       body: JSON.stringify({
         recipient: { id: recipientId },
