@@ -6,8 +6,12 @@ import DeleteChatButton from "@/components/Common/DeleteChatButton";
 import AutoRefresh from "@/components/Common/AutoRefresh";
 import BotPauseToggle from "@/components/Common/BotPauseToggle";
 import WhatsAppFilters from "@/components/Common/WhatsAppFilters";
+import Pagination from "@/components/Common/Pagination";
 
-async function getConversations(q, alertOnly) {
+async function getConversations(q, alertOnly, page = 1) {
+  const limit = 50;
+  const offset = (page - 1) * limit;
+
   try {
     let queryText = `
       SELECT 
@@ -17,7 +21,8 @@ async function getConversations(q, alertOnly) {
         COUNT(*) as total_messages,
         wc.full_name as push_name,
         wc.ai_enabled,
-        wc.requires_human
+        wc.requires_human,
+        COUNT(*) OVER() as full_count
       FROM whatsapp_messages wm
       LEFT JOIN whatsapp_customers wc ON wm.session_id = wc.id
       WHERE 1=1
@@ -36,14 +41,20 @@ async function getConversations(q, alertOnly) {
     queryText += `
       GROUP BY wm.session_id, wc.full_name, wc.ai_enabled, wc.requires_human
       ORDER BY last_message DESC
-      LIMIT 50
+      LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2}
     `;
 
+    queryParams.push(limit, offset);
+
     const res = await query(queryText, queryParams);
-    return res.rows;
+    const conversations = res.rows;
+    const totalCount = conversations.length > 0 ? parseInt(conversations[0].full_count) : 0;
+    const totalPages = Math.ceil(totalCount / limit);
+
+    return { conversations, totalPages };
   } catch (e) {
     console.error(e);
-    return [];
+    return { conversations: [], totalPages: 0 };
   }
 }
 
@@ -53,7 +64,8 @@ export default async function WhatsAppPage({ searchParams }) {
   } catch(e) {}
 
   const params = await searchParams;
-  const conversations = await getConversations(params?.q, params?.alert === 'true');
+  const currentPage = parseInt(params?.page) || 1;
+  const { conversations, totalPages } = await getConversations(params?.q, params?.alert === 'true', currentPage);
 
   return (
     <div>
@@ -197,6 +209,8 @@ export default async function WhatsAppPage({ searchParams }) {
           ))
         )}
       </div>
+
+      <Pagination totalPages={totalPages} currentPage={currentPage} />
 
       <style>{`
         @keyframes pulseRed {

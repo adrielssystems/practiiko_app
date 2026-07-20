@@ -7,8 +7,12 @@ import AutoRefresh from "@/components/Common/AutoRefresh";
 
 import DeleteChatButton from "@/components/Common/DeleteChatButton";
 import BotPauseToggle from "@/components/Common/BotPauseToggle";
+import Pagination from "@/components/Common/Pagination";
 
-async function getConversations() {
+async function getConversations(page = 1) {
+  const limit = 50;
+  const offset = (page - 1) * limit;
+
   try {
     const res = await query(`
       SELECT 
@@ -18,22 +22,30 @@ async function getConversations() {
         COUNT(*) as total_messages,
         (SELECT full_name FROM instagram_customers WHERE id = session_id LIMIT 1) as full_name,
         (SELECT ai_enabled FROM instagram_customers WHERE id = session_id LIMIT 1) as ai_enabled,
-        (SELECT source FROM instagram_messages m2 WHERE m2.session_id = instagram_messages.session_id ORDER BY created_at DESC LIMIT 1) as latest_source
+        (SELECT source FROM instagram_messages m2 WHERE m2.session_id = instagram_messages.session_id ORDER BY created_at DESC LIMIT 1) as latest_source,
+        COUNT(*) OVER() as full_count
       FROM instagram_messages
       WHERE session_id != 'practiiko'
       GROUP BY session_id
       ORDER BY last_message DESC
-      LIMIT 100
-    `);
-    return res.rows;
+      LIMIT $1 OFFSET $2
+    `, [limit, offset]);
+    
+    const conversations = res.rows;
+    const totalCount = conversations.length > 0 ? parseInt(conversations[0].full_count) : 0;
+    const totalPages = Math.ceil(totalCount / limit);
+
+    return { conversations, totalPages };
   } catch (e) {
     console.error("Error fetching conversations:", e);
-    return [];
+    return { conversations: [], totalPages: 0 };
   }
 }
 
-export default async function InstagramMonitoringPage() {
-  const conversations = await getConversations();
+export default async function InstagramMonitoringPage({ searchParams }) {
+  const params = await searchParams;
+  const currentPage = parseInt(params?.page) || 1;
+  const { conversations, totalPages } = await getConversations(currentPage);
 
   return (
     <div>
@@ -159,6 +171,7 @@ export default async function InstagramMonitoringPage() {
         )}
       </div>
 
+      <Pagination totalPages={totalPages} currentPage={currentPage} />
       <BotSimulator />
     </div>
   );
