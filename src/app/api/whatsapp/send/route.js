@@ -33,11 +33,17 @@ export async function POST(req) {
 
     const data = await response.json();
 
-    if (data.key) {
+    if (response.ok && !data.error) {
       // 2. Guardar en la base de datos como mensaje del asistente (pero manual)
       await query(
         "INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)",
         [to, JSON.stringify({ role: 'assistant', content: text, manual: true })]
+      );
+
+      // 3. Auto-pausar la IA ya que un humano acaba de intervenir desde el gestor
+      await query(
+        "UPDATE whatsapp_customers SET ai_enabled = false WHERE id = $1",
+        [to]
       );
 
       return NextResponse.json({ success: true, data });
