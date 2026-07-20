@@ -84,5 +84,20 @@
 ### 5. Configuración de Construcción (Build Fixes)
 - **Exclusión de Empaquetado:** Se modificó el archivo `next.config.mjs` de `practiiko_app`, añadiendo `@ffmpeg-installer/ffmpeg` y `fluent-ffmpeg` a la lista de `serverExternalPackages`. Esto previno un fallo crítico durante el proceso de despliegue en el que *Turbopack* intentaba erróneamente compilar los binarios nativos del sistema operativo correspondientes al motor FFmpeg.
 
+## Tareas Realizadas (19 y 20 de Julio de 2026)
+
+### 1. Diagnóstico y Soporte del Agente de Instagram
+- **Expiración de Token:** Se diagnosticó un fallo silencioso donde la IA de Instagram generaba respuestas en base de datos pero estas no se enviaban a Meta. La causa fue la expiración del `INSTAGRAM_PAGE_ACCESS_TOKEN` (política de 60 días de Meta). Se instruyó la generación y actualización del token como solución definitiva.
+- **Fix de Zonas Horarias (Timezones):** Durante el desarrollo de un script temporal de rescate de mensajes, se corrigió un bug en la consulta SQL que limitaba erróneamente los chats al evaluar `CURRENT_DATE` contra la zona horaria UTC del servidor. Se reemplazó por la ventana estricta de `NOW() - INTERVAL '24 hours'`, garantizando la cobertura de todos los mensajes sin importar la hora local.
+
+### 2. Autogestor: Optimización de Subida Multimedia (Prevención OOM)
+- **Error 500 al subir videos pesados:** Se resolvió un error crítico de servidor ("Error en el servidor") reportado al intentar adjuntar videos pesados (ej. 150MB) a las fichas de los productos.
+- **Streaming a Disco:** Se refactorizó por completo el endpoint de subida (`src/app/api/products/upload/route.js`) y la función `processVideo` (`src/lib/media.js`). En lugar de volcar el archivo completo en la Memoria RAM del contenedor usando un buffer, ahora se emplea la API nativa de **Streams de Node.js** (`pipeline`, `createWriteStream`, `Readable.fromWeb`) para escribir los datos de la red directamente al disco duro. Esto mantiene el consumo de memoria casi en cero, asegurando máxima escalabilidad sin cierres forzosos (Out of Memory).
+
+### 3. Paginación en Paneles de Monitoreo (WhatsApp e Instagram)
+- **Paginación Dinámica:** Para poder revisar los historiales antiguos sin sobrecargar la interfaz, se implementó un sistema de paginación con un límite uniforme de 50 conversaciones por pantalla para ambas plataformas.
+- **Cálculo con Funciones de Ventana:** Se optimizaron las consultas SQL de `whatsapp/page.js` e `instagram/page.js` utilizando `LIMIT`, `OFFSET` y la función analítica `COUNT(*) OVER()` para calcular el número total de páginas con altísima eficiencia.
+- **Componente `<Pagination />`:** Se construyó un componente reutilizable de navegación de páginas (Anterior/Siguiente) que lee y muta la URL (`?page=X`) de manera dinámica. Al ser basado en URL, interactúa perfectamente con el `<AutoRefresh />` sin devolver al usuario a la primera página mientras hace su auditoría.
+
 ## Próximos Pasos
 - [ ] Mantenimiento general y desarrollo continuo según requerimientos.
