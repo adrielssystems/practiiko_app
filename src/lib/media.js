@@ -71,37 +71,37 @@ export async function processVideo(file) {
   const nodeStream = Readable.fromWeb(file.stream());
   await pipeline(nodeStream, createWriteStream(tempFilepath));
 
-  console.log(`[MEDIA]: Comprimiendo video... Destino: ${filepath}`);
+  console.log(`[MEDIA]: Comprimiendo video en segundo plano... Destino: ${filepath}`);
 
-  return new Promise((resolve, reject) => {
-    ffmpeg(tempFilepath)
-      .videoCodec('libx264')
-      .audioCodec('aac')
-      .outputOptions([
-        '-preset veryfast',
-        '-crf 28',
-        '-movflags +faststart'
-      ])
-      .toFormat('mp4')
-      .on('end', async () => {
-        console.log(`[MEDIA]: Video comprimido con éxito: ${relativeUrl}`);
-        try {
-          await fs.unlink(tempFilepath);
-        } catch (e) {
-          console.error('[MEDIA]: Error eliminando temporal', e);
-        }
-        resolve({
-          url: relativeUrl,
-          filename: filename
-        });
-      })
-      .on('error', async (err) => {
-        console.error(`[MEDIA ERROR]: Falló la compresión del video: ${err.message}`);
-        try {
-          await fs.unlink(tempFilepath);
-        } catch (e) {}
-        reject(err);
-      })
-      .save(filepath);
-  });
+  // Iniciar la compresión en segundo plano sin bloquear el retorno
+  ffmpeg(tempFilepath)
+    .videoCodec('libx264')
+    .audioCodec('aac')
+    .outputOptions([
+      '-preset veryfast',
+      '-crf 28',
+      '-movflags +faststart'
+    ])
+    .toFormat('mp4')
+    .on('end', async () => {
+      console.log(`[MEDIA]: Video comprimido con éxito en segundo plano: ${relativeUrl}`);
+      try {
+        await fs.unlink(tempFilepath);
+      } catch (e) {
+        console.error('[MEDIA]: Error eliminando temporal', e);
+      }
+    })
+    .on('error', async (err) => {
+      console.error(`[MEDIA ERROR]: Falló la compresión del video: ${err.message}`);
+      try {
+        await fs.unlink(tempFilepath);
+      } catch (e) {}
+    })
+    .save(filepath);
+
+  // Retornar INMEDIATAMENTE para evitar el timeout de la petición HTTP (ej: 60s en Traefik/Nginx)
+  return {
+    url: relativeUrl,
+    filename: filename
+  };
 }
