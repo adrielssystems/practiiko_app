@@ -15,7 +15,7 @@ export async function GET(req) {
       SELECT DISTINCT m.session_id, c.full_name, c.username
       FROM instagram_messages m
       JOIN instagram_customers c ON m.session_id = c.id
-      WHERE m.created_at >= CURRENT_DATE 
+      WHERE m.created_at >= NOW() - INTERVAL '24 hours'
         AND m.session_id != 'practiiko'
         AND c.ai_enabled = true
     `);
@@ -41,9 +41,9 @@ export async function GET(req) {
 
       // Si el último mensaje es del asistente, y fue enviado hoy,
       // asumimos que es una respuesta "fantasma" que nunca llegó a Meta por el token vencido.
-      const isToday = new Date(lastMsgRow.created_at) >= new Date(new Date().setHours(0,0,0,0));
+      const isRecent = new Date(lastMsgRow.created_at) >= new Date(Date.now() - 24 * 60 * 60 * 1000);
       
-      if (msgObj.role === 'assistant' && isToday) {
+      if (msgObj.role === 'assistant' && isRecent) {
         if (confirm === 'true') {
           // PASO A: Eliminar la respuesta fantasma para que la IA no se confunda
           await query(`DELETE FROM instagram_messages WHERE id = $1`, [lastMsgRow.id]);
