@@ -4,6 +4,9 @@ import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import ffmpeg from 'fluent-ffmpeg';
 import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
+import { createWriteStream } from 'fs';
+import { pipeline } from 'stream/promises';
+import { Readable } from 'stream';
 
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 
@@ -51,9 +54,10 @@ export async function processImage(buffer) {
 /**
  * Procesa un video: comprime a libx264, optimiza bitrate y formato web.
  */
-export async function processVideo(buffer, originalFilename) {
+export async function processVideo(file) {
   await ensureUploadDir();
   
+  const originalFilename = file.name || 'video.mp4';
   const ext = path.extname(originalFilename) || '.mp4';
   const tempFilename = `temp_${uuidv4()}${ext}`;
   const tempFilepath = path.join(UPLOAD_DIR, tempFilename);
@@ -62,8 +66,10 @@ export async function processVideo(buffer, originalFilename) {
   const filepath = path.join(UPLOAD_DIR, filename);
   const relativeUrl = `/api/media/${filename}`;
 
-  // Guardar archivo temporal crudo
-  await fs.writeFile(tempFilepath, buffer);
+  // Guardar archivo temporal usando Streams (Previene colapso de RAM en videos pesados)
+  console.log(`[MEDIA]: Guardando temporal de video en disco (Stream)...`);
+  const nodeStream = Readable.fromWeb(file.stream());
+  await pipeline(nodeStream, createWriteStream(tempFilepath));
 
   console.log(`[MEDIA]: Comprimiendo video... Destino: ${filepath}`);
 

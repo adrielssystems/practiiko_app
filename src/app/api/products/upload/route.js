@@ -11,12 +11,14 @@ export async function POST(req) {
       return NextResponse.json({ error: 'No se subió ningún archivo' }, { status: 400 });
     }
 
-    const buffer = Buffer.from(await file.arrayBuffer());
     let result;
 
     if (type === 'video') {
-      result = await processVideo(buffer, file.name);
+      // Para videos, pasamos el objeto File directamente para procesarlo mediante streams
+      result = await processVideo(file);
     } else {
+      // Para imágenes (ligeras), el buffer en memoria es seguro
+      const buffer = Buffer.from(await file.arrayBuffer());
       result = await processImage(buffer);
     }
 
