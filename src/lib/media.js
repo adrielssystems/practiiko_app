@@ -56,7 +56,7 @@ export async function processImage(buffer) {
  * de forma progresiva, garantizando consumo mínimo de RAM y evitando cualquier límite de
  * tamaño impuesto por parseadores de FormData/JSON.
  */
-export async function processVideo(reqBody, originalFilename = 'video.mp4') {
+export async function processVideo(buffer, originalFilename = 'video.mp4') {
   await ensureUploadDir();
   
   // Forzar siempre la extensión a .mp4 para compatibilidad del reproductor HTML5 y cabeceras mime-type del servidor
@@ -64,40 +64,13 @@ export async function processVideo(reqBody, originalFilename = 'video.mp4') {
   const filepath = path.join(UPLOAD_DIR, filename);
   const relativeUrl = `/api/media/${filename}`;
 
-  console.log(`[MEDIA]: Guardando transmisión de video en disco (MP4): ${filepath}`);
+  console.log(`[MEDIA]: Guardando video en disco (MP4): ${filepath}`);
 
-  // Transmitir flujo de datos chunk-por-chunk al archivo
-  const reader = reqBody.getReader();
-  const writeStream = createWriteStream(filepath);
-  let bytesWritten = 0;
+  // Escribir el buffer completo directamente a disco
+  await fs.writeFile(filepath, buffer);
 
-  await new Promise((resolve, reject) => {
-    writeStream.on('finish', resolve);
-    writeStream.on('error', (err) => {
-      console.error('[MEDIA ERROR]: Error escribiendo stream a disco:', err);
-      reject(err);
-    });
-    
-    (async () => {
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) {
-            writeStream.end();
-            break;
-          }
-          writeStream.write(Buffer.from(value));
-          bytesWritten += value.length;
-        }
-      } catch (err) {
-        writeStream.destroy(err);
-        reject(err);
-      }
-    })();
-  });
-
-  const fileSizeMb = (bytesWritten / (1024 * 1024)).toFixed(2);
-  console.log(`[MEDIA]: Transmisión de video guardada exitosamente: ${filename} (${fileSizeMb} MB)`);
+  const fileSizeMb = (buffer.length / (1024 * 1024)).toFixed(2);
+  console.log(`[MEDIA]: Video guardado exitosamente: ${filename} (${fileSizeMb} MB)`);
 
   // Intentar compresión/optimización a MP4 en segundo plano (Fire & Forget)
   // Preserva el archivo original si ffmpeg no está disponible o la compresión falla.

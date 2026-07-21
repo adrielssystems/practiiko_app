@@ -82,12 +82,17 @@ export default function MediaUpload({ onMediaChange, initialMedia = { images: []
     });
   }, [images, localSpecs, localPreviews]);
 
+  const localPreviewsRef = useRef(localPreviews);
+  useEffect(() => {
+    localPreviewsRef.current = localPreviews;
+  }, [localPreviews]);
+
   // Limpiar URLs locales al desmontar para evitar fugas de memoria
   useEffect(() => {
     return () => {
-      Object.values(localPreviews).forEach(url => URL.revokeObjectURL(url));
+      Object.values(localPreviewsRef.current).forEach(url => URL.revokeObjectURL(url));
     };
-  }, [localPreviews]);
+  }, []);
 
   // Sincronizar con el padre cada vez que cambie algo localmente
   useEffect(() => {

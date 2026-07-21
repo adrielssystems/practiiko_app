@@ -15,11 +15,12 @@ export async function POST(req) {
         return NextResponse.json({ error: 'No se recibió ningún cuerpo de archivo' }, { status: 400 });
       }
 
+      const arrayBuffer = await req.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
       if (queryType === 'video') {
-        result = await processVideo(req.body, queryFilename);
+        result = await processVideo(buffer, queryFilename);
       } else {
-        const arrayBuffer = await req.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
         result = await processImage(buffer);
       }
     } else {
