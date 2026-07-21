@@ -460,6 +460,8 @@ export default function MediaUpload({ onMediaChange, initialMedia = { images: []
                   controls 
                   playsInline 
                   preload="metadata"
+                  muted
+                  autoPlay
                   style={{ 
                     width: '100%', 
                     height: '100%', 

@@ -498,11 +498,12 @@ export default function ProductCardPreview({ product }) {
                                   playsInline
                                   preload="auto"
                                   muted
+                                  autoPlay
                                   data-index={i}
                                   className="modal-video-element"
                                   style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }} 
                                 >
-                                  <source src={typeof media.url === 'string' ? (media.url.startsWith('blob:') ? media.url : media.url.trim().replace('http://', 'https://')) : media.url} type="video/mp4" />
+                                  <source src={typeof media.url === 'string' ? (media.url.startsWith('blob:') ? media.url : media.url.trim().replace('http://', 'https://')) : media.url} />
                                   Tu navegador no soporta el formato de video.
                                 </video>
                               ) : (
