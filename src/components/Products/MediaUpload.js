@@ -2,8 +2,44 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
-import { X, Upload, Film, Loader2, AlertCircle } from "lucide-react";
+import { X, Upload, Film, Loader2, Maximize2 } from "lucide-react";
 import { useToast } from "@/components/Toast";
+
+function CircularProgress({ progress = 0, size = 54, strokeWidth = 5 }) {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (progress / 100) * circumference;
+
+  return (
+    <div style={{ position: 'relative', width: size, height: size, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="rgba(4, 119, 191, 0.15)"
+          strokeWidth={strokeWidth}
+          fill="transparent"
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="var(--primary)"
+          strokeWidth={strokeWidth}
+          fill="transparent"
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          strokeLinecap="round"
+          style={{ transition: 'stroke-dashoffset 0.2s linear' }}
+        />
+      </svg>
+      <span style={{ position: 'absolute', fontSize: '11px', fontWeight: 900, color: 'var(--primary)' }}>
+        {progress}%
+      </span>
+    </div>
+  );
+}
 
 export default function MediaUpload({ onMediaChange, initialMedia = { images: [], videos: [] } }) {
   const { addToast } = useToast();
@@ -11,7 +47,14 @@ export default function MediaUpload({ onMediaChange, initialMedia = { images: []
   const [videos, setVideos] = useState(initialMedia.videos || []);
   const [localPreviews, setLocalPreviews] = useState({});
   const [localSpecs, setLocalSpecs] = useState({});
+  
+  // Estados para barra / círculo de progreso de subida en tiempo real
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadingItem, setUploadingItem] = useState(null);
+
+  // Estado para modal de previsualización amplia
+  const [expandedMedia, setExpandedMedia] = useState(null);
 
   // Obtener specs para imágenes existentes (ya subidas al servidor)
   useEffect(() => {
@@ -51,9 +94,47 @@ export default function MediaUpload({ onMediaChange, initialMedia = { images: []
     onMediaChange({ images, videos, localPreviews });
   }, [images, videos, localPreviews, onMediaChange]);
 
+  // Función de subida mediante XMLHttpRequest para obtener porcentaje de avance real
+  const uploadFileWithProgress = useCallback((file, isVideo, onProgress) => {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      const url = `/api/products/upload?type=${isVideo ? 'video' : 'image'}&filename=${encodeURIComponent(file.name)}`;
+
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const percent = Math.round((event.loaded / event.total) * 100);
+          onProgress(percent);
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const data = JSON.parse(xhr.responseText);
+            resolve(data);
+          } catch (e) {
+            reject(new Error("Respuesta de servidor inválida"));
+          }
+        } else {
+          try {
+            const errData = JSON.parse(xhr.responseText);
+            reject(new Error(errData.error || 'Error en el servidor al subir'));
+          } catch (e) {
+            reject(new Error('Error en el servidor al subir'));
+          }
+        }
+      };
+
+      xhr.onerror = () => reject(new Error("Error de red al subir archivo. Verifica tu conexión."));
+      xhr.ontimeout = () => reject(new Error("Tiempo de espera agotado durante la subida."));
+
+      xhr.open("POST", url, true);
+      xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
+      xhr.send(file);
+    });
+  }, []);
+
   const onDrop = useCallback(async (acceptedFiles) => {
-    setIsUploading(true);
-    
     for (const file of acceptedFiles) {
       const isVideo = file.type.startsWith('video/');
       
@@ -67,25 +148,17 @@ export default function MediaUpload({ onMediaChange, initialMedia = { images: []
         continue;
       }
 
-      // Crear URL local inmediata para preview resiliente
+      setIsUploading(true);
+      setUploadProgress(0);
+      setUploadingItem({ name: file.name, isVideo });
+
+      // Crear URL local inmediata para preview resiliente e instantánea
       const localUrl = URL.createObjectURL(file);
 
       try {
-        const url = `/api/products/upload?type=${isVideo ? 'video' : 'image'}&filename=${encodeURIComponent(file.name)}`;
-        const res = await fetch(url, {
-          method: 'POST',
-          body: file,
-          headers: {
-            'Content-Type': file.type || 'application/octet-stream'
-          }
+        const data = await uploadFileWithProgress(file, isVideo, (percent) => {
+          setUploadProgress(percent);
         });
-        
-        if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
-          throw new Error(errData.error || 'Error en el servidor al subir');
-        }
-        
-        const data = await res.json();
 
         if (data.url) {
           // Mapear la URL del servidor a la URL local para la preview
@@ -103,36 +176,34 @@ export default function MediaUpload({ onMediaChange, initialMedia = { images: []
               }));
             };
             img.src = localUrl;
+            setImages(prev => [...prev, data.url]);
+            addToast("Imagen optimizada y subida", "success");
           } else {
             setLocalSpecs(prev => ({
               ...prev,
               [data.url]: { size: sizeStr }
             }));
-          }
-
-          if (isVideo) {
             setVideos(prev => [...prev, data.url]);
-            addToast("Video subido con éxito", "success");
-          } else {
-            setImages(prev => [...prev, data.url]);
-            addToast("Imagen optimizada y subida", "success");
+            addToast("Video subido con éxito 🎬", "success");
           }
         }
       } catch (err) {
         console.error("Upload error:", err);
-        addToast("Error al subir archivo. Verifica tu conexión.", "error");
+        addToast(err.message || "Error al subir archivo.", "error");
         URL.revokeObjectURL(localUrl); // Limpiar si falla
+      } finally {
+        setIsUploading(false);
+        setUploadingItem(null);
+        setUploadProgress(0);
       }
     }
-    
-    setIsUploading(false);
-  }, [images, videos, addToast]);
+  }, [images, videos, addToast, uploadFileWithProgress]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
     onDrop,
     accept: {
       'image/*': ['.jpeg', '.jpg', '.png', '.webp'],
-      'video/*': ['.mp4', '.webm']
+      'video/*': ['.mp4', '.webm', '.mov', '.avi']
     },
     disabled: isUploading
   });
@@ -184,11 +255,28 @@ export default function MediaUpload({ onMediaChange, initialMedia = { images: []
       >
         <input {...getInputProps()} />
         
+        {/* OVERLAY DE PROGRESO DE SUBIDA */}
         {isUploading && (
-          <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
-            <div style={{ textAlign: 'center' }}>
-              <div className="animate-spin" style={{ width: '40px', height: '40px', border: '3px solid var(--primary)', borderTopColor: 'transparent', borderRadius: '50%', margin: '0 auto 1rem' }}></div>
-              <p style={{ fontWeight: 800, color: 'var(--primary)', fontSize: '0.85rem' }}>Subiendo y optimizando...</p>
+          <div style={{ 
+            position: 'absolute', 
+            inset: 0, 
+            background: 'rgba(255,255,255,0.92)', 
+            backdropFilter: 'blur(6px)', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            zIndex: 10 
+          }}>
+            <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
+              <CircularProgress progress={uploadProgress} size={64} strokeWidth={6} />
+              <div>
+                <p style={{ fontWeight: 900, color: 'var(--primary)', fontSize: '0.9rem', margin: 0 }}>
+                  Subiendo {uploadingItem?.isVideo ? 'Video' : 'Imagen'}...
+                </p>
+                <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '4px 0 0 0', fontWeight: 600 }}>
+                  {uploadProgress < 100 ? `${uploadProgress}% completado` : 'Procesando en servidor...'}
+                </p>
+              </div>
             </div>
           </div>
         )}
@@ -208,22 +296,46 @@ export default function MediaUpload({ onMediaChange, initialMedia = { images: []
             <Upload size={28} />
           </div>
           <p style={{ fontWeight: 800, margin: '0 0 0.5rem 0', fontSize: '1rem', color: '#1e293b' }}>Arrastra tus archivos aquí</p>
-          <p style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500 }}>Soporta imágenes (WebP, JPG) y Video (MP4)</p>
+          <p style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500 }}>Soporta imágenes (WebP, JPG) y Video (MP4, MOV)</p>
           <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', marginTop: '1rem' }}>
             <span style={{ padding: '0.25rem 0.75rem', borderRadius: '20px', background: '#f1f5f9', fontSize: '0.65rem', fontWeight: 700, color: '#475569' }}>MAX 10 FOTOS</span>
-            <span style={{ padding: '0.25rem 0.75rem', borderRadius: '20px', background: '#f1f5f9', fontSize: '0.65rem', fontWeight: 700, color: '#475569' }}>MAX 2 VIDEOS</span>
+            <span style={{ padding: '0.25rem 0.75rem', borderRadius: '20px', background: '#f1f5f9', fontSize: '0.65rem', fontWeight 700, color: '#475569' }}>MAX 2 VIDEOS</span>
           </div>
         </div>
       </div>
 
-      {/* MINIATURAS (CRÍTICO: Asegurar visualización) */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 110px))', gap: '1.25rem' }}>
+      {/* MINIATURAS GRID */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '1.25rem' }}>
         
+        {/* CARD PLACEHOLDER DE SUBIDA EN PROGRESO */}
+        {isUploading && uploadingItem && (
+          <div style={{
+            width: '130px',
+            height: '130px',
+            borderRadius: '16px',
+            border: '2px dashed var(--primary)',
+            background: 'rgba(4, 119, 191, 0.04)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '0.5rem',
+            boxShadow: '0 4px 12px rgba(4, 119, 191, 0.1)',
+            animation: 'pulse 1.5s infinite'
+          }}>
+            <CircularProgress progress={uploadProgress} size={48} strokeWidth={4} />
+            <span style={{ fontSize: '10px', fontWeight: 900, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              {uploadingItem.isVideo ? 'SUBIENDO VIDEO' : 'SUBIENDO FOTO'}
+            </span>
+          </div>
+        )}
+
+        {/* IMÁGENES */}
         {images.map((url, index) => (
           <div key={index} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'center' }}>
             <div style={{ 
-              width: '110px', 
-              height: '110px', 
+              width: '130px', 
+              height: '130px', 
               position: 'relative', 
               borderRadius: '16px', 
               overflow: 'hidden', 
@@ -236,49 +348,78 @@ export default function MediaUpload({ onMediaChange, initialMedia = { images: []
               alignItems: 'center',
               justifyContent: 'center'
             }}
-            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.03)'}
             onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
             >
-            <img src={localPreviews[url] || url} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-            <button 
-              type="button"
-              onClick={() => removeImage(index)}
-              style={{ 
-                position: 'absolute', 
-                top: '6px', 
-                right: '6px', 
-                background: 'rgba(255,255,255,0.9)', 
-                backdropFilter: 'blur(4px)',
-                border: 'none', 
-                borderRadius: '8px', 
-                width: '24px', 
-                height: '24px', 
-                cursor: 'pointer', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center', 
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                transition: 'all 0.2s'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = '#ef4444'}
-            >
-              <X size={14} className="icon-close" />
-            </button>
-            {index === 0 && (
-              <div style={{ 
-                position: 'absolute', 
-                bottom: 0, 
-                left: 0, 
-                right: 0, 
-                background: 'var(--primary)', 
-                color: 'white', 
-                fontSize: '9px', 
-                textAlign: 'center', 
-                padding: '4px 0', 
-                fontWeight: 900,
-                letterSpacing: '0.05em'
-              }}>PORTADA</div>
-            )}
+              <img src={localPreviews[url] || url} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              
+              {/* BOTÓN EXPANDIR PREVIEW */}
+              <button 
+                type="button"
+                onClick={() => setExpandedMedia({ type: 'image', url: localPreviews[url] || url })}
+                style={{
+                  position: 'absolute',
+                  top: '6px',
+                  left: '6px',
+                  background: 'rgba(255,255,255,0.9)',
+                  backdropFilter: 'blur(4px)',
+                  border: 'none',
+                  borderRadius: '8px',
+                  width: '24px',
+                  height: '24px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                }}
+                title="Ampliar vista previa"
+              >
+                <Maximize2 size={12} color="#0f172a" />
+              </button>
+
+              {/* BOTÓN ELIMINAR */}
+              <button 
+                type="button"
+                onClick={() => removeImage(index)}
+                style={{ 
+                  position: 'absolute', 
+                  top: '6px', 
+                  right: '6px', 
+                  background: 'rgba(255,255,255,0.9)', 
+                  backdropFilter: 'blur(4px)',
+                  border: 'none', 
+                  borderRadius: '8px', 
+                  width: '24px', 
+                  height: '24px', 
+                  cursor: 'pointer', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = '#ef4444'}
+                title="Eliminar imagen"
+              >
+                <X size={14} className="icon-close" />
+              </button>
+
+              {index === 0 && (
+                <div style={{ 
+                  position: 'absolute', 
+                  bottom: 0, 
+                  left: 0, 
+                  right: 0, 
+                  background: 'var(--primary)', 
+                  color: 'white', 
+                  fontSize: '9px', 
+                  textAlign: 'center', 
+                  padding: '4px 0', 
+                  fontWeight: 900,
+                  letterSpacing: '0.05em'
+                }}>PORTADA</div>
+              )}
             </div>
             
             {localSpecs[url] && (
@@ -290,66 +431,189 @@ export default function MediaUpload({ onMediaChange, initialMedia = { images: []
           </div>
         ))}
 
-        {videos.map((vid, index) => (
-          <div key={`vid-${index}`} style={{ 
-            width: '110px', 
-            height: '110px', 
-            position: 'relative', 
-            borderRadius: '16px', 
-            overflow: 'hidden', 
-            border: '2px solid #0f172a', 
-            background: '#000',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-            transition: 'transform 0.2s'
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
-          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-          >
-            <video src={localPreviews[vid] || vid} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6 }} />
-            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-              <Film size={24} color="white" />
+        {/* VIDEOS INTERACTIVOS (REPRODUCTOR COMPLETO Y REPRODUCIBLE DIRECTAMENTE) */}
+        {videos.map((vid, index) => {
+          const videoSrc = localPreviews[vid] || vid;
+          return (
+            <div key={`vid-${index}`} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'center' }}>
+              <div style={{ 
+                width: '130px', 
+                height: '130px', 
+                position: 'relative', 
+                borderRadius: '16px', 
+                overflow: 'hidden', 
+                border: '2px solid #0f172a', 
+                background: '#000000',
+                boxShadow: '0 6px 16px rgba(0,0,0,0.2)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                {/* REPRODUCTOR DE VIDEO HTML5 TOTALMENTE INTERACTIVO */}
+                <video 
+                  src={videoSrc} 
+                  controls 
+                  playsInline 
+                  preload="metadata"
+                  style={{ 
+                    width: '100%', 
+                    height: '100%', 
+                    objectFit: 'contain',
+                    backgroundColor: '#000000'
+                  }} 
+                />
+
+                {/* BOTÓN EXPANDIR PREVIEW COMPLETA */}
+                <button 
+                  type="button"
+                  onClick={() => setExpandedMedia({ type: 'video', url: videoSrc })}
+                  style={{
+                    position: 'absolute',
+                    top: '6px',
+                    left: '6px',
+                    background: 'rgba(0,0,0,0.75)',
+                    backdropFilter: 'blur(4px)',
+                    border: 'none',
+                    borderRadius: '8px',
+                    width: '24px',
+                    height: '24px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                    zIndex: 5
+                  }}
+                  title="Reproducir en pantalla grande"
+                >
+                  <Maximize2 size={12} color="white" />
+                </button>
+
+                {/* BOTÓN ELIMINAR */}
+                <button 
+                  type="button"
+                  onClick={() => removeVideo(index)}
+                  style={{ 
+                    position: 'absolute', 
+                    top: '6px', 
+                    right: '6px', 
+                    background: 'rgba(255,255,255,0.9)', 
+                    backdropFilter: 'blur(4px)',
+                    border: 'none', 
+                    borderRadius: '8px', 
+                    width: '24px', 
+                    height: '24px', 
+                    cursor: 'pointer', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                    zIndex: 5
+                  }}
+                  title="Eliminar video"
+                >
+                  <X size={14} color="#ef4444" />
+                </button>
+
+                <div style={{ 
+                  position: 'absolute', 
+                  bottom: 0, 
+                  left: 0, 
+                  right: 0, 
+                  background: 'rgba(15, 23, 42, 0.9)', 
+                  color: 'white', 
+                  fontSize: '9px', 
+                  textAlign: 'center', 
+                  padding: '3px 0', 
+                  fontWeight: 900,
+                  pointerEvents: 'none',
+                  zIndex: 4
+                }}>VIDEO {index + 1}</div>
+              </div>
+
+              {localSpecs[vid] && (
+                <div style={{ fontSize: '10px', color: '#64748b', textAlign: 'center', fontWeight: 600, lineHeight: 1.2, marginTop: '2px' }}>
+                  <div>{localSpecs[vid].size}</div>
+                </div>
+              )}
             </div>
+          );
+        })}
+      </div>
+
+      {/* MODAL PREVIEW AMPLIADA DE MEDIA */}
+      {expandedMedia && (
+        <div 
+          onClick={() => setExpandedMedia(null)}
+          style={{ 
+            position: 'fixed', 
+            inset: 0, 
+            zIndex: 99999, 
+            background: 'rgba(0,0,0,0.85)', 
+            backdropFilter: 'blur(8px)', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            padding: '2rem' 
+          }}
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            style={{ 
+              position: 'relative', 
+              maxWidth: '90vw', 
+              maxHeight: '90vh', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center' 
+            }}
+          >
             <button 
-              type="button"
-              onClick={() => removeVideo(index)}
-              style={{ 
-                position: 'absolute', 
-                top: '6px', 
-                right: '6px', 
-                background: 'rgba(255,255,255,0.9)', 
-                backdropFilter: 'blur(4px)',
-                border: 'none', 
-                borderRadius: '8px', 
-                width: '24px', 
-                height: '24px', 
-                cursor: 'pointer', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center', 
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+              onClick={() => setExpandedMedia(null)}
+              style={{
+                position: 'absolute',
+                top: '-40px',
+                right: '0',
+                background: 'rgba(255,255,255,0.2)',
+                border: 'none',
+                borderRadius: '50%',
+                width: '36px',
+                height: '36px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: 'white'
               }}
             >
-              <X size={14} color="#ef4444" />
+              <X size={20} />
             </button>
-            <div style={{ 
-              position: 'absolute', 
-              bottom: 0, 
-              left: 0, 
-              right: 0, 
-              background: '#0f172a', 
-              color: 'white', 
-              fontSize: '9px', 
-              textAlign: 'center', 
-              padding: '4px 0', 
-              fontWeight: 900 
-            }}>VIDEO {index + 1}</div>
+            {expandedMedia.type === 'video' ? (
+              <video 
+                src={expandedMedia.url} 
+                controls 
+                autoPlay 
+                playsInline 
+                style={{ maxWidth: '85vw', maxHeight: '80vh', borderRadius: '16px', boxShadow: '0 20px 50px rgba(0,0,0,0.5)' }} 
+              />
+            ) : (
+              <img 
+                src={expandedMedia.url} 
+                alt="Expanded Preview" 
+                style={{ maxWidth: '85vw', maxHeight: '80vh', borderRadius: '16px', objectFit: 'contain', boxShadow: '0 20px 50px rgba(0,0,0,0.5)' }} 
+              />
+            )}
           </div>
-        ))}
-      </div>
+        </div>
+      )}
 
       <style jsx>{`
         .icon-close { color: #ef4444; transition: color 0.2s; }
         button:hover .icon-close { color: white; }
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.6; }
+        }
       `}</style>
     </div>
   );

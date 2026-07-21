@@ -130,8 +130,15 @@
   - **Diagnóstico:** Si el usuario subía archivos en otros formatos/extensiones (como `.mov` o `.webm`), el servidor guardaba el archivo con dicha extensión. Al consumirse el recurso desde `/api/media/[...path]`, la ruta de Next.js respondía con el mime-type genérico `application/octet-stream` en lugar de `video/mp4` o `video/webm`, impidiendo que los reproductores HTML5 reprodujeran el video de manera automática o manual.
   - **Solución:** Se forzó a que todos los videos procesados se almacenen y expongan estrictamente con la extensión `.mp4` (`const filename = \`\${uuidv4()}.mp4\``). Esto garantiza que el servidor de contenido estático API entregue siempre la cabecera `Content-Type: video/mp4`, permitiendo reproducción y autoplay nativo inmediato e interactivo en todos los navegadores del catálogo web y del gestor.
 
+- **Círculo de Progreso en Tiempo Real y Reproducción Directa en Gestor ([MediaUpload.js](file:///c:/Users/Hector%20Ollarves/Documents/PROYECTOS/Practiiko/practiiko_app/src/components/Products/MediaUpload.js)):**
+  - **Indicador de Carga Progresiva (`CircularProgress`):** Se integró la API `XMLHttpRequest.upload.onprogress` para calcular la transferencia en tiempo real (`0%` al `100%`). Se diseñó un componente SVG circular animado de avance que se despliega de dos formas: en el centro del área de arrastre (Dropzone) y en una tarjeta en la grilla que muestra el estado de carga en vivo.
+  - **Reproducción Directa e Interactiva:** Se removieron los bloqueos estáticos (cuadro negro con icono flotante estático) de los elementos `<video>`. Ahora cada tarjeta de video en el gestor incorpora un reproductor HTML5 con controles nativos (`play`, `pause`, `volumen`, `línea de tiempo`), permitiendo reproducir, pausar y audicionar el video subido directamente en la ficha del formulario.
+  - **Previsualización Amplia en Modal:** Se añadió un botón para ampliar el video en un modal flotante a pantalla completa.
+  - **Fix de URLs de Previsualización (`ProductCardPreview.js`):** Se previno la corrupción de URLs `blob:` producida al aplicar transformaciones de protocolo HTTP/HTTPS, asegurando que las vistas previas locales funcionen fluidamente.
+
 ## Próximos Pasos
 - [ ] Mantenimiento general y desarrollo continuo según requerimientos.
+
 
 
 
