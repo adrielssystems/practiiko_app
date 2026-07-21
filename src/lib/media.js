@@ -2,13 +2,6 @@ import sharp from 'sharp';
 import fs from 'fs/promises';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import ffmpeg from 'fluent-ffmpeg';
-import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
-import { createWriteStream } from 'fs';
-import { pipeline } from 'stream/promises';
-import { Readable } from 'stream';
-
-ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 
 const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads', 'products');
 
@@ -52,9 +45,8 @@ export async function processImage(buffer) {
 }
 
 /**
- * Procesa un video: transmite el flujo de datos (Web ReadableStream) directamente a disco
- * de forma progresiva, garantizando consumo mínimo de RAM y evitando cualquier límite de
- * tamaño impuesto por parseadores de FormData/JSON.
+ * Procesa un video: lo guarda directamente al disco en su formato original
+ * con extensión .mp4 asumiendo que el usuario ya lo sube optimizado.
  */
 export async function processVideo(buffer, originalFilename = 'video.mp4') {
   await ensureUploadDir();
@@ -63,7 +55,7 @@ export async function processVideo(buffer, originalFilename = 'video.mp4') {
     throw new Error('El buffer del video está vacío (0 bytes)');
   }
 
-  // Forzar siempre la extensión a .mp4 para compatibilidad del reproductor HTML5 y cabeceras mime-type del servidor
+  // Forzar siempre la extensión a .mp4 para cabeceras mime-type
   const filename = `${uuidv4()}.mp4`;
   const filepath = path.join(UPLOAD_DIR, filename);
   const relativeUrl = `/api/media/${filename}`;
@@ -75,49 +67,6 @@ export async function processVideo(buffer, originalFilename = 'video.mp4') {
 
   const fileSizeMb = (buffer.length / (1024 * 1024)).toFixed(2);
   console.log(`[MEDIA]: Video guardado exitosamente: ${filename} (${fileSizeMb} MB)`);
-
-  // Intentar compresión/optimización a MP4 en segundo plano (Fire & Forget)
-  // Preserva el archivo original si ffmpeg no está disponible o la compresión falla.
-  const compressedFilename = `opt_${filename.replace(/\.[^/.]+$/, "")}.mp4`;
-  const compressedFilepath = path.join(UPLOAD_DIR, compressedFilename);
-
-  console.log(`[MEDIA]: Iniciando optimización ffmpeg en segundo plano...`);
-
-  try {
-    ffmpeg(filepath)
-      .videoCodec('libx264')
-      .audioCodec('aac')
-      .outputOptions([
-        '-preset veryfast',
-        '-crf 28',
-        '-movflags +faststart'
-      ])
-      .toFormat('mp4')
-      .on('end', async () => {
-        try {
-          // Check if compressed file is valid before replacing
-          const stats = await fs.stat(compressedFilepath);
-          if (stats.size > 1024) {
-            await fs.rename(compressedFilepath, filepath);
-            console.log(`[MEDIA]: Video optimizado reemplazó correctamente al original en ${filename}`);
-          } else {
-            console.warn(`[MEDIA WARNING]: Archivo optimizado muy pequeño (${stats.size} bytes). Descartando optimización.`);
-            await fs.unlink(compressedFilepath).catch(() => {});
-          }
-        } catch (renameErr) {
-          console.error(`[MEDIA ERROR]: Error reemplazando video optimizado: ${renameErr.message}`);
-        }
-      })
-      .on('error', async (err) => {
-        console.warn(`[MEDIA WARNING]: No se pudo comprimir el video en segundo plano (${err.message}). Se conserva el video original subido.`);
-        try {
-          await fs.unlink(compressedFilepath);
-        } catch (e) {}
-      })
-      .save(compressedFilepath);
-  } catch (ffmpegErr) {
-    console.warn(`[MEDIA WARNING]: No se pudo iniciar el proceso de compresión: ${ffmpegErr.message}`);
-  }
 
   // Retornar INMEDIATAMENTE la URL del video guardado y listo para reproducir
   return {
