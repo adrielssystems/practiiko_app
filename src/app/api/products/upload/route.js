@@ -24,7 +24,10 @@ export async function POST(req) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error('[UPLOAD ERROR]:', error);
-    return NextResponse.json({ error: 'Error al procesar el archivo' }, { status: 500 });
+    console.error('[UPLOAD ERROR]:', error?.stack || error);
+    return NextResponse.json(
+      { error: error?.message || 'Error al procesar el archivo' },
+      { status: 500 }
+    );
   }
 }

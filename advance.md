@@ -99,5 +99,27 @@
 - **Cálculo con Funciones de Ventana:** Se optimizaron las consultas SQL de `whatsapp/page.js` e `instagram/page.js` utilizando `LIMIT`, `OFFSET` y la función analítica `COUNT(*) OVER()` para calcular el número total de páginas con altísima eficiencia.
 - **Componente `<Pagination />`:** Se construyó un componente reutilizable de navegación de páginas (Anterior/Siguiente) que lee y muta la URL (`?page=X`) de manera dinámica. Al ser basado en URL, interactúa perfectamente con el `<AutoRefresh />` sin devolver al usuario a la primera página mientras hace su auditoría.
 
+### 4. Gestor: Toma de Control Manual en WhatsApp
+- **Auto-pausa de IA:** Se solucionó el problema en la vista de monitoreo de WhatsApp (`/whatsapp/[id]/page.js`) donde el administrador enviaba una respuesta manual y la IA seguía activa. Ahora, al enviar un mensaje mediante el `<ManualReplyInput />`, el servidor ejecuta una consulta `UPDATE` que apaga la propiedad `ai_enabled` automáticamente (`src/app/api/whatsapp/send/route.js`).
+- **Resiliencia ante la API de Meta/Evolution:** Se retiró la validación estricta que exigía `data.key` al enviar mensajes manuales de WhatsApp, reemplazándose por un chequeo `response.ok && !data.error` más tolerante. Esto evita bloqueos 500 originados por discrepancias en la respuesta de la instancia y permite responder sin fallos.
+
+### 5. Autogestor: Prevención de Timeouts en Multimedia
+- **Transcodificación Asíncrona (Fire & Forget):** Se resolvió una caída silenciosa que ocurría al subir videos muy pesados (~200 MB). Anteriormente, el proxy (Traefik/Nginx) abortaba la conexión por superar el tiempo de espera (timeout de 60s) mientras `ffmpeg` realizaba la compresión. Ahora, la ruta `src/lib/media.js` devuelve la URL del video inmediatamente después de guardarlo en disco, permitiéndole al usuario guardar el producto de inmediato en el autogestor, mientras la optimización a MP4 ocurre en segundo plano.
+
+### 6. Auditoría del Monitor de WhatsApp
+- **Diagnóstico de Recepción:** Ante un reporte de que no ingresaban los mensajes, se realizó una auditoría en la ruta de webhooks (`src/app/api/webhooks/whatsapp/route.js`). Tras verificar la ausencia total de *logs* de entrada y confirmar que el código estaba intacto, se diagnosticó que el problema proviene exclusivamente del agente externo (Evolution API): bien sea por desconexión de la sesión en el teléfono o pérdida de configuración del webhook en el servidor de Evolution.
+
+## Tareas Realizadas (21 de Julio de 2026)
+
+### 1. Autogestor: Corrección Definitiva en la Subida de Video (Error 500 y Fallo de Red)
+- **Diagnóstico del Error:** Se identificó la causa raíz por la cual la subida de videos (incluso de 30MB) fallaba con el mensaje `{"error": "Error al procesar el archivo"}` (HTTP 500):
+  1. `Readable.fromWeb(file.stream())` generaba una incompatibilidad fatal de prototipos de stream en el motor Node.js/Undici de Next.js App Router, provocando un `TypeError` no capturado que abortaba la petición inmediatamente.
+  2. Existía una "carrera de archivo" (*race condition*), pues la API retornaba la URL final del video antes de que `ffmpeg` lo hubiera generado en segundo plano. Si el usuario/navegador intentaba cargarlo o si `ffmpeg` fallaba, el archivo resultaba en un error 404 permanente.
+- **Solución Implementada (`src/lib/media.js`):**
+  - **Escritura Directa y Segura:** Se reemplazó la conversión de stream por la lectura buffer nativa (`Buffer.from(await file.arrayBuffer())` y `fs.writeFile`). El video subido se escribe inmediatamente en su ruta final (`/api/media/${filename}`), estando disponible al instante para reproducción en el frontend en cuestión de milisegundos.
+  - **Compresión en Segundo Plano Resiliente (Fire & Forget):** `ffmpeg` realiza la optimización opcional a MP4 en segundo plano a un archivo temporal (`opt_...mp4`). Al finalizar con éxito, reemplaza el original de forma transparente. Si `ffmpeg` falla o el códec original no es soportado, se captura el warning en consola y **se mantiene intacto el video original subido**, evitando caídas de servicio o archivos borrados.
+  - **Soporte de Tamaño Ampliado (`next.config.mjs`):** Se incrementó `bodySizeLimit` a `250mb`.
+
 ## Próximos Pasos
 - [ ] Mantenimiento general y desarrollo continuo según requerimientos.
+

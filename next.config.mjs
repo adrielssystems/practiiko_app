@@ -4,7 +4,7 @@ const nextConfig = {
   serverExternalPackages: ['@ffmpeg-installer/ffmpeg', 'fluent-ffmpeg'],
   experimental: {
     serverActions: {
-      bodySizeLimit: '50mb',
+      bodySizeLimit: '250mb',
     },
   },
   async rewrites() {
