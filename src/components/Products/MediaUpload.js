@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useDropzone } from "react-dropzone";
 import { X, Upload, Film, Loader2, Maximize2 } from "lucide-react";
 import { useToast } from "@/components/Toast";
