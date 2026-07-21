@@ -59,6 +59,10 @@ export async function processImage(buffer) {
 export async function processVideo(buffer, originalFilename = 'video.mp4') {
   await ensureUploadDir();
   
+  if (!buffer || buffer.length === 0) {
+    throw new Error('El buffer del video está vacío (0 bytes)');
+  }
+
   // Forzar siempre la extensión a .mp4 para compatibilidad del reproductor HTML5 y cabeceras mime-type del servidor
   const filename = `${uuidv4()}.mp4`;
   const filepath = path.join(UPLOAD_DIR, filename);
@@ -90,11 +94,16 @@ export async function processVideo(buffer, originalFilename = 'video.mp4') {
       ])
       .toFormat('mp4')
       .on('end', async () => {
-        console.log(`[MEDIA]: Video comprimido con éxito en segundo plano: ${compressedFilename}`);
         try {
-          // Reemplazar de forma segura el video original por el optimizado
-          await fs.rename(compressedFilepath, filepath);
-          console.log(`[MEDIA]: Video optimizado reemplazó correctamente al original en ${filename}`);
+          // Check if compressed file is valid before replacing
+          const stats = await fs.stat(compressedFilepath);
+          if (stats.size > 1024) {
+            await fs.rename(compressedFilepath, filepath);
+            console.log(`[MEDIA]: Video optimizado reemplazó correctamente al original en ${filename}`);
+          } else {
+            console.warn(`[MEDIA WARNING]: Archivo optimizado muy pequeño (${stats.size} bytes). Descartando optimización.`);
+            await fs.unlink(compressedFilepath).catch(() => {});
+          }
         } catch (renameErr) {
           console.error(`[MEDIA ERROR]: Error reemplazando video optimizado: ${renameErr.message}`);
         }
