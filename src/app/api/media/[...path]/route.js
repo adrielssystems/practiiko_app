@@ -55,16 +55,13 @@ export async function GET(req, { params }) {
       const MAX_CHUNK_SIZE = 2 * 1024 * 1024;
       let end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
       
-      if (end - start >= MAX_CHUNK_SIZE) {
-        end = start + MAX_CHUNK_SIZE - 1;
-      }
-      
       const chunksize = (end - start) + 1;
       
-      const stream = fs.createReadStream(filePath, { start, end });
-      const webStream = Readable.toWeb(stream);
+      // Leer el archivo a memoria y servir la porción solicitada (evita bugs de Readable.toWeb en Next.js)
+      const fileBuffer = await fs.promises.readFile(filePath);
+      const chunk = fileBuffer.subarray(start, end + 1);
 
-      return new NextResponse(webStream, {
+      return new NextResponse(chunk, {
         status: 206,
         headers: {
           'Content-Range': `bytes ${start}-${end}/${fileSize}`,
@@ -76,10 +73,10 @@ export async function GET(req, { params }) {
       });
     }
 
-    const stream = fs.createReadStream(filePath);
-    const webStream = Readable.toWeb(stream);
+    // Leer completo a memoria si no hay Range
+    const fileBuffer = await fs.promises.readFile(filePath);
 
-    const res = new NextResponse(webStream, {
+    const res = new NextResponse(fileBuffer, {
       status: 200,
       headers: {
         'Accept-Ranges': 'bytes',
