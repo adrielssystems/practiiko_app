@@ -70,17 +70,20 @@ export default function MediaUpload({ onMediaChange, initialMedia = { images: []
       // Crear URL local inmediata para preview resiliente
       const localUrl = URL.createObjectURL(file);
 
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('type', isVideo ? 'video' : 'image');
-
       try {
-        const res = await fetch('/api/products/upload', {
+        const url = `/api/products/upload?type=${isVideo ? 'video' : 'image'}&filename=${encodeURIComponent(file.name)}`;
+        const res = await fetch(url, {
           method: 'POST',
-          body: formData,
+          body: file,
+          headers: {
+            'Content-Type': file.type || 'application/octet-stream'
+          }
         });
         
-        if (!res.ok) throw new Error('Error en el servidor al subir');
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || 'Error en el servidor al subir');
+        }
         
         const data = await res.json();
 

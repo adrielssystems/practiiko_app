@@ -120,6 +120,13 @@
   - **Compresión en Segundo Plano Resiliente (Fire & Forget):** `ffmpeg` realiza la optimización opcional a MP4 en segundo plano a un archivo temporal (`opt_...mp4`). Al finalizar con éxito, reemplaza el original de forma transparente. Si `ffmpeg` falla o el códec original no es soportado, se captura el warning en consola y **se mantiene intacto el video original subido**, evitando caídas de servicio o archivos borrados.
   - **Soporte de Tamaño Ampliado (`next.config.mjs`):** Se incrementó `bodySizeLimit` a `250mb`.
 
+- **Solución al error "Failed to parse body as FormData" (Carga por Streams de Flujo de Datos):**
+  - **Diagnóstico:** A pesar del cambio a buffers, Next.js / Undici y el parser `req.formData()` imponen un límite rígido interno y fallan al procesar peticiones `multipart/form-data` con archivos medianos/grandes (como videos de 30MB o superiores), arrojando el error `Failed to parse body as FormData.`.
+  - **Solución:** Se refactorizó la comunicación entre el frontend y el backend:
+    - **Frontend ([src/components/Products/MediaUpload.js](file:///c:/Users/Hector%20Ollarves/Documents/PROYECTOS/Practiiko/practiiko_app/src/components/Products/MediaUpload.js)):** Ahora transmite el archivo directamente como el cuerpo de la petición HTTP (`body: file` en formato binario crudo/raw stream) y envía las propiedades `type` y `filename` como parámetros de consulta (URL query parameters). Esto evita el uso y procesamiento de `multipart/form-data` por completo.
+    - **Backend API ([src/app/api/products/upload/route.js](file:///c:/Users/Hector%20Ollarves/Documents/PROYECTOS/Practiiko/practiiko_app/src/app/api/products/upload/route.js)):** Detecta la presencia de los parámetros y procesa el cuerpo directamente como una transmisión de flujo de red (`req.body` de tipo Web `ReadableStream`). Incorpora un mecanismo de lectura chunk-por-chunk progresivo que escribe el flujo directamente al disco sin cargar en memoria el archivo completo. Mantiene retrocompatibilidad con el parser `FormData` tradicional para cargas ligeras e imágenes heredadas.
+
 ## Próximos Pasos
 - [ ] Mantenimiento general y desarrollo continuo según requerimientos.
+
 

@@ -52,27 +52,52 @@ export async function processImage(buffer) {
 }
 
 /**
- * Procesa un video: guarda el archivo original inmediatamente en disco para garantizar
- * disponibilidad instantánea sin bloqueos de red, e inicia compresión en segundo plano si es posible.
+ * Procesa un video: transmite el flujo de datos (Web ReadableStream) directamente a disco
+ * de forma progresiva, garantizando consumo mínimo de RAM y evitando cualquier límite de
+ * tamaño impuesto por parseadores de FormData/JSON.
  */
-export async function processVideo(file) {
+export async function processVideo(reqBody, originalFilename = 'video.mp4') {
   await ensureUploadDir();
   
-  const originalFilename = file.name || 'video.mp4';
   const ext = path.extname(originalFilename) || '.mp4';
   const filename = `${uuidv4()}${ext}`;
   const filepath = path.join(UPLOAD_DIR, filename);
   const relativeUrl = `/api/media/${filename}`;
 
-  console.log(`[MEDIA]: Guardando video subido en disco: ${filepath}`);
+  console.log(`[MEDIA]: Guardando transmisión de video en disco: ${filepath}`);
 
-  // Convertir el File a Buffer de forma totalmente compatible con Node.js / Next.js
-  const arrayBuffer = await file.arrayBuffer();
-  const buffer = Buffer.from(arrayBuffer);
-  await fs.writeFile(filepath, buffer);
+  // Transmitir flujo de datos chunk-por-chunk al archivo
+  const reader = reqBody.getReader();
+  const writeStream = createWriteStream(filepath);
+  let bytesWritten = 0;
 
-  const fileSizeMb = (buffer.length / (1024 * 1024)).toFixed(2);
-  console.log(`[MEDIA]: Video subido y guardado exitosamente: ${filename} (${fileSizeMb} MB)`);
+  await new Promise((resolve, reject) => {
+    writeStream.on('finish', resolve);
+    writeStream.on('error', (err) => {
+      console.error('[MEDIA ERROR]: Error escribiendo stream a disco:', err);
+      reject(err);
+    });
+    
+    (async () => {
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) {
+            writeStream.end();
+            break;
+          }
+          writeStream.write(Buffer.from(value));
+          bytesWritten += value.length;
+        }
+      } catch (err) {
+        writeStream.destroy(err);
+        reject(err);
+      }
+    })();
+  });
+
+  const fileSizeMb = (bytesWritten / (1024 * 1024)).toFixed(2);
+  console.log(`[MEDIA]: Transmisión de video guardada exitosamente: ${filename} (${fileSizeMb} MB)`);
 
   // Intentar compresión/optimización a MP4 en segundo plano (Fire & Forget)
   // Preserva el archivo original si ffmpeg no está disponible o la compresión falla.
