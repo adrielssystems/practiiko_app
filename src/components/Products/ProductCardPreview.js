@@ -438,7 +438,8 @@ export default function ProductCardPreview({ product }) {
                                   justifyContent: 'center',
                                   overflow: 'hidden'
                                 }}
-                                                     <svg style={{ width: '24px', height: '24px', color: 'white', position: 'absolute', zIndex: 10, pointerEvents: 'none' }} fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                              >
+                                <svg style={{ width: '24px', height: '24px', color: 'white', position: 'absolute', zIndex: 10, pointerEvents: 'none' }} fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                                  <video src={typeof media.url === 'string' ? (media.url.startsWith('blob:') ? media.url : media.url.replace('http://', 'https://')) : media.url} preload="metadata" playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6, pointerEvents: 'none', userSelect: 'none' }} controlsList="nodownload" />
                               </div>
                             ) : (

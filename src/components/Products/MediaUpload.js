@@ -299,7 +299,7 @@ export default function MediaUpload({ onMediaChange, initialMedia = { images: []
           <p style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500 }}>Soporta imágenes (WebP, JPG) y Video (MP4, MOV)</p>
           <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', marginTop: '1rem' }}>
             <span style={{ padding: '0.25rem 0.75rem', borderRadius: '20px', background: '#f1f5f9', fontSize: '0.65rem', fontWeight: 700, color: '#475569' }}>MAX 10 FOTOS</span>
-            <span style={{ padding: '0.25rem 0.75rem', borderRadius: '20px', background: '#f1f5f9', fontSize: '0.65rem', fontWeight 700, color: '#475569' }}>MAX 2 VIDEOS</span>
+            <span style={{ padding: '0.25rem 0.75rem', borderRadius: '20px', background: '#f1f5f9', fontSize: '0.65rem', fontWeight: 700, color: '#475569' }}>MAX 2 VIDEOS</span>
           </div>
         </div>
       </div>
