@@ -126,7 +126,12 @@
     - **Frontend ([src/components/Products/MediaUpload.js](file:///c:/Users/Hector%20Ollarves/Documents/PROYECTOS/Practiiko/practiiko_app/src/components/Products/MediaUpload.js)):** Ahora transmite el archivo directamente como el cuerpo de la petición HTTP (`body: file` en formato binario crudo/raw stream) y envía las propiedades `type` y `filename` como parámetros de consulta (URL query parameters). Esto evita el uso y procesamiento de `multipart/form-data` por completo.
     - **Backend API ([src/app/api/products/upload/route.js](file:///c:/Users/Hector%20Ollarves/Documents/PROYECTOS/Practiiko/practiiko_app/src/app/api/products/upload/route.js)):** Detecta la presencia de los parámetros y procesa el cuerpo directamente como una transmisión de flujo de red (`req.body` de tipo Web `ReadableStream`). Incorpora un mecanismo de lectura chunk-por-chunk progresivo que escribe el flujo directamente al disco sin cargar en memoria el archivo completo. Mantiene retrocompatibilidad con el parser `FormData` tradicional para cargas ligeras e imágenes heredadas.
 
+- **Forzar Extensión a `.mp4` para Compatibilidad HTML5:**
+  - **Diagnóstico:** Si el usuario subía archivos en otros formatos/extensiones (como `.mov` o `.webm`), el servidor guardaba el archivo con dicha extensión. Al consumirse el recurso desde `/api/media/[...path]`, la ruta de Next.js respondía con el mime-type genérico `application/octet-stream` en lugar de `video/mp4` o `video/webm`, impidiendo que los reproductores HTML5 reprodujeran el video de manera automática o manual.
+  - **Solución:** Se forzó a que todos los videos procesados se almacenen y expongan estrictamente con la extensión `.mp4` (`const filename = \`\${uuidv4()}.mp4\``). Esto garantiza que el servidor de contenido estático API entregue siempre la cabecera `Content-Type: video/mp4`, permitiendo reproducción y autoplay nativo inmediato e interactivo en todos los navegadores del catálogo web y del gestor.
+
 ## Próximos Pasos
 - [ ] Mantenimiento general y desarrollo continuo según requerimientos.
+
 
 

@@ -59,12 +59,12 @@ export async function processImage(buffer) {
 export async function processVideo(reqBody, originalFilename = 'video.mp4') {
   await ensureUploadDir();
   
-  const ext = path.extname(originalFilename) || '.mp4';
-  const filename = `${uuidv4()}${ext}`;
+  // Forzar siempre la extensión a .mp4 para compatibilidad del reproductor HTML5 y cabeceras mime-type del servidor
+  const filename = `${uuidv4()}.mp4`;
   const filepath = path.join(UPLOAD_DIR, filename);
   const relativeUrl = `/api/media/${filename}`;
 
-  console.log(`[MEDIA]: Guardando transmisión de video en disco: ${filepath}`);
+  console.log(`[MEDIA]: Guardando transmisión de video en disco (MP4): ${filepath}`);
 
   // Transmitir flujo de datos chunk-por-chunk al archivo
   const reader = reqBody.getReader();
