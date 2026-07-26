@@ -41,6 +41,12 @@ export async function POST(req) {
         [recipientId, JSON.stringify({ role: 'assistant', content: text, manual: true }), 'manual']
       );
 
+      // 3. Auto-pausar la IA ya que un humano acaba de intervenir desde el gestor
+      await query(
+        "UPDATE instagram_customers SET ai_enabled = false WHERE id = $1 OR username = $1",
+        [recipientId]
+      );
+
       return NextResponse.json({ success: true, data });
     } else {
       console.error("[INSTAGRAM SEND META ERROR]:", JSON.stringify(data));

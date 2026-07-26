@@ -136,6 +136,16 @@
   - **Previsualización Amplia en Modal:** Se añadió un botón para ampliar el video en un modal flotante a pantalla completa.
   - **Fix de URLs de Previsualización (`ProductCardPreview.js`):** Se previno la corrupción de URLs `blob:` producida al aplicar transformaciones de protocolo HTTP/HTTPS, asegurando que las vistas previas locales funcionen fluidamente.
 
+## Tareas Realizadas (26 de Julio de 2026)
+
+### 1. Monitoreo e Intervención Humana en Instagram
+- **Corrección de la API de Pausa de Bot (`src/app/api/settings/bot-pause/route.js`):**
+  - **Diagnóstico:** El botón de pausa (`BotPauseToggle.js`) enviaba el `id` numérico del usuario de Instagram, pero el backend ejecutaba la consulta `UPDATE instagram_customers SET ai_enabled = $1 WHERE username = $2`. Al no coincidir el nombre de usuario con la ID numérica, la consulta actualizaba 0 filas, impidiendo pausar la IA desde la interfaz.
+  - **Solución:** Se ajustó la consulta SQL a `WHERE id = $2 OR username = $2`, garantizando que la actualización de `ai_enabled` funcione sin importar si se pasa la ID numérica o el `username`.
+- **Auto-Pausa al Responder Manualmente (`src/app/api/instagram/send/route.js`):**
+  - **Diagnóstico:** Al enviar un mensaje manual desde la vista detallada de Instagram en Practiiko (`/instagram/[id]`), la respuesta se enviaba al cliente y se guardaba en base de datos, pero no se cambiaba `ai_enabled` a `false`. Al responder el cliente, la IA volvía a contestar automáticamente.
+  - **Solución:** Se agregó la consulta `UPDATE instagram_customers SET ai_enabled = false WHERE id = $1 OR username = $1` al finalizar con éxito el envío manual de un mensaje, cediendo inmediatamente el control al asesor humano.
+
 ## Próximos Pasos
 - [ ] Mantenimiento general y desarrollo continuo según requerimientos.
 

@@ -12,7 +12,7 @@ export async function POST(req) {
       );
     } else {
       await query(
-        "UPDATE instagram_customers SET ai_enabled = $1 WHERE username = $2",
+        "UPDATE instagram_customers SET ai_enabled = $1 WHERE id = $2 OR username = $2",
         [enabled, id]
       );
     }
