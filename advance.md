@@ -146,6 +146,11 @@
   - **Diagnóstico:** Al enviar un mensaje manual desde la vista detallada de Instagram en Practiiko (`/instagram/[id]`), la respuesta se enviaba al cliente y se guardaba en base de datos, pero no se cambiaba `ai_enabled` a `false`. Al responder el cliente, la IA volvía a contestar automáticamente.
   - **Solución:** Se agregó la consulta `UPDATE instagram_customers SET ai_enabled = false WHERE id = $1 OR username = $1` al finalizar con éxito el envío manual de un mensaje, cediendo inmediatamente el control al asesor humano.
 
+### 2. Configuración e Sincronización Git
+- **Configuración de Identidad y Despliegue:**
+  - Se configuró la identidad del autor de Git (`adriels.systems@gmail.com` / `Adriels Systems`).
+  - Se ejecutó el commit y push hacia el repositorio remoto `origin/main` (`https://github.com/adrielssystems/practiiko_app.git`), dejando el repositorio completamente sincronizado y actualizado.
+
 ## Próximos Pasos
 - [ ] Mantenimiento general y desarrollo continuo según requerimientos.
 
