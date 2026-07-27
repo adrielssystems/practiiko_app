@@ -157,10 +157,17 @@ export async function POST(req) {
               if (followupStatus === 'sent') {
                 console.log(`[INSTAGRAM DM] Cliente ${senderId} respondió al seguimiento. Pausando bot y alertando.`);
                 
-                await query(
-                  "UPDATE instagram_customers SET followup_status = 'replied', ai_enabled = false, requires_human = true WHERE id = $1",
-                  [senderId]
-                );
+                try {
+                  await query(
+                    "UPDATE instagram_customers SET followup_status = 'replied', ai_enabled = false, requires_human = true WHERE id = $1",
+                    [senderId]
+                  );
+                } catch (e) {
+                  await query(
+                    "UPDATE instagram_customers SET followup_status = 'replied', ai_enabled = false WHERE id = $1",
+                    [senderId]
+                  );
+                }
 
                 const usernameInfo = userInfo?.username ? `@${userInfo.username}` : senderId;
                 const notifyText = `🚨 RESPUESTA A SEGUIMIENTO\n\n*Canal:* INSTAGRAM\n*Cliente:* ${customerName} (${usernameInfo})\n*Mensaje:* "${userMessage}"\n\n👇 Panel:\nhttps://auto.practiiko.com/instagram/${senderId}`;

@@ -43,6 +43,10 @@ async function getConversations(page = 1) {
 }
 
 export default async function InstagramMonitoringPage({ searchParams }) {
+  try {
+    await query("ALTER TABLE instagram_customers ADD COLUMN IF NOT EXISTS requires_human BOOLEAN DEFAULT FALSE;");
+  } catch(e) {}
+
   const params = await searchParams;
   const currentPage = parseInt(params?.page) || 1;
   const { conversations, totalPages } = await getConversations(currentPage);

@@ -153,6 +153,11 @@
   - **Estructura Declarativa Atómica:** Se refactorizaron los prompts de **WhatsApp** y **Instagram** adoptando la versión v6.1 basada en árboles de decisión algorítmicos (Pasos 1 al 6/7) y autoverificación (*Checklist Final*).
   - **Integración con Backend de Practiiko:** Se mantuvo la sintaxis obligatoria `URL_FOTO: [URL]` para la renderización multimedia por webhook, la regla estricta de CERO EMOJIS, trato formal ("Usted"), el uso exclusivo del **Precio BCV** y las URLs del showroom en Porlamar e Instagram a WhatsApp (`wa.me`).
   - **Control Anti-Spam de Catálogo:** Se restringió el envío del enlace del catálogo web a un máximo de UNA sola vez por conversación.
+- **Solución a Error SQL en Transferencia de Instagram (`requires_human`):**
+  - **Diagnóstico:** Al activarse una transferencia `[TRANSFER]`, el agente intentaba actualizar `UPDATE instagram_customers SET ai_enabled = false, requires_human = true`. PostgreSQL arrojaba el error `42703 (column "requires_human" does not exist)` impidiendo que `ai_enabled` se marcara en `false`.
+  - **Solución Implementada:** 
+    1. Se añadió la instrucción auto-migratoria `ALTER TABLE instagram_customers ADD COLUMN IF NOT EXISTS requires_human BOOLEAN DEFAULT FALSE;` en `src/app/instagram/page.js`.
+    2. Se implementó una cláusula de reserva (fallback) en `src/lib/ai/instagramAgent.js` y `src/app/api/webhooks/instagram/route.js` para que, si la columna aún no está creada en la BD, se ejecute `UPDATE instagram_customers SET ai_enabled = false` garantizando la pausa inmediata de la IA.
 
 ## Próximos Pasos
 - [ ] Mantenimiento general y desarrollo continuo según requerimientos.

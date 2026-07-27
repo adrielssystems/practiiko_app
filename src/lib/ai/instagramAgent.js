@@ -512,7 +512,8 @@ export async function processInstagramMessage(message, sessionId, customerName =
       try {
         await query("UPDATE instagram_customers SET ai_enabled = false, requires_human = true WHERE id = $1", [sessionId]);
       } catch(e) {
-        console.error("Error actualizando requires_human Instagram (Guardrail):", e);
+        console.warn("Columna requires_human no detectada en instagram_customers, actualizando solo ai_enabled:", e.message);
+        await query("UPDATE instagram_customers SET ai_enabled = false WHERE id = $1", [sessionId]);
       }
       await query(`INSERT INTO instagram_messages (session_id, message, source, comment_id) VALUES ($1, $2, $3, $4)`,
         [sessionId, JSON.stringify({ role: 'assistant', content: loopResponse }), source, commentId]);
@@ -550,7 +551,8 @@ export async function processInstagramMessage(message, sessionId, customerName =
       try {
         await query("UPDATE instagram_customers SET ai_enabled = false, requires_human = true WHERE id = $1", [sessionId]);
       } catch(e) {
-        console.error("Error actualizando requires_human Instagram:", e);
+        console.warn("Columna requires_human no detectada en instagram_customers, actualizando solo ai_enabled:", e.message);
+        await query("UPDATE instagram_customers SET ai_enabled = false WHERE id = $1", [sessionId]);
       }
       await query(`INSERT INTO instagram_messages (session_id, message, source, comment_id) VALUES ($1, $2, $3, $4)`,
         [sessionId, JSON.stringify({ role: 'assistant', content: response }), source, commentId]);
@@ -601,7 +603,8 @@ export async function processInstagramMessage(message, sessionId, customerName =
       try {
         await query("UPDATE instagram_customers SET ai_enabled = false, requires_human = true WHERE id = $1", [sessionId]);
       } catch(e) {
-        console.error("Error actualizando requires_human (IA-TRANSFER) Instagram:", e);
+        console.warn("Columna requires_human no detectada en instagram_customers, actualizando solo ai_enabled:", e.message);
+        await query("UPDATE instagram_customers SET ai_enabled = false WHERE id = $1", [sessionId]);
       }
     }
 
