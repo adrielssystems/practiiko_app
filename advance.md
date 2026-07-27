@@ -146,10 +146,13 @@
   - **Diagnóstico:** Al enviar un mensaje manual desde la vista detallada de Instagram en Practiiko (`/instagram/[id]`), la respuesta se enviaba al cliente y se guardaba en base de datos, pero no se cambiaba `ai_enabled` a `false`. Al responder el cliente, la IA volvía a contestar automáticamente.
   - **Solución:** Se agregó la consulta `UPDATE instagram_customers SET ai_enabled = false WHERE id = $1 OR username = $1` al finalizar con éxito el envío manual de un mensaje, cediendo inmediatamente el control al asesor humano.
 
-### 2. Configuración e Sincronización Git
-- **Configuración de Identidad y Despliegue:**
-  - Se configuró la identidad del autor de Git (`adriels.systems@gmail.com` / `Adriels Systems`).
-  - Se ejecutó el commit y push hacia el repositorio remoto `origin/main` (`https://github.com/adrielssystems/practiiko_app.git`), dejando el repositorio completamente sincronizado y actualizado.
+### 3. Actualización de Agente de IA y System Prompts (v6.1)
+- **Respaldo de Prompts Heredados (`src/lib/ai/prompts_OLD.js`):**
+  - Se respaldó intacta la versión anterior v4.5 en `prompts_OLD.js` para mantener un registro histórico y facilitar reversiones rápidas si fuese necesario.
+- **Implementación del Nuevo Prompt Declarativo v6.1 (`src/lib/ai/prompts.js`):**
+  - **Estructura Declarativa Atómica:** Se refactorizaron los prompts de **WhatsApp** y **Instagram** adoptando la versión v6.1 basada en árboles de decisión algorítmicos (Pasos 1 al 6/7) y autoverificación (*Checklist Final*).
+  - **Integración con Backend de Practiiko:** Se mantuvo la sintaxis obligatoria `URL_FOTO: [URL]` para la renderización multimedia por webhook, la regla estricta de CERO EMOJIS, trato formal ("Usted"), el uso exclusivo del **Precio BCV** y las URLs del showroom en Porlamar e Instagram a WhatsApp (`wa.me`).
+  - **Control Anti-Spam de Catálogo:** Se restringió el envío del enlace del catálogo web a un máximo de UNA sola vez por conversación.
 
 ## Próximos Pasos
 - [ ] Mantenimiento general y desarrollo continuo según requerimientos.
