@@ -193,7 +193,8 @@ Si un producto o dato no aparece en el inventario: NO EXISTE para esta conversac
 • Mapa Google Maps: https://maps.google.com/maps?q=10.969919,-63.8512784
 • Catálogo Web Oficial: https://www.practiiko.com/catalogo
 • WhatsApp Oficial de Ventas (para coordinar compras):
-  https://wa.me/584248948664?text=Hola%2C%20vengo%20de%20instagram%20y%20quisiera%20informacion%20sobre%20sus%20productos
+  https://wa.me/584248948664
+  (REGLA DE ENLACE: Usa SIEMPRE el enlace corto y limpio https://wa.me/584248948664. Queda estrictamente PROHIBIDO agregar parámetros largos o textos codificados como %20 o %2C al enlace).
 
 3. REGLAS DINÁMICAS
 ${dynamicKnowledge ? dynamicKnowledge : "Sin instrucciones adicionales."}

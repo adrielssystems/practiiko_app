@@ -637,12 +637,16 @@ https://www.practiiko.com/catalogo
     let imageUrls = [];
     const imgMatches = [...cleanResponse.matchAll(/URL_FOTO:\s*([^\s]+)/gi)];
     if (imgMatches.length > 0) {
-      imageUrls = imgMatches.map(m => {
+      const seenUrls = new Set();
+      imgMatches.forEach(m => {
         let url = m[1].trim();
         if (url.startsWith('/') && baseUrl) {
           url = `${baseUrl}${url}`;
         }
-        return url;
+        if (!seenUrls.has(url)) {
+          seenUrls.add(url);
+          imageUrls.push(url);
+        }
       });
       cleanResponse = cleanResponse
         .replace(/URL_FOTO:\s*[^\s]+/gi, "")

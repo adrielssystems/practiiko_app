@@ -176,7 +176,10 @@
   - Se añadieron *"en el catálogo"*, *"del catálogo"*, *"en la página"*, *"de la web"* dentro del array `CONTEXT_REFS` para resolver correctamente referencias a productos vistos en la web.
 - **Limpieza de Espacios y Extracción de Imágenes en Mensajes Multimedia (`whatsappAgent.js` / `instagramAgent.js`):**
   - **Compresión de Texto:** Se añadió una regla de limpieza con expresiones regulares (`.replace(/:\s*\n\s*\n/g, ":\n").replace(/\n\s*\n\s*\n+/g, "\n\n")`) que comprime los saltos de línea sobrantes al remover la sintaxis `URL_FOTO: ...`.
-  - **Corrección en Simulador y Webhooks:** Se amplió la detección del extractor de imágenes cuando el usuario responde de forma afirmativa (ej: *"sí"*, *"claro"*, *"por favor"*) a la pregunta de mostrar fotos de un producto. Si no se indica un color específico en el nombre del modelo, el sistema recupera automáticamente las imágenes del producto en contexto (ej: `Sofá Burbuja`), garantizando que se muestren en el simulador de Instagram y se adjunten por las APIs de WhatsApp/Instagram.
+  - **Corrección en Simulador y Webhooks:** Se amplió la detección del extractor de imágenes cuando el usuario responde de forma afirmativa (ej: *"sí"*, *"claro"*, *"por favor"*).
+  - **Desduplicación Estricta de Imágenes:** Se agregó una desduplicación mediante `Set()` en la extracción de `imageUrls`. Si la BD solo posee 1 imagen principal para un producto, el sistema evita enviar 3 réplicas idénticas de la misma foto cuando el bot nombra 3 variantes de color.
+- **Simplificación de Enlace a WhatsApp (`prompts.js`):**
+  - Se forzó el uso estricto de la URL corta y limpia `https://wa.me/584248948664` prohibiendo la generación de parámetros URL-encoded extensos con caracteres especiales (como `%2C` y `%20`), garantizando enlaces atractivos y directos para el cliente.
 
 ## Próximos Pasos
 - [ ] Mantenimiento general y desarrollo continuo según requerimientos.
