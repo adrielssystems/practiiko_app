@@ -309,14 +309,20 @@ export async function POST(req) {
               }
 
               processInstagramMessage(userMessage, senderId, username || 'Cliente', baseUrl, 'comment', commentId).then(async (aiResponse) => {
-                // 1. Respuesta pública corta con guía de solicitudes
-                replyToInstagramComment(commentId, "¡Hola! Te enviamos el detalle al DM (revisa tu bandeja de mensajes) 💎");
+                if (aiResponse.text) {
+                  // 1. Responder públicamente al comentario con la respuesta completa de la IA (Garantiza entrega 100% en Instagram)
+                  await replyToInstagramComment(commentId, aiResponse.text);
 
-                // 2. Respuesta privada con el detalle de la IA
-                await sendInstagramPrivateReply(commentId, aiResponse.text, pageId);
-                if (aiResponse.imageUrls && aiResponse.imageUrls.length > 0) {
-                  for (const imgUrl of aiResponse.imageUrls) {
-                    await sendInstagramImage(senderId, imgUrl);
+                  // 2. Intentar además enviar por DM privado si Meta lo autoriza para este comentario
+                  try {
+                    await sendInstagramPrivateReply(commentId, aiResponse.text, pageId);
+                    if (aiResponse.imageUrls && aiResponse.imageUrls.length > 0) {
+                      for (const imgUrl of aiResponse.imageUrls) {
+                        await sendInstagramImage(senderId, imgUrl);
+                      }
+                    }
+                  } catch (dmErr) {
+                    console.warn("[INSTAGRAM DM NOTICE] El mensaje privado (DM) no pudo enviarse por política de ventana de Meta:", dmErr.message);
                   }
                 }
               }).catch(e => console.error("[ERROR ASYNC COMMENT]:", e));

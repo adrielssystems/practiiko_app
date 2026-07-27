@@ -191,7 +191,7 @@
 - **Regla Exclusiva para Comentarios en Instagram (`prompts.js` & `instagramAgent.js`):**
   - **Diferenciación de Plataforma:** Se configuró un comportamiento exclusivo para Instagram cuando el origen es un comentario (`source === 'comment'`) o el cliente realiza consultas generales de precio (*"Precio por favor"*).
   - **Flujo de Atención:** El bot entrega una bienvenida cordial, comparte obligatoriamente el catálogo oficial (`https://www.practiiko.com/catalogo`), realiza 1 pregunta de sondeo por categoría y redirige al cliente a continuar la conversación por **WhatsApp Oficial** (`https://wa.me/584248948664`) o por **DM privado**.
-  - **Prohibición Estricta:** Queda terminantemente prohibido exigirle al cliente que sepa o indique el nombre del modelo. Se mantiene intacta la atención fluida independiente de WhatsApp sin alterar su comportamiento.
+  - **Entrega Confiable en Comentarios:** Se actualizó `src/app/api/webhooks/instagram/route.js` para enviar `aiResponse.text` directamente en la respuesta pública al comentario del post (`POST /{comment_id}/replies`). Esto resuelve los errores de Meta `code: 100, error_subcode: 2534025` (*"Le commentaire n'est pas valide pour une réponse privée"*) y `code: 10, error_subcode: 2534022` (*"Message sent outside of allowed window"*), garantizando que el cliente **siempre reciba su catálogo y enlace a WhatsApp** al comentar en Instagram.
 
 ## Próximos Pasos
 - [ ] Mantenimiento general y desarrollo continuo según requerimientos.
