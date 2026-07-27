@@ -122,8 +122,17 @@ function detectIntent(message) {
 
   // --- Intenciones de venta / consulta ---
   if (m.includes("precio") || m.includes("cuanto") || m.includes("cuesta") || m.includes("vale")) return "PRICE_INFO";
-  if (m.includes("catalogo") || m.includes("ver todo")) return "CATALOG";
-  if (m.includes("sofa") || m.includes("colchon") || m.match(/[a-z]\d{3}/)) return "PRODUCT_QUERY";
+
+  // Solicitud directa del enlace del catálogo
+  const isDirectCatalogReq = (
+    m === "catalogo" || m.includes("ver catalogo") || m.includes("enviar catalogo") || 
+    m.includes("mandar catalogo") || m.includes("link del catalogo") || m.includes("ver todo") ||
+    m.includes("dame el catalogo") || m.includes("pasa el catalogo") || m.includes("tienen catalogo") ||
+    m.includes("tienen un catalogo") || m.includes("pasame el catalogo")
+  );
+  if (isDirectCatalogReq) return "CATALOG";
+
+  if (m.includes("sofa") || m.includes("colchon") || m.includes("catalogo") || m.match(/[a-z]\d{3}/)) return "PRODUCT_QUERY";
   if (m.includes("hola") || m.includes("buen") || m.includes("saludos")) return "GREETING";
 
   // Cortesía simple (ok, dale, etc.) sin contexto emocional
@@ -148,13 +157,16 @@ function extractKeywords(message) {
   return words.length > 0 ? words : null;
 }
 
-// Detecta cuando el cliente usa referencias de contexto (pronombres/referencias a mensajes anteriores)
+// Detecta cuando el cliente usa referencias de contexto (pronombres/referencias a mensajes anteriores o a la web)
 const CONTEXT_REFS = [
   "el mismo", "la misma", "ese", "esa", "de ese", "de esa",
   "ese modelo", "ese mueble", "esa pieza", "el de la publicidad",
   "la de la publicidad", "el que sale", "el que aparece", "el que mostraste",
   "el que me mandaste", "el que vimos", "el que estaba", "el que salio",
-  "el que salia", "el del anuncio", "el del video"
+  "el que salia", "el del anuncio", "el del video",
+  "en el catalogo", "del catalogo", "en la pagina", "de la pagina",
+  "en la web", "de la web", "el del catalogo", "la del catalogo",
+  "el de la pagina", "la de la pagina", "el de la web"
 ];
 
 function detectContextReference(message) {
@@ -621,7 +633,11 @@ export async function processInstagramMessage(message, sessionId, customerName =
         }
         return url;
       });
-      cleanResponse = cleanResponse.replace(/URL_FOTO:\s*[^\s]+/gi, "").trim();
+      cleanResponse = cleanResponse
+        .replace(/URL_FOTO:\s*[^\s]+/gi, "")
+        .replace(/:\s*\n\s*\n/g, ":\n")
+        .replace(/\n\s*\n\s*\n+/g, "\n\n")
+        .trim();
     }
 
     // Fallback de extracción de imágenes
@@ -637,18 +653,27 @@ export async function processInstagramMessage(message, sessionId, customerName =
                             normalizeMsg.includes("imagenes") || 
                             normalizeMsg.includes("ver") || 
                             normalizeMsg.includes("mostra") || 
-                            normalizeMsg.includes("muestr");
+                            normalizeMsg.includes("muestr") ||
+                            normalizeMsg.includes("si") ||
+                            normalizeMsg.includes("claro") ||
+                            normalizeMsg.includes("dale") ||
+                            normalizeMsg.includes("por favor");
                             
       const botEntregaFotos = (normalizeRawResp.includes("foto") || 
                               normalizeRawResp.includes("imagen") || 
-                              normalizeRawResp.includes("imagenes")) && 
+                              normalizeRawResp.includes("imagenes") ||
+                              normalizeRawResp.includes("color") ||
+                              normalizeRawResp.includes("colores")) && 
                              (normalizeRawResp.includes("aqui tiene") || 
                               normalizeRawResp.includes("aqui esta") || 
                               normalizeRawResp.includes("te muestro") || 
+                              normalizeRawResp.includes("le muestro") ||
+                              normalizeRawResp.includes("muestro") ||
                               normalizeRawResp.includes("te envio") || 
                               normalizeRawResp.includes("foto de") || 
                               normalizeRawResp.includes("imagen de") || 
                               normalizeRawResp.includes("estas son") ||
+                              normalizeRawResp.includes("opciones de color") ||
                               normalizeRawResp.includes("aqui adjunto") ||
                               normalizeRawResp.includes("en la imagen"));
 
@@ -669,6 +694,8 @@ export async function processInstagramMessage(message, sessionId, customerName =
           "azul", "negro", "crema", "naranja", "rosado"
         ];
         
+        let foundSpecificColor = false;
+
         inventory.rows.forEach(r => {
           if (r.image_url) {
             const prodName = normalize(r.name);
@@ -687,6 +714,7 @@ export async function processInstagramMessage(message, sessionId, customerName =
             }
             
             if (nameMentioned && matchesColor) {
+              foundSpecificColor = true;
               let url = r.image_url.trim();
               if (url.startsWith('/') && baseUrl) {
                 url = `${baseUrl}${url}`;
@@ -697,6 +725,32 @@ export async function processInstagramMessage(message, sessionId, customerName =
             }
           }
         });
+
+        // Si no se encontró un producto con el color específico en el nombre, enviar las fotos del producto mencionado en la conversación
+        if (!foundSpecificColor && imageUrls.length === 0) {
+          inventory.rows.forEach(r => {
+            if (r.image_url) {
+              const prodName = normalize(r.name);
+              const prodCode = normalize(r.code || "");
+              const prodPseudonimo = normalize(r.pseudonimo || "");
+              const nameWords = prodName.split(" ").filter(word => !GENERIC_WORDS.includes(word));
+              
+              const nameMentioned = (nameWords.some(word => word.length >= 3 && fullContext.includes(word))) || 
+                                    (prodPseudonimo && fullContext.includes(prodPseudonimo)) ||
+                                    (prodCode && fullContext.includes(prodCode));
+              
+              if (nameMentioned) {
+                let url = r.image_url.trim();
+                if (url.startsWith('/') && baseUrl) {
+                  url = `${baseUrl}${url}`;
+                }
+                if (!imageUrls.includes(url)) {
+                  imageUrls.push(url);
+                }
+              }
+            }
+          });
+        }
       }
     }
 

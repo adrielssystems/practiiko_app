@@ -167,7 +167,16 @@
 - **Actualización de System Prompts (`src/lib/ai/prompts.js` - v6.2):**
   - **Módulo `INTEL-SPELL`:** Se incorporó una instrucción declarativa que exige a la IA deducir fonética o visualmente el modelo probable cuando el cliente escribe con errores ortográficos.
   - **Confirmación Proactiva:** En lugar de emitir `[TRANSFER]`, la IA confirma amablemente con el cliente (ej: *"¿Se refiere a nuestro modelo Caterpillar?"*) entregando el Precio BCV exacto de inmediato.
-  - **Flexibilización de Fallback:** Se reescribió la regla de fallback para prohibir la transferencia inmediata ante errores tipográficos, obligando al bot a sugerir hasta 3 productos similares antes de derivar a un humano.
+- **Módulo `MANEJO DE REFERENCIAS AL CATÁLOGO` (`src/lib/ai/prompts.js` - v6.3):**
+  - **Petición Directa (Caso A):** Envía el link del catálogo web con pregunta de sondeo (máximo 1 vez por chat).
+  - **Referencia a Producto Visto (Caso B):** Se prohíbe explícitamente volver a enviar el enlace si el cliente dice *"en el catálogo vi..."* o *"el de la web"*. El bot busca directamente la opción descrita en la BD y muestra su Precio BCV y foto.
+  - **Reporte de Ausencia (Caso C):** Si el cliente indica que un producto *"no sale en la página"*, el bot no insiste y transfiere inmediatamente con `[TRANSFER]`.
+- **Refinamiento de Intenciones y Contexto (`whatsappAgent.js` / `instagramAgent.js`):**
+  - Se actualizó `detectIntent` para no marcar erróneamente como `CATALOG` las frases donde el cliente describe productos usando la palabra catálogo (ej: *"en el catálogo vi uno verde"*).
+  - Se añadieron *"en el catálogo"*, *"del catálogo"*, *"en la página"*, *"de la web"* dentro del array `CONTEXT_REFS` para resolver correctamente referencias a productos vistos en la web.
+- **Limpieza de Espacios y Extracción de Imágenes en Mensajes Multimedia (`whatsappAgent.js` / `instagramAgent.js`):**
+  - **Compresión de Texto:** Se añadió una regla de limpieza con expresiones regulares (`.replace(/:\s*\n\s*\n/g, ":\n").replace(/\n\s*\n\s*\n+/g, "\n\n")`) que comprime los saltos de línea sobrantes al remover la sintaxis `URL_FOTO: ...`.
+  - **Corrección en Simulador y Webhooks:** Se amplió la detección del extractor de imágenes cuando el usuario responde de forma afirmativa (ej: *"sí"*, *"claro"*, *"por favor"*) a la pregunta de mostrar fotos de un producto. Si no se indica un color específico en el nombre del modelo, el sistema recupera automáticamente las imágenes del producto en contexto (ej: `Sofá Burbuja`), garantizando que se muestren en el simulador de Instagram y se adjunten por las APIs de WhatsApp/Instagram.
 
 ## Próximos Pasos
 - [ ] Mantenimiento general y desarrollo continuo según requerimientos.
