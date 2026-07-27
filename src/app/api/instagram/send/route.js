@@ -50,11 +50,12 @@ export async function POST(req) {
       return NextResponse.json({ success: true, data });
     } else {
       console.error("[INSTAGRAM SEND META ERROR]:", JSON.stringify(data));
-      return NextResponse.json({ success: false, error: data }, { status: 500 });
+      const metaErrMsg = data.error?.message || data.error?.error?.message || (typeof data.error === 'string' ? data.error : null) || "Meta API rechazó el envío de mensaje.";
+      return NextResponse.json({ success: false, error: metaErrMsg, metaError: data }, { status: 500 });
     }
 
   } catch (error) {
     console.error("[MANUAL SEND ERROR INSTAGRAM]:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: error.message || "Error interno al enviar mensaje." }, { status: 500 });
   }
 }

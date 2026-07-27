@@ -29,7 +29,10 @@ export default function ManualReplyInput({ id, platform }) {
         // Forzamos un refresco leve o simplemente esperamos al AutoRefresh
         // window.location.reload(); 
       } else {
-        alert('Error al enviar mensaje: ' + (data.error?.message || 'Error desconocido'));
+        const errorMsg = typeof data.error === 'string' 
+          ? data.error 
+          : (data.error?.message || data.error?.error?.message || data.metaError?.error?.message || 'Error rechazado por la API de Instagram/Meta');
+        alert('Error al enviar mensaje: ' + errorMsg);
       }
     } catch (error) {
       console.error("Error manual send:", error);

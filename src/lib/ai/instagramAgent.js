@@ -263,7 +263,7 @@ async function getInventory(terms, currentIntent) {
   }
 }
 
-async function buildResponse(message, customerName, inventory, historyMessages, dynamicKnowledge = "", isFallback = false, isGeneralPriceQuery = false) {
+async function buildResponse(message, customerName, inventory, historyMessages, dynamicKnowledge = "", isFallback = false, isGeneralPriceQuery = false, source = "instagram") {
   const prompt = getInstagramPrompt(inventory.text, dynamicKnowledge, isFallback);
 
   try {
@@ -291,8 +291,20 @@ async function buildResponse(message, customerName, inventory, historyMessages, 
       ...historyMessages
     ];
 
+    if (source === 'comment' || isGeneralPriceQuery) {
+      finalMessages.push(new SystemMessage(
+        "REGLA DE COMENTARIOS / CONSULTA GENERAL DE PRECIO (INSTAGRAM):\n" +
+        "El cliente ha escrito un comentario o solicita precio sin nombrar un modelo específico.\n" +
+        "1. Queda TERMINANTEMENTE PROHIBIDO pedirle al cliente que te indique el nombre o modelo del producto (el cliente no conoce los nombres).\n" +
+        "2. Dale una bienvenida cordial y atenta.\n" +
+        "3. Envíale OBLIGATORIAMENTE el enlace al catálogo web oficial: https://www.practiiko.com/catalogo\n" +
+        "4. Hazle 1 sola pregunta de sondeo breve por categoría (ej: '¿Está buscando renovar su espacio con un sofá, sofá cama o colchón?').\n" +
+        "5. Redirige al cliente a escribir a nuestro WhatsApp Oficial de Ventas (https://wa.me/584248948664) o por mensaje directo (DM) de Instagram."
+      ));
+    }
+
     if (suppressLink) {
-      finalMessages.push(new SystemMessage("REGLA DE CONTROL DE ENLACES: Ya le has enviado el enlace del catálogo web al cliente en los mensajes anteriores de esta conversación. Por lo tanto, queda estrictamente PROHIBIDO incluir cualquier URL de catálogo (como https://www.practiiko.com/catalogo) en tu respuesta actual. Si necesitas hacer referencia al catálogo o a la página, hazlo textualmente sin escribir el enlace literal. No obstante, el enlace oficial de redirección a WhatsApp SIEMPRE debe estar permitido si es requerido."));
+      finalMessages.push(new SystemMessage("REGLA DE CONTROL DE ENLACES: Ya le has enviado el enlace del catálogo web al cliente en los mensajes anteriores de esta conversación. Por lo tanto, queda strictly PROHIBIDO incluir cualquier URL de catálogo (como https://www.practiiko.com/catalogo) en tu respuesta actual. Si necesitas hacer referencia al catálogo o a la página, hazlo textualmente sin escribir el enlace literal. No obstante, el enlace oficial de redirección a WhatsApp SIEMPRE debe estar permitido si es requerido."));
     }
 
     // REGLA ANTI-SALUDO REPETIDO: Si el asistente ya saludó al cliente, prohibir volver a saludar.
@@ -599,7 +611,7 @@ export async function processInstagramMessage(message, sessionId, customerName =
 
     // 6. Invocar LLM
     const isGeneralPriceQuery = intent === "PRICE_INFO" && (!terms || terms.length === 0);
-    const rawResponse = await buildResponse(message, customerName, inventory, historyMessages, dynamicKnowledge, inventory.isFallback, isGeneralPriceQuery);
+    const rawResponse = await buildResponse(message, customerName, inventory, historyMessages, dynamicKnowledge, inventory.isFallback, isGeneralPriceQuery, source);
 
     console.log(`[DEBUG INSTAGRAM LLM RAW]\n${rawResponse}\n[DEBUG INSTAGRAM LLM RAW END]`);
 

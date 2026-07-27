@@ -184,6 +184,15 @@
   - **Pilar Institucional:** Se inyectó en la sección de `INFORMACIÓN INSTITUCIONAL AUTORIZADA` la directiva explícita de que **TODOS los muebles de Practiiko (sofás, sofás cama y colchones) son comprimidos en caja**.
   - **Exclusión de Adjetivos en Búsqueda:** Se añadieron las palabras adjetivas de marca (`"comprimido"`, `"comprimidos"`, `"caja"`, `"box"`, `"empacado"`, `"vacio"`) a `stopWords`, evitando que consultas como *"sofás comprimidos"* anulen los filtros de SQL y permitiendo que la IA responda ofreciendo orgullosamente toda la línea de sofás de Practiiko.
 
+- **Mejora en Notificación de Errores de Respuesta Manual (`instagram/send/route.js` y `ManualReplyInput.js`):**
+  - **Diagnóstico:** Cuando la API de Meta rechazaba un mensaje manual de Instagram (ej: por token de acceso expirado o vencimiento de la ventana de 24 horas de Meta), el servidor devolvía el objeto de error anidado en JSON, haciendo que el alert web mostrase el vago mensaje *"Error al enviar mensaje: Error desconocido"*.
+  - **Solución:** Se actualizó la extracción del mensaje de error en `route.js` y `ManualReplyInput.js`. Ahora el sistema parsea directamente la propiedad de texto de Meta (ej: `data.error.message`), desplegando el motivo exacto y transparente del fallo en pantalla.
+
+- **Regla Exclusiva para Comentarios en Instagram (`prompts.js` & `instagramAgent.js`):**
+  - **Diferenciación de Plataforma:** Se configuró un comportamiento exclusivo para Instagram cuando el origen es un comentario (`source === 'comment'`) o el cliente realiza consultas generales de precio (*"Precio por favor"*).
+  - **Flujo de Atención:** El bot entrega una bienvenida cordial, comparte obligatoriamente el catálogo oficial (`https://www.practiiko.com/catalogo`), realiza 1 pregunta de sondeo por categoría y redirige al cliente a continuar la conversación por **WhatsApp Oficial** (`https://wa.me/584248948664`) o por **DM privado**.
+  - **Prohibición Estricta:** Queda terminantemente prohibido exigirle al cliente que sepa o indique el nombre del modelo. Se mantiene intacta la atención fluida independiente de WhatsApp sin alterar su comportamiento.
+
 ## Próximos Pasos
 - [ ] Mantenimiento general y desarrollo continuo según requerimientos.
 
