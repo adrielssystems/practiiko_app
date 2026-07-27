@@ -150,7 +150,8 @@ function extractKeywords(message) {
     "muestrame", "muestra", "ver", "fotos", "foto", "imagenes", "imagen", "del", "las", "los", "una", "uno", "unos", "unas", 
     "este", "esto", "de", "el", "la", "ese", "eso", "esa", "esos", "esas", "aqui", "alla", "mueble", "muebles", 
     "sofa", "sofas", "colchon", "colchones", "modelo", "modelos", "gustaria", "mas", "informacion", "detalle", "detalles",
-    "enviar", "mandar", "pasar", "saber", "conocer", "por", "con", "que", "sus", "estos", "estas", "cual", "cuales", "dame"
+    "enviar", "mandar", "pasar", "saber", "conocer", "por", "con", "que", "sus", "estos", "estas", "cual", "cuales", "dame",
+    "comprimido", "comprimidos", "comprimida", "comprimidas", "caja", "box", "empacado", "empacados", "empacada", "empacadas", "vacio", "vacío"
   ];
   const words = m.split(/[\s,?.!]+/).filter(w => w.length >= 3 && !stopWords.includes(w));
 

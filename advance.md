@@ -180,6 +180,9 @@
   - **Desduplicación Estricta de Imágenes:** Se agregó una desduplicación mediante `Set()` en la extracción de `imageUrls`. Si la BD solo posee 1 imagen principal para un producto, el sistema evita enviar 3 réplicas idénticas de la misma foto cuando el bot nombra 3 variantes de color.
 - **Simplificación de Enlace a WhatsApp (`prompts.js`):**
   - Se forzó el uso estricto de la URL corta y limpia `https://wa.me/584248948664` prohibiendo la generación de parámetros URL-encoded extensos con caracteres especiales (como `%2C` y `%20`), garantizando enlaces atractivos y directos para el cliente.
+- **Incorporación de Tecnología de Compresión de Marca (`prompts.js`, `whatsappAgent.js`, `instagramAgent.js`):**
+  - **Pilar Institucional:** Se inyectó en la sección de `INFORMACIÓN INSTITUCIONAL AUTORIZADA` la directiva explícita de que **TODOS los muebles de Practiiko (sofás, sofás cama y colchones) son comprimidos en caja**.
+  - **Exclusión de Adjetivos en Búsqueda:** Se añadieron las palabras adjetivas de marca (`"comprimido"`, `"comprimidos"`, `"caja"`, `"box"`, `"empacado"`, `"vacio"`) a `stopWords`, evitando que consultas como *"sofás comprimidos"* anulen los filtros de SQL y permitiendo que la IA responda ofreciendo orgullosamente toda la línea de sofás de Practiiko.
 
 ## Próximos Pasos
 - [ ] Mantenimiento general y desarrollo continuo según requerimientos.
