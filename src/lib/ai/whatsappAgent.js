@@ -58,12 +58,14 @@ function levenshtein(a, b) {
 function isFuzzyMatch(term, text) {
   const cleanText = normalize(text);
   const cleanTerm = normalize(term);
-  if (cleanText.includes(cleanTerm)) return true;
+  if (cleanText.includes(cleanTerm) || cleanTerm.includes(cleanText)) return true;
 
   const textWords = cleanText.split(/[\s,?.!/-]+/).filter(w => w.length >= 3);
   for (const word of textWords) {
     const dist = levenshtein(cleanTerm, word);
-    const maxAllowedDist = cleanTerm.length > 6 ? 2 : (cleanTerm.length >= 4 ? 1 : 0);
+    // Para términos de 7+ letras, permitir hasta 3 caracteres de diferencia (ej: katerpila vs caterpillar)
+    // Para términos de 4+ letras, permitir 2 caracteres de diferencia
+    const maxAllowedDist = cleanTerm.length >= 7 ? 3 : (cleanTerm.length >= 4 ? 2 : 1);
     if (dist <= maxAllowedDist) {
       return true;
     }

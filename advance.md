@@ -159,6 +159,16 @@
     1. Se añadió la instrucción auto-migratoria `ALTER TABLE instagram_customers ADD COLUMN IF NOT EXISTS requires_human BOOLEAN DEFAULT FALSE;` en `src/app/instagram/page.js`.
     2. Se implementó una cláusula de reserva (fallback) en `src/lib/ai/instagramAgent.js` y `src/app/api/webhooks/instagram/route.js` para que, si la columna aún no está creada en la BD, se ejecute `UPDATE instagram_customers SET ai_enabled = false` garantizando la pausa inmediata de la IA.
 
+## Tareas Realizadas (27 de Julio de 2026)
+
+### 1. Tolerancia a Errores Ortográficos e Indagación Inteligente (Intel-Spell v6.2)
+- **Ampliación de Coincidencia Borrosa (Fuzzy Match Levenshtein):**
+  - Se modificó la función `isFuzzyMatch` en `src/lib/ai/whatsappAgent.js` y `src/lib/ai/instagramAgent.js`. Se aumentó la tolerancia a 3 diferencias de caracteres para términos de 7 o más letras y a 2 para términos de 4 a 6 letras. Esto permite que errores como *"katerpila"*, *"materpilar"*, *"mery"* o *"sofama"* sean vinculados directamente al producto correspondiente (`Caterpillar`, `Merey`, etc.) en lugar de activar fallbacks.
+- **Actualización de System Prompts (`src/lib/ai/prompts.js` - v6.2):**
+  - **Módulo `INTEL-SPELL`:** Se incorporó una instrucción declarativa que exige a la IA deducir fonética o visualmente el modelo probable cuando el cliente escribe con errores ortográficos.
+  - **Confirmación Proactiva:** En lugar de emitir `[TRANSFER]`, la IA confirma amablemente con el cliente (ej: *"¿Se refiere a nuestro modelo Caterpillar?"*) entregando el Precio BCV exacto de inmediato.
+  - **Flexibilización de Fallback:** Se reescribió la regla de fallback para prohibir la transferencia inmediata ante errores tipográficos, obligando al bot a sugerir hasta 3 productos similares antes de derivar a un humano.
+
 ## Próximos Pasos
 - [ ] Mantenimiento general y desarrollo continuo según requerimientos.
 
