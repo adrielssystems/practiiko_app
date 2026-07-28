@@ -193,6 +193,25 @@
   - **Flujo de Atención:** El bot entrega una bienvenida cordial, comparte obligatoriamente el catálogo oficial (`https://www.practiiko.com/catalogo`), realiza 1 pregunta de sondeo por categoría y redirige al cliente a continuar la conversación por **WhatsApp Oficial** (`https://wa.me/584248948664`) o por **DM privado**.
   - **Entrega Confiable en Comentarios:** Se actualizó `src/app/api/webhooks/instagram/route.js` para enviar `aiResponse.text` directamente en la respuesta pública al comentario del post (`POST /{comment_id}/replies`). Esto resuelve los errores de Meta `code: 100, error_subcode: 2534025` (*"Le commentaire n'est pas valide pour une réponse privée"*) y `code: 10, error_subcode: 2534022` (*"Message sent outside of allowed window"*), garantizando que el cliente **siempre reciba su catálogo y enlace a WhatsApp** al comentar en Instagram.
 
+## Tareas Realizadas (28 de Julio de 2026)
+
+### 1. Filtros Avanzados de Monitoreo en Instagram (`/instagram`)
+- **Nuevo Componente `<InstagramFilters />` (`src/components/Instagram/InstagramFilters.jsx`):**
+  - Se diseñó e implementó un componente con estética *glassmorphism* que incluye:
+    - **Búsqueda por texto:** Filtra por nombre de usuario (`username`), nombre completo (`full_name`) o ID de cliente.
+    - **Dropdown de Origen:** Permite filtrar por tipo de interacción: *Todos los Orígenes*, *💬 Solo Mensajes (DMs)* o *📝 Solo Comentarios*.
+    - **Filtro `🚨 Requiere Asesor`:** Toggle que resalta y filtra conversaciones marcadas con `requires_human = true`.
+    - **Rango de Fechas:** Selectores `Desde` y `Hasta` para acotar conversaciones dentro de un periodo específico.
+    - **Limpieza Rápida:** Botón dinámico para restablecer todos los filtros.
+- **Refactorización de Backend SQL (`src/app/instagram/page.js`):**
+  - Se actualizó la consulta `getConversations` mediante un `LEFT JOIN` con `instagram_customers`.
+  - Soporte completo para parámetros combinados (`q`, `source`, `alertOnly`, `startDate`, `endDate`, `page`).
+  - Incorporación del badge parpadeante rojo *"🚨 REQUIERE ASESOR"* en las tarjetas de Instagram.
+
+### 2. Mejora en la Búsqueda de Monitoreo de WhatsApp (`/whatsapp`)
+- **Ampliación de Coincidencias (`src/app/whatsapp/page.js`):**
+  - Se modificó la condición de búsqueda para incluir `(wm.session_id ILIKE $1 OR wc.full_name ILIKE $1)`. Ahora la barra de búsqueda de WhatsApp encuentra conversaciones tanto si el usuario escribe un **número telefónico** como si escribe el **nombre del cliente**.
+
 ## Próximos Pasos
 - [ ] Mantenimiento general y desarrollo continuo según requerimientos.
 

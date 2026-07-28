@@ -31,7 +31,7 @@ async function getConversations(q, alertOnly, page = 1) {
 
     if (q) {
       queryParams.push(`%${q}%`);
-      queryText += ` AND wm.session_id LIKE $${queryParams.length}`;
+      queryText += ` AND (wm.session_id ILIKE $${queryParams.length} OR wc.full_name ILIKE $${queryParams.length})`;
     }
 
     if (alertOnly) {
