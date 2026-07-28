@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Search, AlertCircle, X, Filter, Calendar, MessageSquare, MessageCircle } from "lucide-react";
+import { Search, AlertCircle, X, Filter } from "lucide-react";
 
 export default function InstagramFilters() {
   const router = useRouter();
@@ -14,13 +14,7 @@ export default function InstagramFilters() {
   const [startDate, setStartDate] = useState(searchParams.get("startDate") || "");
   const [endDate, setEndDate] = useState(searchParams.get("endDate") || "");
 
-  // Debounce para aplicar filtros automáticamente al escribir o cambiar valores
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      updateUrl(search, source, alertOnly, startDate, endDate);
-    }, 400);
-    return () => clearTimeout(timer);
-  }, [search, source, alertOnly, startDate, endDate]);
+  const initialRender = useRef(true);
 
   const updateUrl = (q, src, alert, from, to) => {
     const params = new URLSearchParams();
@@ -29,11 +23,43 @@ export default function InstagramFilters() {
     if (alert) params.set("alert", "true");
     if (from) params.set("startDate", from);
     if (to) params.set("endDate", to);
-    
-    // Al filtrar, reiniciamos a la página 1
     params.set("page", "1");
 
     router.push(`/instagram?${params.toString()}`);
+  };
+
+  // Debounce solo para la búsqueda por texto (evita peticiones por cada tecla)
+  useEffect(() => {
+    if (initialRender.current) {
+      initialRender.current = false;
+      return;
+    }
+    const timer = setTimeout(() => {
+      updateUrl(search, source, alertOnly, startDate, endDate);
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // Manejadores inmediatos para cambios de controles (select, toggle, fecha)
+  const handleSourceChange = (newSource) => {
+    setSource(newSource);
+    updateUrl(search, newSource, alertOnly, startDate, endDate);
+  };
+
+  const handleAlertToggle = () => {
+    const newAlert = !alertOnly;
+    setAlertOnly(newAlert);
+    updateUrl(search, source, newAlert, startDate, endDate);
+  };
+
+  const handleStartDateChange = (newStart) => {
+    setStartDate(newStart);
+    updateUrl(search, source, alertOnly, newStart, endDate);
+  };
+
+  const handleEndDateChange = (newEnd) => {
+    setEndDate(newEnd);
+    updateUrl(search, source, alertOnly, startDate, newEnd);
   };
 
   const clearFilters = () => {
@@ -119,7 +145,7 @@ export default function InstagramFilters() {
         <div style={{ position: 'relative', width: '100%' }}>
           <select
             value={source}
-            onChange={(e) => setSource(e.target.value)}
+            onChange={(e) => handleSourceChange(e.target.value)}
             style={{
               width: '100%',
               padding: '0.65rem 0.85rem',
@@ -140,7 +166,7 @@ export default function InstagramFilters() {
 
         {/* Toggle Requiere Asesor */}
         <button 
-          onClick={() => setAlertOnly(!alertOnly)}
+          onClick={handleAlertToggle}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -168,7 +194,7 @@ export default function InstagramFilters() {
           <input 
             type="date" 
             value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
+            onChange={(e) => handleStartDateChange(e.target.value)}
             style={{
               width: '100%',
               padding: '0.55rem 0.75rem',
@@ -188,7 +214,7 @@ export default function InstagramFilters() {
           <input 
             type="date" 
             value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
+            onChange={(e) => handleEndDateChange(e.target.value)}
             style={{
               width: '100%',
               padding: '0.55rem 0.75rem',

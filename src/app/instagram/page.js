@@ -16,55 +16,70 @@ async function getConversations(filters = {}, page = 1) {
   const { q, source, alertOnly, startDate, endDate } = filters;
 
   try {
-    let queryText = `
-      SELECT 
-        im.session_id, 
-        MAX(im.created_at) as last_message,
-        to_char(MAX(im.created_at) AT TIME ZONE 'America/Caracas', 'DD/MM/YYYY, HH12:MI AM') as last_message_fmt,
-        COUNT(*) as total_messages,
-        ic.full_name,
-        ic.username,
-        ic.ai_enabled,
-        ic.requires_human,
-        (SELECT source FROM instagram_messages m2 WHERE m2.session_id = im.session_id ORDER BY id DESC LIMIT 1) as latest_source,
-        COUNT(*) OVER() as full_count
-      FROM instagram_messages im
-      LEFT JOIN instagram_customers ic ON im.session_id = ic.id
-      WHERE im.session_id != 'practiiko'
-    `;
     let queryParams = [];
+    let whereConditions = ["cs.session_id != 'practiiko'"];
 
     if (q) {
       queryParams.push(`%${q}%`);
-      queryText += ` AND (im.session_id ILIKE $${queryParams.length} OR ic.full_name ILIKE $${queryParams.length} OR ic.username ILIKE $${queryParams.length})`;
+      whereConditions.push(`(cs.session_id ILIKE $${queryParams.length} OR ic.full_name ILIKE $${queryParams.length} OR ic.username ILIKE $${queryParams.length})`);
     }
 
     if (alertOnly) {
-      queryText += ` AND ic.requires_human = true`;
+      whereConditions.push(`ic.requires_human = true`);
     }
 
     if (startDate) {
       queryParams.push(`${startDate} 00:00:00`);
-      queryText += ` AND im.created_at >= $${queryParams.length}::timestamp`;
+      whereConditions.push(`cs.last_message >= $${queryParams.length}::timestamp`);
     }
 
     if (endDate) {
       queryParams.push(`${endDate} 23:59:59`);
-      queryText += ` AND im.created_at <= $${queryParams.length}::timestamp`;
+      whereConditions.push(`cs.last_message <= $${queryParams.length}::timestamp`);
     }
-
-    queryText += `
-      GROUP BY im.session_id, ic.full_name, ic.username, ic.ai_enabled, ic.requires_human
-    `;
 
     if (source === 'comment') {
-      queryText += ` HAVING (SELECT source FROM instagram_messages m2 WHERE m2.session_id = im.session_id ORDER BY id DESC LIMIT 1) = 'comment'`;
+      whereConditions.push(`COALESCE(lm.source, 'dm') = 'comment'`);
     } else if (source === 'dm') {
-      queryText += ` HAVING COALESCE((SELECT source FROM instagram_messages m2 WHERE m2.session_id = im.session_id ORDER BY id DESC LIMIT 1), 'dm') != 'comment'`;
+      whereConditions.push(`COALESCE(lm.source, 'dm') != 'comment'`);
     }
 
-    queryText += `
-      ORDER BY last_message DESC
+    const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(" AND ")}` : "";
+
+    const queryText = `
+      WITH conv_stats AS (
+        SELECT 
+          session_id,
+          MAX(created_at) as last_message,
+          COUNT(*) as total_messages
+        FROM instagram_messages
+        WHERE session_id != 'practiiko'
+        GROUP BY session_id
+      ),
+      latest_msgs AS (
+        SELECT DISTINCT ON (session_id)
+          session_id,
+          source
+        FROM instagram_messages
+        WHERE session_id != 'practiiko'
+        ORDER BY session_id, id DESC
+      )
+      SELECT 
+        cs.session_id, 
+        cs.last_message,
+        to_char(cs.last_message AT TIME ZONE 'America/Caracas', 'DD/MM/YYYY, HH12:MI AM') as last_message_fmt,
+        cs.total_messages,
+        ic.full_name,
+        ic.username,
+        ic.ai_enabled,
+        ic.requires_human,
+        COALESCE(lm.source, 'dm') as latest_source,
+        COUNT(*) OVER() as full_count
+      FROM conv_stats cs
+      LEFT JOIN latest_msgs lm ON cs.session_id = lm.session_id
+      LEFT JOIN instagram_customers ic ON cs.session_id = ic.id
+      ${whereClause}
+      ORDER BY cs.last_message DESC
       LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2}
     `;
 
@@ -85,6 +100,7 @@ async function getConversations(filters = {}, page = 1) {
 export default async function InstagramMonitoringPage({ searchParams }) {
   try {
     await query("ALTER TABLE instagram_customers ADD COLUMN IF NOT EXISTS requires_human BOOLEAN DEFAULT FALSE;");
+    await query("CREATE INDEX IF NOT EXISTS idx_ig_messages_session_id_id ON instagram_messages(session_id, id DESC);");
   } catch(e) {}
 
   const params = await searchParams;
