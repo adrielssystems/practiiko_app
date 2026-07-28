@@ -26,7 +26,7 @@ async function getConversations(filters = {}, page = 1) {
         ic.username,
         ic.ai_enabled,
         ic.requires_human,
-        (SELECT source FROM instagram_messages m2 WHERE m2.session_id = im.session_id ORDER BY created_at DESC LIMIT 1) as latest_source,
+        (SELECT source FROM instagram_messages m2 WHERE m2.session_id = im.session_id ORDER BY id DESC LIMIT 1) as latest_source,
         COUNT(*) OVER() as full_count
       FROM instagram_messages im
       LEFT JOIN instagram_customers ic ON im.session_id = ic.id
@@ -57,9 +57,10 @@ async function getConversations(filters = {}, page = 1) {
       GROUP BY im.session_id, ic.full_name, ic.username, ic.ai_enabled, ic.requires_human
     `;
 
-    if (source) {
-      queryParams.push(source);
-      queryText += ` HAVING (SELECT source FROM instagram_messages m2 WHERE m2.session_id = im.session_id ORDER BY created_at DESC LIMIT 1) = $${queryParams.length}`;
+    if (source === 'comment') {
+      queryText += ` HAVING (SELECT source FROM instagram_messages m2 WHERE m2.session_id = im.session_id ORDER BY id DESC LIMIT 1) = 'comment'`;
+    } else if (source === 'dm') {
+      queryText += ` HAVING COALESCE((SELECT source FROM instagram_messages m2 WHERE m2.session_id = im.session_id ORDER BY id DESC LIMIT 1), 'dm') != 'comment'`;
     }
 
     queryText += `
