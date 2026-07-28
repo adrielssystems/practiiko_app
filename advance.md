@@ -210,7 +210,11 @@
 
 ### 2. Mejora en la Búsqueda de Monitoreo de WhatsApp (`/whatsapp`)
 - **Ampliación de Coincidencias (`src/app/whatsapp/page.js`):**
-  - Se modificó la condición de búsqueda para incluir `(wm.session_id ILIKE $1 OR wc.full_name ILIKE $1)`. Ahora la barra de búsqueda de WhatsApp encuentra conversaciones tanto si el usuario escribe un **número telefónico** como si escribe el **nombre del cliente**.
+  - Se modificó la condición de búsqueda para incluir `(wm.session_id ILIKE $1 OR wc.full_name ILIKE $1)`. Ahora la barra de búsqueda de WhatsApp encuentra conversaciones tanto si el usuario escribe un **números telefónico** como si escribe el **nombre del cliente**.
+
+### 3. Respuesta Fija para Comentarios de Instagram (`src/lib/ai/instagramAgent.js`)
+- **Desactivación de IA en Comentarios:** Se configuró una regla de respuesta fija e inmediata cuando el origen es un comentario (`source === 'comment'`), evitando que el Agente trate de conversar o llame al modelo de IA.
+- **Mensaje Oficial Fijo:** Se responde automáticamente adjuntando el enlace al catálogo oficial (`https://www.practiiko.com/catalogo`) y el enlace directo al WhatsApp Oficial (`https://wa.me/584248948664`), guardando la respuesta en la base de datos de monitoreo.
 
 ## Próximos Pasos
 - [ ] Mantenimiento general y desarrollo continuo según requerimientos.

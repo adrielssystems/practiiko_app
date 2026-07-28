@@ -388,6 +388,19 @@ export async function processInstagramMessage(message, sessionId, customerName =
       return { text: "", imageUrls: [], ignored: true };
     }
 
+    // 1.5 Respuesta fija estricta para Comentarios de Instagram (sin entablar conversación ni llamar a la IA)
+    if (source === 'comment') {
+      const fixedCommentResponse = `Con gusto. Para ver nuestro catálogo completo de productos, puede ingresar al siguiente enlace:\n\nhttps://www.practiiko.com/catalogo\n\n¿Está buscando renovar su espacio con un sofá, sofá cama o colchón? Con gusto puedo orientarle. Si lo prefiere, puede continuar la atención por nuestro WhatsApp Oficial de Ventas: https://wa.me/584248948664`;
+
+      await query(
+        `INSERT INTO instagram_messages (session_id, message, source, comment_id) VALUES ($1, $2, $3, $4)`,
+        [sessionId, JSON.stringify({ role: 'assistant', content: fixedCommentResponse }), source, commentId]
+      );
+
+      console.log(`[INSTAGRAM COMMENT] Respuesta fija de catálogo y WhatsApp enviada para comentario ${commentId} de ${sessionId}`);
+      return { text: fixedCommentResponse, imageUrls: [] };
+    }
+
     // 2. Cargar historial primero para determinar si es una conversación en curso
     const historyRes = await query(
       `SELECT message FROM instagram_messages WHERE session_id = $1 ORDER BY created_at DESC LIMIT 6`,
