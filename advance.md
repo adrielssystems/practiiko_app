@@ -238,6 +238,8 @@
 - **Plantilla Genérica de Meta (Botones Nativos):** Se actualizó `sendInstagramPrivateReply` para emitir tarjetas interactivas de Meta (`attachment.type = 'template'`) con botones de llamada a la acción (`type: 'web_url'`): **"📖 Ver Catálogo Web"** y **"💬 Chat de WhatsApp"**. Al ser botones de la interfaz nativa de Instagram, garantizan clics inmediatos en iOS y Android sin importar la política de hipervínculos de solicitudes DM de Meta.
 - **Formateo de URLs Limpias y Cortas:** En el mensaje de texto fallback, se acortaron y estructuraron los enlaces en líneas dedicadas e independientes (`https://practiiko.com/catalogo` y `https://wa.me/584248948664`), evitando el salto de línea sobre el carácter `/` que impedía el autolink en la app móvil.
 
+- **Corrección de Sintaxis de Build y Configuración Next 16:** Se corrigió una comilla de apertura faltante (`"type": "web_url"`) en la línea 448 de `route.js` que causó el fallo de compilación en Turbopack, y se migró la opción obsoleta `middlewareClientMaxBodySize` a `proxyClientMaxBodySize` en `next.config.mjs`.
+
 ## Próximos Pasos
 - [ ] Mantenimiento general y desarrollo continuo según requerimientos.
 

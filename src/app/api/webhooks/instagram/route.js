@@ -445,7 +445,7 @@ async function sendInstagramPrivateReply(commentId, text, igId = "me") {
                   title: "📖 Ver Catálogo Web"
                 },
                 {
-                  type": "web_url",
+                  "type": "web_url",
                   url: "https://wa.me/584248948664",
                   title: "💬 Chat de WhatsApp"
                 }
