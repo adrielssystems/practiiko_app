@@ -240,6 +240,10 @@
 
 - **Corrección de Sintaxis de Build y Configuración Next 16:** Se corrigió una comilla de apertura faltante (`"type": "web_url"`) en la línea 448 de `route.js` que causó el fallo de compilación en Turbopack, y se migró la opción obsoleta `middlewareClientMaxBodySize` a `proxyClientMaxBodySize` en `next.config.mjs`.
 
+### 5. Tarjetas con Botones Clickeables en DMs y Links Interactivos en Panel de Monitoreo (`route.js`, `/instagram/[id]`, `/whatsapp/[id]`)
+- **Envío de Tarjetas Interactivas en DMs (`sendInstagramMessage`):** Se integró la emisión de la tarjeta genérica de Meta con botones interactivos de llamada a la acción (**"📖 Ver Catálogo Web"** y **"💬 Chat de WhatsApp"**) para todos los DMs de Instagram que transmitan información de catálogo o ventas.
+- **Renderizado de Enlaces Clickeables en el Panel de Monitoreo:** Se implementó la función helper `renderMessageWithLinks` en las vistas detalladas de chat del panel de administración (`/instagram/[id]` y `/whatsapp/[id]`). Ahora todas las URLs de catálogo y WhatsApp se muestran como hipervínculos azules interactivos `<a target="_blank">` directamente dentro de las burbujas del panel.
+
 ## Próximos Pasos
 - [ ] Mantenimiento general y desarrollo continuo según requerimientos.
 

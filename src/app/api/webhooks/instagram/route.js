@@ -395,6 +395,62 @@ async function sendInstagramMessage(recipientId, text) {
 
   const url = `https://graph.instagram.com/v21.0/me/messages`;
 
+  // 1. Si el mensaje contiene enlaces al catálogo o WhatsApp, enviar tarjeta con botones clickeables
+  const hasCatalogOrWa = text.includes("practiiko.com") || text.includes("wa.me");
+
+  if (hasCatalogOrWa) {
+    const templatePayload = {
+      recipient: { id: recipientId },
+      message: {
+        attachment: {
+          type: "template",
+          payload: {
+            template_type: "generic",
+            elements: [
+              {
+                title: "Practiiko 💎",
+                subtitle: "¡Hola! Gracias por comunicarte. Elige una opción:",
+                buttons: [
+                  {
+                    type: "web_url",
+                    url: "https://practiiko.com/catalogo",
+                    title: "📖 Ver Catálogo Web"
+                  },
+                  {
+                    type: "web_url",
+                    url: "https://wa.me/584248948664",
+                    title: "💬 Chat de WhatsApp"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    };
+
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${PAGE_ACCESS_TOKEN}`
+        },
+        body: JSON.stringify(templatePayload),
+      });
+
+      const data = await response.json();
+      if (!data.error) {
+        console.log(`[INSTAGRAM DM TEMPLATE] Tarjeta con botones clickeables enviada a ${recipientId}`);
+      } else {
+        console.warn("[INSTAGRAM DM TEMPLATE WARN]:", data.error);
+      }
+    } catch (e) {
+      console.error("[ERROR SENDING INSTAGRAM TEMPLATE]:", e);
+    }
+  }
+
+  // 2. Enviar el mensaje de texto principal
   try {
     const response = await fetch(url, {
       method: "POST",

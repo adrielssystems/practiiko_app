@@ -6,6 +6,34 @@ import AutoRefresh from "@/components/Common/AutoRefresh";
 import BotPauseToggle from "@/components/Common/BotPauseToggle";
 import ManualReplyInput from "@/components/Common/ManualReplyInput";
 
+function renderMessageWithLinks(text) {
+  if (!text) return null;
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = text.split(urlRegex);
+
+  return parts.map((part, i) => {
+    if (part.match(urlRegex)) {
+      return (
+        <a
+          key={i}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            color: '#0477BF',
+            textDecoration: 'underline',
+            fontWeight: 700,
+            wordBreak: 'break-all'
+          }}
+        >
+          {part}
+        </a>
+      );
+    }
+    return part;
+  });
+}
+
 async function getChatHistory(sessionId) {
   try {
     const res = await query(`
@@ -96,9 +124,10 @@ export default async function InstagramDetailPage({ params }) {
                   color: 'var(--foreground)',
                   fontSize: '0.9375rem',
                   lineHeight: 1.5,
-                  whiteSpace: 'pre-wrap'
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word'
                 }}>
-                  {msg.content}
+                  {renderMessageWithLinks(msg.content)}
                 </div>
                 
                 <span style={{ fontSize: '0.65rem', color: 'var(--muted-foreground)', marginTop: '0.25rem' }}>

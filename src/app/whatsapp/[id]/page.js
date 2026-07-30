@@ -7,6 +7,34 @@ import BotPauseToggle from "@/components/Common/BotPauseToggle";
 import ManualReplyInput from "@/components/Common/ManualReplyInput";
 import ResolveHumanButton from "@/components/Common/ResolveHumanButton";
 
+function renderMessageWithLinks(text) {
+  if (!text) return null;
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = text.split(urlRegex);
+
+  return parts.map((part, i) => {
+    if (part.match(urlRegex)) {
+      return (
+        <a
+          key={i}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            color: '#0477BF',
+            textDecoration: 'underline',
+            fontWeight: 700,
+            wordBreak: 'break-all'
+          }}
+        >
+          {part}
+        </a>
+      );
+    }
+    return part;
+  });
+}
+
 async function getChatMessages(id) {
   try {
     const res = await query(
@@ -101,8 +129,8 @@ export default async function WhatsAppChatPage({ params }) {
                 boxShadow: '0 2px 5px rgba(0,0,0,0.05)',
                 position: 'relative'
               }}>
-                <div style={{ fontSize: '0.95rem', lineHeight: '1.5' }}>
-                  {data.content}
+                <div style={{ fontSize: '0.95rem', lineHeight: '1.5', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                  {renderMessageWithLinks(data.content)}
                 </div>
                 <div style={{ 
                   fontSize: '0.65rem', 
