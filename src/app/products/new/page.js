@@ -108,7 +108,7 @@ export default async function NewProductPage() {
             revalidatePath("/");
             revalidatePath("/catalogo");
 
-            return { success: true };
+            return { success: true, id: productId };
         } catch (e) {
             console.error("Error creating product:", e);
             return { success: false, error: e.message };

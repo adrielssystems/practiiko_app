@@ -417,12 +417,72 @@ async function sendInstagramMessage(recipientId, text) {
   }
 }
 
-// Función para enviar respuesta privada a un comentario (DM automático)
+// Función para enviar respuesta privada a un comentario (DM automático con botones clickeables)
 async function sendInstagramPrivateReply(commentId, text, igId = "me") {
   const PAGE_ACCESS_TOKEN = process.env.INSTAGRAM_PAGE_ACCESS_TOKEN?.trim();
   if (!PAGE_ACCESS_TOKEN) return;
 
   console.log(`[DEBUG] Intentando respuesta privada via /${igId}/messages con token IGAA`);
+
+  const url = `https://graph.instagram.com/v21.0/${igId}/messages`;
+
+  // 1. Intentar enviar con Plantilla Genérica de Meta (Botones Clickeables Interactivos)
+  const templatePayload = {
+    recipient: { comment_id: commentId },
+    message: {
+      attachment: {
+        type: "template",
+        payload: {
+          template_type: "generic",
+          elements: [
+            {
+              title: "Practiiko 💎",
+              subtitle: "¡Hola! Gracias por comunicarte. Elige una opción:",
+              buttons: [
+                {
+                  type: "web_url",
+                  url: "https://practiiko.com/catalogo",
+                  title: "📖 Ver Catálogo Web"
+                },
+                {
+                  type": "web_url",
+                  url: "https://wa.me/584248948664",
+                  title: "💬 Chat de WhatsApp"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  };
+
+  try {
+    const response = await fetch(url, { 
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${PAGE_ACCESS_TOKEN}`
+      },
+      body: JSON.stringify(templatePayload)
+    });
+    const data = await response.json();
+
+    if (data.error) {
+      console.warn("[PRIVATE REPLY TEMPLATE WARN]:", data.error.message, "-> Usando fallback de texto formateado...");
+      await sendInstagramPrivateReplyText(commentId, text, igId);
+    } else {
+      console.log(`[INSTAGRAM] Respuesta privada con tarjeta de botones clickeables enviada al comentario ${commentId}`);
+    }
+  } catch (e) {
+    console.error("[EXCEPTION PRIVATE REPLY TEMPLATE]:", e);
+    await sendInstagramPrivateReplyText(commentId, text, igId);
+  }
+}
+
+async function sendInstagramPrivateReplyText(commentId, text, igId = "me") {
+  const PAGE_ACCESS_TOKEN = process.env.INSTAGRAM_PAGE_ACCESS_TOKEN?.trim();
+  if (!PAGE_ACCESS_TOKEN) return;
 
   const url = `https://graph.instagram.com/v21.0/${igId}/messages`;
 
@@ -440,12 +500,12 @@ async function sendInstagramPrivateReply(commentId, text, igId = "me") {
     });
     const data = await response.json();
     if (data.error) {
-      console.error("[ERROR PRIVATE REPLY]:", data.error);
+      console.error("[ERROR PRIVATE REPLY TEXT]:", data.error);
     } else {
-      console.log(`[INSTAGRAM] Respuesta privada enviada al comentario ${commentId}`);
+      console.log(`[INSTAGRAM] Respuesta privada de texto enviada al comentario ${commentId}`);
     }
   } catch (e) {
-    console.error("[EXCEPTION PRIVATE REPLY]:", e);
+    console.error("[EXCEPTION PRIVATE REPLY TEXT]:", e);
   }
 }
 

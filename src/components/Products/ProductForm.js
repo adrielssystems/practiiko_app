@@ -181,7 +181,12 @@ export default function ProductForm({ categories, onSubmitAction, initialData = 
       
       if (result && result.success) {
         addToast(initialData.id ? "Cambios guardados con éxito 💎" : "Producto publicado con éxito 🚀", "success");
-        router.push("/products");
+        setIsSaving(false);
+        if (result.id && !initialData.id) {
+          router.push(`/products/${result.id}/edit`);
+        } else {
+          router.refresh();
+        }
       } else {
         throw new Error(result?.error || "Error desconocido en el servidor");
       }

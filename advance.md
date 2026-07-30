@@ -231,6 +231,13 @@
 ### 2. Configuración de Límite de Subida de Videos (`next.config.mjs`)
 - **Ampliación de Límite de Peticiones HTTP (`middlewareClientMaxBodySize`):** Se agregó `middlewareClientMaxBodySize: '250mb'` a `next.config.mjs`. Esto corrige la advertencia y truncamiento automático a 10MB que aplicaba Next.js App Router en la ruta `/api/products/upload`, permitiendo la carga completa de archivos de video pesados.
 
+### 3. Persistencia de Pantalla en Edición de Productos (`src/components/Products/ProductForm.js`)
+- **Permanencia en Editor al Guardar:** Se modificó la acción posterior al guardar en `ProductForm.js`. Ahora, al pulsar **"Guardar Cambios"**, el formulario guarda los datos en la BD, muestra la notificación toast de éxito y **mantiene al usuario dentro del editor** (con los botones activos para continuar haciendo ajustes), en lugar de redirigirlo y cerrar la pantalla automáticamente hacia `/products`. El editor solo se cierra cuando el usuario decide hacer clic en **"Cancelar"** o **"Volver a la lista de productos"**.
+
+### 4. Botones Interactivos y Links Clickeables en DMs de Instagram (`src/app/api/webhooks/instagram/route.js` e `instagramAgent.js`)
+- **Plantilla Genérica de Meta (Botones Nativos):** Se actualizó `sendInstagramPrivateReply` para emitir tarjetas interactivas de Meta (`attachment.type = 'template'`) con botones de llamada a la acción (`type: 'web_url'`): **"📖 Ver Catálogo Web"** y **"💬 Chat de WhatsApp"**. Al ser botones de la interfaz nativa de Instagram, garantizan clics inmediatos en iOS y Android sin importar la política de hipervínculos de solicitudes DM de Meta.
+- **Formateo de URLs Limpias y Cortas:** En el mensaje de texto fallback, se acortaron y estructuraron los enlaces en líneas dedicadas e independientes (`https://practiiko.com/catalogo` y `https://wa.me/584248948664`), evitando el salto de línea sobre el carácter `/` que impedía el autolink en la app móvil.
+
 ## Próximos Pasos
 - [ ] Mantenimiento general y desarrollo continuo según requerimientos.
 

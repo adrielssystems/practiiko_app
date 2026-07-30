@@ -399,7 +399,7 @@ export async function processInstagramMessage(message, sessionId, customerName =
       ];
 
       const publicCommentResponse = commentResponses[Math.floor(Math.random() * commentResponses.length)];
-      const privateDmResponse = `Con gusto. Para ver nuestro catálogo completo de productos, puede ingresar al siguiente enlace:\n\nhttps://www.practiiko.com/catalogo\n\n¿Está buscando renovar su espacio con un sofá, sofá cama o colchón? Con gusto puedo orientarle. Si lo prefiere, puede continuar la atención por nuestro WhatsApp Oficial de Ventas: https://wa.me/584248948664`;
+      const privateDmResponse = `Con gusto le compartimos toda la información 💎\n\n📖 Catálogo Web:\nhttps://practiiko.com/catalogo\n\n💬 WhatsApp Oficial de Ventas:\nhttps://wa.me/584248948664\n\n¿Está buscando renovar su espacio con un sofá, sofá cama o colchón? Con gusto le orientamos.`;
 
       await query(
         `INSERT INTO instagram_messages (session_id, message, source, comment_id) VALUES ($1, $2, $3, $4)`,
