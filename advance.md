@@ -228,6 +228,9 @@
 - **Respuestas Públicas Aleatorias (Anti-Spam Meta):** Se implementó la rotación aleatoria entre 5 frases de notificación de DM para responder a comentarios públicos en Instagram (ej: *"¡Hola! Te dejamos toda la información en tu DM. ¡Revisa tus mensajes!"*), evitando patrones repetitivos que puedan ser penalizados por Meta.
 - **Respuesta Privada por DM con Enlaces Clickeables:** Se desacopló la respuesta del comentario del mensaje privado enviando mediante `sendInstagramPrivateReply` el mensaje detallado con los enlaces directos y clickeables hacia el catálogo web (`https://www.practiiko.com/catalogo`) y el WhatsApp Oficial de Ventas (`https://wa.me/584248948664`).
 
+### 2. Configuración de Límite de Subida de Videos (`next.config.mjs`)
+- **Ampliación de Límite de Peticiones HTTP (`middlewareClientMaxBodySize`):** Se agregó `middlewareClientMaxBodySize: '250mb'` a `next.config.mjs`. Esto corrige la advertencia y truncamiento automático a 10MB que aplicaba Next.js App Router en la ruta `/api/products/upload`, permitiendo la carga completa de archivos de video pesados.
+
 ## Próximos Pasos
 - [ ] Mantenimiento general y desarrollo continuo según requerimientos.
 
