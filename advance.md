@@ -224,25 +224,24 @@
 
 ## Tareas Realizadas (30 de Julio de 2026)
 
-### 1. Respuestas Aleatorias en Comentarios e Información en DM (`src/lib/ai/instagramAgent.js` y `src/app/api/webhooks/instagram/route.js`)
-- **Respuestas Públicas Aleatorias (Anti-Spam Meta):** Se implementó la rotación aleatoria entre 5 frases de notificación de DM para responder a comentarios públicos en Instagram (ej: *"¡Hola! Te dejamos toda la información en tu DM. ¡Revisa tus mensajes!"*), evitando patrones repetitivos que puedan ser penalizados por Meta.
-- **Respuesta Privada por DM con Enlaces Clickeables:** Se desacopló la respuesta del comentario del mensaje privado enviando mediante `sendInstagramPrivateReply` el mensaje detallado con los enlaces directos y clickeables hacia el catálogo web (`https://www.practiiko.com/catalogo`) y el WhatsApp Oficial de Ventas (`https://wa.me/584248948664`).
+### 1. Respuestas Aleatorias en Comentarios e Información por DM (`src/lib/ai/instagramAgent.js` y `src/app/api/webhooks/instagram/route.js`)
+- **Rotación Anti-Spam en Comentarios Públicos:** Se implementó la selección aleatoria entre 5 variaciones de texto para responder a comentarios públicos en Instagram (ej: *"¡Hola! Te dejamos toda la información en tu DM. ¡Revisa tus mensajes!"*), evitando la penalización de Meta por respuestas repetitivas/automatizadas en comentarios.
+- **Desacoplamiento de Mensaje Público y DM Privado:** Se configuró el flujo para que la respuesta pública notifique la revisión del DM y, en paralelo, se envíe la información completa y los enlaces del catálogo y WhatsApp por mensaje privado.
 
-### 2. Configuración de Límite de Subida de Videos (`next.config.mjs`)
-- **Ampliación de Límite de Peticiones HTTP (`middlewareClientMaxBodySize`):** Se agregó `middlewareClientMaxBodySize: '250mb'` a `next.config.mjs`. Esto corrige la advertencia y truncamiento automático a 10MB que aplicaba Next.js App Router en la ruta `/api/products/upload`, permitiendo la carga completa de archivos de video pesados.
+### 2. Tarjetas Interactivas con Botones Nativos y Links Clickeables en Instagram DMs (`route.js` e `instagramAgent.js`)
+- **Plantilla Genérica Nativa de Meta (`generic` template):** Se integró en `sendInstagramPrivateReply` y `sendInstagramMessage` el envío de tarjetas con botones nativos de llamada a la acción (`web_url` buttons: **"📖 Ver Catálogo Web"** y **"💬 Chat de WhatsApp"**). Esto garantiza que en la app móvil de Instagram (iOS y Android) el cliente vea botones grandes e interactivos que abren la web o WhatsApp en 1 solo tap, superando las restricciones de enlaces planos en solicitudes de mensajes.
+- **Formateo de URLs Limpias y Cortas:** En los mensajes de texto de reserva (fallback), se formatearon las URLs en líneas independientes y cortas (`https://practiiko.com/catalogo` y `https://wa.me/584248948664`), evitando el quiebre de línea en medio del carácter `/` que impedía el auto-enlace en dispositivos móviles.
 
-### 3. Persistencia de Pantalla en Edición de Productos (`src/components/Products/ProductForm.js`)
-- **Permanencia en Editor al Guardar:** Se modificó la acción posterior al guardar en `ProductForm.js`. Ahora, al pulsar **"Guardar Cambios"**, el formulario guarda los datos en la BD, muestra la notificación toast de éxito y **mantiene al usuario dentro del editor** (con los botones activos para continuar haciendo ajustes), en lugar de redirigirlo y cerrar la pantalla automáticamente hacia `/products`. El editor solo se cierra cuando el usuario decide hacer clic en **"Cancelar"** o **"Volver a la lista de productos"**.
+### 3. Renderizado de Enlaces Clickeables en el Panel de Monitoreo (`src/app/instagram/[id]/page.js` y `src/app/whatsapp/[id]/page.js`)
+- **Links Interactivos en Chat del Panel (`renderMessageWithLinks`):** Se desarrolló y aplicó una función helper que analiza dinámicamente el contenido de los mensajes en los paneles de detalle de **Instagram** y **WhatsApp**. Todas las URLs detectadas se renderizan como hipervínculos azules interactivos `<a target="_blank">`, permitiendo a los asesores hacer clic y abrir enlaces del catálogo o archivos multimedia directamente desde las burbujas de chat del dashboard.
 
-### 4. Botones Interactivos y Links Clickeables en DMs de Instagram (`src/app/api/webhooks/instagram/route.js` e `instagramAgent.js`)
-- **Plantilla Genérica de Meta (Botones Nativos):** Se actualizó `sendInstagramPrivateReply` para emitir tarjetas interactivas de Meta (`attachment.type = 'template'`) con botones de llamada a la acción (`type: 'web_url'`): **"📖 Ver Catálogo Web"** y **"💬 Chat de WhatsApp"**. Al ser botones de la interfaz nativa de Instagram, garantizan clics inmediatos en iOS y Android sin importar la política de hipervínculos de solicitudes DM de Meta.
-- **Formateo de URLs Limpias y Cortas:** En el mensaje de texto fallback, se acortaron y estructuraron los enlaces en líneas dedicadas e independientes (`https://practiiko.com/catalogo` y `https://wa.me/584248948664`), evitando el salto de línea sobre el carácter `/` que impedía el autolink en la app móvil.
+### 4. UX del Autogestor: Persistencia en Pantalla de Edición (`src/components/Products/ProductForm.js` y `new/page.js`)
+- **Permanencia en el Editor al Guardar:** Se eliminó la redirección automática `/products` al hacer clic en **"Guardar Cambios"** en `ProductForm.js`. Ahora, el formulario guarda los datos en la base de datos, muestra la notificación toast de éxito ("Cambios guardados con éxito 💎") y mantiene al usuario en la pantalla de edición con los controles activos para seguir realizando cambios.
+- **Redirección de Publicación Nueva:** Al crear y publicar un producto nuevo en `/products/new`, la acción redirige a `/products/[id]/edit` para mantener al usuario dentro de la pantalla de edición del producto recién creado.
 
-- **Corrección de Sintaxis de Build y Configuración Next 16:** Se corrigió una comilla de apertura faltante (`"type": "web_url"`) en la línea 448 de `route.js` que causó el fallo de compilación en Turbopack, y se migró la opción obsoleta `middlewareClientMaxBodySize` a `proxyClientMaxBodySize` en `next.config.mjs`.
-
-### 5. Tarjetas con Botones Clickeables en DMs y Links Interactivos en Panel de Monitoreo (`route.js`, `/instagram/[id]`, `/whatsapp/[id]`)
-- **Envío de Tarjetas Interactivas en DMs (`sendInstagramMessage`):** Se integró la emisión de la tarjeta genérica de Meta con botones interactivos de llamada a la acción (**"📖 Ver Catálogo Web"** y **"💬 Chat de WhatsApp"**) para todos los DMs de Instagram que transmitan información de catálogo o ventas.
-- **Renderizado de Enlaces Clickeables en el Panel de Monitoreo:** Se implementó la función helper `renderMessageWithLinks` en las vistas detalladas de chat del panel de administración (`/instagram/[id]` y `/whatsapp/[id]`). Ahora todas las URLs de catálogo y WhatsApp se muestran como hipervínculos azules interactivos `<a target="_blank">` directamente dentro de las burbujas del panel.
+### 5. Correcciones de Infraestructura y Configuración (`next.config.mjs` y `route.js`)
+- **Ampliación de Límite de Peticiones HTTP en Subida de Videos:** Se configuró `experimental.proxyClientMaxBodySize: '250mb'` en `next.config.mjs`. Esto resolvió la advertencia y el truncamiento a 10MB que aplicaba Next.js App Router en `/api/products/upload`, permitiendo subir archivos de video pesados por completo.
+- **Corrección de Sintaxis de Build para Turbopack:** Se corrigió un error tipográfico de comillas (`"type": "web_url"`) en la definición del objeto de la plantilla de Instagram en `route.js`, garantizando la compilación limpia del proyecto en Docker/Easypanel.
 
 ## Próximos Pasos
 - [ ] Mantenimiento general y desarrollo continuo según requerimientos.
