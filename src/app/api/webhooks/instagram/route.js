@@ -310,12 +310,13 @@ export async function POST(req) {
 
               processInstagramMessage(userMessage, senderId, username || 'Cliente', baseUrl, 'comment', commentId).then(async (aiResponse) => {
                 if (aiResponse.text) {
-                  // 1. Responder públicamente al comentario con la respuesta completa de la IA (Garantiza entrega 100% en Instagram)
+                  // 1. Responder públicamente al comentario con la frase aleatoria elegida
                   await replyToInstagramComment(commentId, aiResponse.text);
 
-                  // 2. Intentar además enviar por DM privado si Meta lo autoriza para este comentario
+                  // 2. Intentar además enviar por DM privado el mensaje con catálogo y WhatsApp (si Meta lo autoriza para este comentario)
+                  const dmText = aiResponse.dmText || aiResponse.text;
                   try {
-                    await sendInstagramPrivateReply(commentId, aiResponse.text, pageId);
+                    await sendInstagramPrivateReply(commentId, dmText, pageId);
                     if (aiResponse.imageUrls && aiResponse.imageUrls.length > 0) {
                       for (const imgUrl of aiResponse.imageUrls) {
                         await sendInstagramImage(senderId, imgUrl);

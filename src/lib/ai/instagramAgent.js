@@ -388,17 +388,26 @@ export async function processInstagramMessage(message, sessionId, customerName =
       return { text: "", imageUrls: [], ignored: true };
     }
 
-    // 1.5 Respuesta fija estricta para Comentarios de Instagram (sin entablar conversación ni llamar a la IA)
+    // 1.5 Respuesta fija aleatoria para Comentarios de Instagram (sin entablar conversación ni llamar a la IA)
     if (source === 'comment') {
-      const fixedCommentResponse = `Con gusto. Para ver nuestro catálogo completo de productos, puede ingresar al siguiente enlace:\n\nhttps://www.practiiko.com/catalogo\n\n¿Está buscando renovar su espacio con un sofá, sofá cama o colchón? Con gusto puedo orientarle. Si lo prefiere, puede continuar la atención por nuestro WhatsApp Oficial de Ventas: https://wa.me/584248948664`;
+      const commentResponses = [
+        "¡Hola! Te dejamos toda la información en tu DM. ¡Revisa tus mensajes!",
+        "¡Hola! Chequea tu bandeja de entrada (DM), ¡ya te enviamos todos los detalles!",
+        "¡Hola! Te escribimos al privado con la información. ¡Échale un ojo a tu inbox!",
+        "¡Hola! Te enviamos un DM con todo lo que necesitas. ¡Revisa tu bandeja!",
+        "¡Hola! Ya tienes un mensaje en tu DM con los detalles. ¡Ve a revisarlo!"
+      ];
+
+      const publicCommentResponse = commentResponses[Math.floor(Math.random() * commentResponses.length)];
+      const privateDmResponse = `Con gusto. Para ver nuestro catálogo completo de productos, puede ingresar al siguiente enlace:\n\nhttps://www.practiiko.com/catalogo\n\n¿Está buscando renovar su espacio con un sofá, sofá cama o colchón? Con gusto puedo orientarle. Si lo prefiere, puede continuar la atención por nuestro WhatsApp Oficial de Ventas: https://wa.me/584248948664`;
 
       await query(
         `INSERT INTO instagram_messages (session_id, message, source, comment_id) VALUES ($1, $2, $3, $4)`,
-        [sessionId, JSON.stringify({ role: 'assistant', content: fixedCommentResponse }), source, commentId]
+        [sessionId, JSON.stringify({ role: 'assistant', content: publicCommentResponse }), source, commentId]
       );
 
-      console.log(`[INSTAGRAM COMMENT] Respuesta fija de catálogo y WhatsApp enviada para comentario ${commentId} de ${sessionId}`);
-      return { text: fixedCommentResponse, imageUrls: [] };
+      console.log(`[INSTAGRAM COMMENT] Respuesta aleatoria enviada para comentario ${commentId} de ${sessionId}: "${publicCommentResponse}"`);
+      return { text: publicCommentResponse, dmText: privateDmResponse, imageUrls: [] };
     }
 
     // 2. Cargar historial primero para determinar si es una conversación en curso
