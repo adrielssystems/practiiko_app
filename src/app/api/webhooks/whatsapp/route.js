@@ -130,6 +130,39 @@ export async function POST(req) {
     if (body.object === "whatsapp_business_account") {
       for (const entry of body.entry) {
         for (const change of entry.changes) {
+          
+          // -------------------------------------------------------------
+          // NUEVA FUNCIÓN: COEXISTENCIA (Mensajes enviados desde la App Móvil)
+          // -------------------------------------------------------------
+          if (change.field === "smb_message_echoes") {
+            const value = change.value;
+            if (value.messages && value.messages.length > 0) {
+              const messageData = value.messages[0];
+              const customerNumber = messageData.to; // En echoes, 'to' es el cliente
+              
+              let outMessage = messageData.text?.body || "[Media enviada por Asesor (App Móvil)]";
+              
+              console.log(`[WHATSAPP COEXISTENCIA] Mensaje enviado por asesor desde la app móvil hacia ${customerNumber}: ${outMessage}`);
+
+              // 1. Guardar el mensaje en el panel
+              await query(
+                `INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`,
+                [customerNumber, JSON.stringify({ role: 'assistant', content: outMessage, manual: true })]
+              );
+
+              // 2. Auto-pausar la IA
+              await query(
+                `UPDATE whatsapp_customers SET ai_enabled = false WHERE id = $1`,
+                [customerNumber]
+              );
+              
+              return NextResponse.json({ status: "echo_processed_bot_paused" });
+            }
+          }
+
+          // -------------------------------------------------------------
+          // MENSAJES ENTRANTES (Del Cliente)
+          // -------------------------------------------------------------
           if (change.field === "messages") {
             const value = change.value;
             
