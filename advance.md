@@ -243,10 +243,20 @@
 - **Ampliación de Límite de Peticiones HTTP en Subida de Videos:** Se configuró `experimental.proxyClientMaxBodySize: '250mb'` en `next.config.mjs`. Esto resolvió la advertencia y el truncamiento a 10MB que aplicaba Next.js App Router en `/api/products/upload`, permitiendo subir archivos de video pesados por completo.
 - **Corrección de Sintaxis de Build para Turbopack:** Se corrigió un error tipográfico de comillas (`"type": "web_url"`) en la definición del objeto de la plantilla de Instagram en `route.js`, garantizando la compilación limpia del proyecto en Docker/Easypanel.
 
-## Próximos Pasos
-- [ ] Mantenimiento general y desarrollo continuo según requerimientos.
+## Planificación en Espera (Pendiente de Aprobación Comercial)
 
-
-
-
-
+### Migración a API Oficial de WhatsApp (Cloud API - Modo Coexistencia)
+- **Estado:** ⏸️ PAUSADO (En espera de aprobación del presupuesto por parte del cliente).
+- **Descripción del Requerimiento:**
+  - Migrar la integración de WhatsApp desde Evolution API hacia la **API Oficial de Meta (Cloud API)** para dar soporte nativo a embudos interactivos (Botones de Respuesta Rápida), Audios (Notas de voz nativas) y Videos (`.mp4`), eliminando riesgos de bloqueos no oficiales.
+  - El sistema deberá operar en **Modo Coexistencia**, permitiendo que el número siga siendo utilizado en la aplicación móvil de *WhatsApp Business* simultáneamente con el Bot.
+   - Incorporar una columna `company_id` o `tenant_id` en absolutamente todas las tablas (mensajes, productos, clientes).
+   - Filtrar todas las consultas SQL (`WHERE company_id = X`) para garantizar que cada cliente vea solo su propia información.
+2. **Sistema de Roles y Autenticación:**
+   - Crear jerarquías: `Super Admin` (Dueño del SaaS), `Owner` (Cliente de la empresa) y `Agente` (Empleado que solo responde chats).
+3. **Onboarding Automático de Meta (Embedded Signup):**
+   - Automatizar el registro de webhooks y credenciales. Cada cliente debe poder iniciar sesión con Facebook y que el sistema guarde dinámicamente su `ACCESS_TOKEN` y `PHONE_ID` vinculados a su `tenant_id`.
+4. **Contexto de IA Dinámico por Cliente:**
+   - Crear un panel donde cada empresa defina las reglas, catálogo y "System Prompt" de su propio negocio. El motor de IA deberá inyectar el contexto específico del `tenant_id` en tiempo real antes de consultar al LLM.
+5. **Módulo de Suscripciones (Facturación Automática):**
+   - Integración con pasarelas de pago (Ej: Stripe). El sistema debe pausar automáticamente la IA y el acceso al Autogestor si el cliente no renueva su mensualidad.

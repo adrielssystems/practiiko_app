@@ -1,327 +1,299 @@
 import { NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { processWhatsappMessage } from "@/lib/ai/whatsappAgent";
-import fs from "fs/promises";
-import path from "path";
-import sharp from "sharp";
 
 export const dynamic = "force-dynamic";
 
 const whatsappDebounceMap = new Map();
 
-// Configuración de Evolution API desde variables de entorno
-const EVO_URL = process.env.EVOLUTION_API_URL;
-const EVO_KEY = process.env.EVOLUTION_API_KEY;
-const EVO_INSTANCE = process.env.EVOLUTION_INSTANCE || "Practiiko";
+// Configuración de Meta Cloud API
+const getPhoneId = () => process.env.WHATSAPP_PHONE_ID;
+const getAccessToken = () => process.env.WHATSAPP_CLOUD_ACCESS_TOKEN;
 
 async function sendWhatsAppMessage(to, text) {
-  if (!EVO_URL) {
-    console.error("[EVOLUTION ERROR]: EVOLUTION_API_URL no está configurada en Easypanel.");
+  const phoneId = getPhoneId();
+  const token = getAccessToken();
+  
+  if (!phoneId || !token) {
+    console.error("[WHATSAPP CLOUD ERROR]: Falta WHATSAPP_PHONE_ID o WHATSAPP_CLOUD_ACCESS_TOKEN.");
     return;
   }
+  
   try {
-    const response = await fetch(`${EVO_URL}/message/sendText/${EVO_INSTANCE}`, {
+    const response = await fetch(`https://graph.facebook.com/v21.0/${phoneId}/messages`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'apikey': EVO_KEY
+        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify({
-        number: to,
-        text: text,
-        delay: 1200, // Simular escritura
-        linkPreview: true
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        to: to,
+        type: "text",
+        text: {
+          preview_url: true,
+          body: text
+        }
       })
     });
     const data = await response.json();
+    if (data.error) {
+      console.error("[WHATSAPP SEND ERROR]:", data.error);
+    }
     return data;
   } catch (error) {
-    console.error("[EVOLUTION SEND ERROR]:", error);
+    console.error("[WHATSAPP SEND EXCEPTION]:", error);
   }
 }
 
 async function sendWhatsAppImage(to, imageUrl) {
-  if (!EVO_URL) {
-    console.error("[EVOLUTION ERROR]: EVOLUTION_API_URL no está configurada en Easypanel.");
+  const phoneId = getPhoneId();
+  const token = getAccessToken();
+  
+  if (!phoneId || !token) {
+    console.error("[WHATSAPP CLOUD ERROR]: Falta WHATSAPP_PHONE_ID o WHATSAPP_CLOUD_ACCESS_TOKEN.");
     return;
   }
-  try {
-    const parts = imageUrl.split('/');
-    const originalFilename = parts[parts.length - 1];
-    
-    let mediaPayload = imageUrl;
-    let filename = originalFilename;
-    let mimetype = "image/jpeg";
 
+  try {
+    let mediaPayload = imageUrl;
+    
+    // Si es una imagen local servida por nuestra API de media, nos aseguramos de que termine en .jpeg o .png para Meta
+    // Meta Cloud API no soporta WebP para imágenes estándar (solo para stickers).
     if (imageUrl.includes("/api/media/")) {
-      // Forzar extensión .jpeg. Nuestro Media API la convertirá automáticamente "en el aire" si es un .webp original
+      const parts = imageUrl.split('/');
+      const originalFilename = parts[parts.length - 1];
       const filenameJpg = originalFilename.replace(/\.webp$/i, '.jpeg');
       mediaPayload = `https://auto.practiiko.com/api/media/${filenameJpg}`;
-      filename = filenameJpg;
-    } else {
-      if (originalFilename.endsWith(".png")) mimetype = "image/png";
-      else if (originalFilename.endsWith(".webp")) mimetype = "image/webp";
     }
 
     const payloadBody = {
-      number: to,
-      mediatype: "image",
-      media: mediaPayload,
-      fileName: filename,
-      mimetype: mimetype,
-      delay: 500
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      to: to,
+      type: "image",
+      image: {
+        link: mediaPayload
+      }
     };
 
     console.log(`[WHATSAPP] Enviando imagen via URL pública dinámica a ${to}: ${mediaPayload}`);
 
-    const response = await fetch(`${EVO_URL}/message/sendMedia/${EVO_INSTANCE}`, {
+    const response = await fetch(`https://graph.facebook.com/v21.0/${phoneId}/messages`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'apikey': EVO_KEY
+        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify(payloadBody)
     });
     
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error(`[EVOLUTION IMAGE SEND HTTP ERROR] ${response.status}:`, errText);
-      // Enviar mensaje de debug por WhatsApp al administrador o cliente
-      await sendWhatsAppMessage(to, `[SISTEMA-DEBUG] Falló envío de imagen. Error de Evolution API: HTTP ${response.status} - ${errText.substring(0, 100)}`);
-      return null;
-    }
-    
     const data = await response.json();
-    
-    if (data.status === "error" || data.error) {
-       await sendWhatsAppMessage(to, `[SISTEMA-DEBUG] Evolution devolvió error en JSON: ${JSON.stringify(data).substring(0, 100)}`);
+    if (data.error) {
+      console.error(`[WHATSAPP IMAGE SEND ERROR]`, data.error);
+      await sendWhatsAppMessage(to, `[SISTEMA-DEBUG] Falló envío de imagen. Meta API rechazó el enlace.`);
+      return null;
     }
     
     return data;
   } catch (error) {
-    console.error("[EVOLUTION IMAGE SEND ERROR]:", error);
-    await sendWhatsAppMessage(to, `[SISTEMA-DEBUG] Falló código interno al enviar imagen: ${error.message}`);
+    console.error("[WHATSAPP IMAGE SEND EXCEPTION]:", error);
   }
+}
+
+// GET: Verificación de Webhook para Meta (WhatsApp Cloud API)
+export async function GET(req) {
+  const { searchParams } = new URL(req.url);
+  const mode = searchParams.get("hub.mode");
+  const token = searchParams.get("hub.verify_token");
+  const challenge = searchParams.get("hub.challenge");
+
+  const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN;
+
+  console.log(`[DEBUG WA] Validando Webhook. Recibido: ${token}, Esperado: ${VERIFY_TOKEN}`);
+
+  if (mode === "subscribe" && token === VERIFY_TOKEN) {
+    return new Response(challenge, { status: 200 });
+  }
+
+  return new Response("Forbidden", { status: 403 });
 }
 
 export async function POST(req) {
   try {
     const body = await req.json();
     
-    // Loguear el webhook para monitoreo (opcional, pero útil al principio)
-    await query("INSERT INTO webhook_logs (event_type, payload) VALUES ($1, $2)", ['whatsapp', JSON.stringify(body)]);
+    // Loguear el webhook
+    await query("INSERT INTO webhook_logs (event_type, payload) VALUES ($1, $2)", ['whatsapp_cloud', JSON.stringify(body)]);
 
-    // Evolution API envía eventos con el campo "event" o "type"
-    const eventType = (body.event || body.type || "").toLowerCase();
-    console.log(`[WHATSAPP DEBUG] Evento recibido: ${eventType}`);
-    
-    if (eventType === "messages.upsert" || eventType === "messages-upsert") {
-      const messageData = body.data;
-      const key = messageData.key;
-      const remoteJid = key.remoteJid;
-      const fromMe = key.fromMe;
-      
-      // 1. FILTRO: Ignorar si no es de un chat individual
-      if (!remoteJid.includes('@s.whatsapp.net')) {
-        return NextResponse.json({ status: "ignored" });
-      }
+    if (body.object === "whatsapp_business_account") {
+      for (const entry of body.entry) {
+        for (const change of entry.changes) {
+          if (change.field === "messages") {
+            const value = change.value;
+            
+            // Ignorar notificaciones de estado (enviado, entregado, leído)
+            if (value.statuses) {
+              continue;
+            }
 
-      // 2. Extraer el texto del mensaje
-      let userMessage = messageData.message?.conversation || 
-                        messageData.message?.extendedTextMessage?.text || 
-                        messageData.message?.imageMessage?.caption ||
-                        messageData.message?.videoMessage?.caption ||
-                        messageData.message?.viewOnceMessage?.message?.imageMessage?.caption ||
-                        messageData.message?.viewOnceMessageV2?.message?.imageMessage?.caption ||
-                        messageData.message?.ephemeralMessage?.message?.imageMessage?.caption ||
-                        "";
+            if (value.messages && value.messages.length > 0) {
+              const messageData = value.messages[0];
+              const senderNumber = messageData.from; // Número del cliente
+              
+              // 1. Extraer texto o imagen
+              let userMessage = "";
+              let isImage = false;
+              
+              if (messageData.type === "text") {
+                userMessage = messageData.text?.body || "";
+              } else if (messageData.type === "image") {
+                isImage = true;
+                userMessage = messageData.image?.caption || "[Imagen]";
+              } else if (messageData.type === "interactive") {
+                // Si usan botones
+                if (messageData.interactive.type === "button_reply") {
+                  userMessage = messageData.interactive.button_reply.title || messageData.interactive.button_reply.id;
+                } else if (messageData.interactive.type === "list_reply") {
+                  userMessage = messageData.interactive.list_reply.title || messageData.interactive.list_reply.id;
+                }
+              } else if (messageData.type === "video") {
+                isImage = true; // Tratamos video igual que imagen para los triggers
+                userMessage = messageData.video?.caption || "[Video]";
+              } else {
+                userMessage = `[Multimedia/Otro formato: ${messageData.type}]`;
+              }
 
-      const isImage = !!(
-        messageData.message?.imageMessage ||
-        messageData.message?.viewOnceMessage?.message?.imageMessage ||
-        messageData.message?.viewOnceMessageV2?.message?.imageMessage ||
-        messageData.message?.ephemeralMessage?.message?.imageMessage
-      );
+              if (isImage) {
+                const mNorm = userMessage.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                const triggersHumanOrBuy = 
+                  mNorm.includes("asesor") || mNorm.includes("humano") || mNorm.includes("persona") || mNorm.includes("atenderme") || mNorm.includes("hablar con alguien") ||
+                  mNorm.includes("comprar") || mNorm.includes("pagar") || mNorm.includes("transferencia") || mNorm.includes("pago") || mNorm.includes("deposito") || mNorm.includes("cuenta") || mNorm.includes("quiero") || mNorm.includes("llevar") || mNorm.includes("zelle");
 
-      const senderNumber = remoteJid.split('@')[0];
+                if (!triggersHumanOrBuy) {
+                  userMessage = `[${messageData.type === 'video' ? 'Video' : 'Imagen'}]`;
+                }
+              }
 
-      // --- AUTO-TAKEOVER & GUARDADO DE MENSAJES DE ASESORES ---
-      if (fromMe) {
-        if (isImage && !userMessage) userMessage = "[Imagen/Media enviada por asesor]";
-        
-        if (userMessage) {
-          // Verificar si la IA envió exactamente este mensaje en el último minuto (es un eco de la API)
-          const recentMsg = await query(
-             `SELECT id FROM whatsapp_messages 
-              WHERE session_id = $1 
-              AND message->>'role' = 'assistant' 
-              AND message->>'content' = $2 
-              AND created_at >= NOW() - INTERVAL '1 minute'`,
-             [senderNumber, userMessage]
-          );
+              if (!userMessage && !isImage) return NextResponse.json({ status: "no_text" });
 
-          if (recentMsg.rowCount === 0) {
-             // Es un mensaje nuevo de un humano enviado directamente desde la app
-             await query(
-               `INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`,
-               [senderNumber, JSON.stringify({ role: 'assistant', content: userMessage })]
-             );
-             // Auto-pausar el bot para ceder el control al asesor
-             await query(
-               `UPDATE whatsapp_customers SET ai_enabled = false WHERE id = $1`,
-               [senderNumber]
-             );
-             console.log(`[WHATSAPP] Intervención humana detectada hacia ${senderNumber}. Bot pausado y mensaje saliente guardado en dashboard.`);
-          }
-        }
-        return NextResponse.json({ status: "ignored_from_me" });
-      }
+              const pushName = value.contacts && value.contacts.length > 0 ? value.contacts[0].profile?.name : "Cliente WhatsApp";
 
-      // A partir de aquí es un mensaje entrante (cliente)
-      if (isImage) {
-        const mNorm = userMessage.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        const triggersHumanOrBuy = 
-          mNorm.includes("asesor") || mNorm.includes("humano") || mNorm.includes("persona") || mNorm.includes("atenderme") || mNorm.includes("hablar con alguien") ||
-          mNorm.includes("comprar") || mNorm.includes("pagar") || mNorm.includes("transferencia") || mNorm.includes("pago") || mNorm.includes("deposito") || mNorm.includes("cuenta") || mNorm.includes("quiero") || mNorm.includes("llevar") || mNorm.includes("zelle");
+              console.log(`[WHATSAPP] Mensaje de ${pushName} (${senderNumber}): ${userMessage}`);
 
-        if (!triggersHumanOrBuy) {
-          userMessage = "[Imagen]";
-        }
-      }
+              // 2. Guardar/Actualizar cliente
+              await query(
+                `INSERT INTO whatsapp_customers (id, full_name, last_seen) 
+                 VALUES ($1, $2, NOW()) 
+                 ON CONFLICT (id) DO UPDATE SET full_name = $2, last_seen = NOW()`,
+                [senderNumber, pushName]
+              );
 
-      if (!userMessage && !isImage) return NextResponse.json({ status: "no_text" });
+              // 3. GUARDAR MENSAJE DEL USUARIO INMEDIATAMENTE
+              await query(
+                `INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`,
+                [senderNumber, JSON.stringify({ role: 'user', content: userMessage })]
+              );
 
-      const pushName = messageData.pushName || "Cliente WhatsApp";
+              // 4. Verificar Breaker Global
+              const globalRes = await query("SELECT value FROM app_settings WHERE key = 'global_bot_enabled'");
+              const isGlobalEnabled = globalRes.rows.length > 0 ? globalRes.rows[0].value === 'true' : true;
+              
+              const TEST_NUMBERS = []; // Whitelist
+              const isTester = TEST_NUMBERS.includes(senderNumber);
 
-      console.log(`[WHATSAPP] Mensaje de ${pushName} (${senderNumber}): ${userMessage}`);
+              if (!isGlobalEnabled && !isTester) {
+                console.log(`[WHATSAPP] BREAKER GLOBAL ACTIVADO. IA pausada.`);
+                return NextResponse.json({ status: "global_paused" });
+              }
 
-      // 3. Guardar/Actualizar cliente
-      await query(
-        `INSERT INTO whatsapp_customers (id, full_name, last_seen) 
-         VALUES ($1, $2, NOW()) 
-         ON CONFLICT (id) DO UPDATE SET full_name = $2, last_seen = NOW()`,
-        [senderNumber, pushName]
-      );
+              // 5. Verificar si el bot está pausado individualmente
+              const customerRes = await query("SELECT ai_enabled, followup_status FROM whatsapp_customers WHERE id = $1", [senderNumber]);
+              const isAiEnabled = customerRes.rows[0]?.ai_enabled ?? true;
+              const followupStatus = customerRes.rows[0]?.followup_status ?? 'none';
 
-      // 4. GUARDAR MENSAJE DEL USUARIO INMEDIATAMENTE (Para que aparezca en el board)
-      await query(
-        `INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`,
-        [senderNumber, JSON.stringify({ role: 'user', content: userMessage })]
-      );
-      console.log(`[WHATSAPP] Mensaje de usuario guardado para ${senderNumber}`);
+              if (!isAiEnabled) {
+                console.log(`[WHATSAPP] Bot pausado para ${senderNumber}.`);
+                return NextResponse.json({ status: "bot_paused" });
+              }
 
-      // 5. Verificar Breaker Global
-      const globalRes = await query("SELECT value FROM app_settings WHERE key = 'global_bot_enabled'");
-      const isGlobalEnabled = globalRes.rows.length > 0 ? globalRes.rows[0].value === 'true' : true;
-      
-      // 🌟 WHITELIST DE PRUEBAS: Añade aquí los números que siempre deben funcionar
-      const TEST_NUMBERS = []; // Lista de prueba vacía
-      const isTester = TEST_NUMBERS.includes(senderNumber);
+              // --- INTERCEPCIÓN DE RESPUESTA A SEGUIMIENTO ---
+              if (followupStatus === 'sent') {
+                console.log(`[WHATSAPP] Cliente ${senderNumber} respondió al seguimiento. Pausando bot.`);
+                
+                await query(
+                  "UPDATE whatsapp_customers SET followup_status = 'replied', ai_enabled = false, requires_human = true WHERE id = $1",
+                  [senderNumber]
+                );
 
-      if (!isGlobalEnabled && !isTester) {
-        console.log(`[WHATSAPP] BREAKER GLOBAL ACTIVADO. IA pausada mundialmente. Ignorando a ${senderNumber}.`);
-        return NextResponse.json({ status: "global_paused" });
-      }
+                const notifyText = `🚨 RESPUESTA A SEGUIMIENTO\n\n*Canal:* WHATSAPP\n*Cliente:* ${pushName} (+${senderNumber})\n*Mensaje:* "${userMessage}"\n\n👇 Responde aquí:\nhttps://auto.practiiko.com/whatsapp/${senderNumber}`;
+                const adminPhone = "584248068515";
+                const groupId = process.env.NOTIFICATIONS_GROUP_ID;
 
-      // 6. Verificar si el bot está pausado para este cliente individual
-      const customerRes = await query("SELECT ai_enabled, followup_status FROM whatsapp_customers WHERE id = $1", [senderNumber]);
-      const isAiEnabled = customerRes.rows[0]?.ai_enabled ?? true;
-      const followupStatus = customerRes.rows[0]?.followup_status ?? 'none';
+                try {
+                  await sendWhatsAppMessage(adminPhone, notifyText);
+                  if (groupId) {
+                    await sendWhatsAppMessage(groupId, notifyText);
+                  }
+                } catch (e) {
+                  console.error("Error notificando respuesta a seguimiento WA:", e);
+                }
 
-      if (!isAiEnabled) {
-        console.log(`[WHATSAPP] Bot pausado para ${senderNumber}. No se generará respuesta automática.`);
-        return NextResponse.json({ status: "bot_paused" });
-      }
+                return NextResponse.json({ status: "followup_replied_takeover" });
+              }
 
-      // --- INTERCEPCIÓN DE RESPUESTA A SEGUIMIENTO ---
-      if (followupStatus === 'sent') {
-        console.log(`[WHATSAPP] Cliente ${senderNumber} respondió al seguimiento. Pausando bot y alertando.`);
-        
-        await query(
-          "UPDATE whatsapp_customers SET followup_status = 'replied', ai_enabled = false, requires_human = true WHERE id = $1",
-          [senderNumber]
-        );
+              const protocol = req.headers.get("x-forwarded-proto") || "https";
+              const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "auto.practiiko.com";
+              let baseUrl = `${protocol}://${host}`;
+              if (baseUrl.includes("localhost") || baseUrl.includes("practiiko_app") || baseUrl.includes("127.0.0.1") || baseUrl.includes("::1")) {
+                baseUrl = "https://auto.practiiko.com";
+              }
 
-        const notifyText = `🚨 RESPUESTA A SEGUIMIENTO\n\n*Canal:* WHATSAPP\n*Cliente:* ${pushName} (+${senderNumber})\n*Mensaje:* "${userMessage}"\n\n👇 Responde aquí:\nhttps://wa.me/${senderNumber}`;
-        const adminPhone = "584248068515";
-        const groupId = process.env.NOTIFICATIONS_GROUP_ID;
+              // 6. Procesar con IA y responder (con debounce de 5 segundos)
+              let debounceState = whatsappDebounceMap.get(senderNumber);
+              if (debounceState) {
+                clearTimeout(debounceState.timer);
+                debounceState.messages.push(userMessage);
+                debounceState.pushName = pushName;
+                debounceState.baseUrl = baseUrl;
+              } else {
+                debounceState = {
+                  messages: [userMessage],
+                  pushName,
+                  baseUrl,
+                  timer: null
+                };
+                whatsappDebounceMap.set(senderNumber, debounceState);
+              }
 
-        try {
-          if (EVO_URL) {
-            await fetch(`${EVO_URL}/message/sendText/${EVO_INSTANCE}`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'apikey': EVO_KEY },
-              body: JSON.stringify({ number: adminPhone, text: notifyText })
-            });
-            if (groupId) {
-              await fetch(`${EVO_URL}/message/sendText/${EVO_INSTANCE}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'apikey': EVO_KEY },
-                body: JSON.stringify({ number: groupId, text: notifyText })
-              });
+              debounceState.timer = setTimeout(async () => {
+                whatsappDebounceMap.delete(senderNumber);
+                
+                const combinedMessage = debounceState.messages.join(" ").trim();
+                
+                try {
+                  const aiResponse = await processWhatsappMessage(combinedMessage, senderNumber, debounceState.pushName, debounceState.baseUrl);
+                  
+                  if (aiResponse.ignored) return;
+
+                  // Enviar a WhatsApp
+                  await sendWhatsAppMessage(senderNumber, aiResponse.text);
+                  
+                  // Enviar imágenes si las hay
+                  if (aiResponse.imageUrls && aiResponse.imageUrls.length > 0) {
+                    for (const imgUrl of aiResponse.imageUrls) {
+                      await sendWhatsAppImage(senderNumber, imgUrl);
+                    }
+                  }
+                } catch (e) {
+                  console.error("[ERROR WHATSAPP AI]:", e);
+                }
+              }, 5000);
             }
           }
-        } catch (e) {
-          console.error("Error notificando respuesta a seguimiento WA:", e);
         }
-
-        return NextResponse.json({ status: "followup_replied_takeover" });
       }
-
-      const protocol = req.headers.get("x-forwarded-proto") || "https";
-      const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "auto.practiiko.com";
-      let baseUrl = `${protocol}://${host}`;
-      // Evitar que URLs locales o de red interna docker se usen para las fotos de Evolution API
-      if (baseUrl.includes("localhost") || baseUrl.includes("practiiko_app") || baseUrl.includes("127.0.0.1") || baseUrl.includes("::1")) {
-        baseUrl = "https://auto.practiiko.com";
-      }
-
-      // 6. Procesar con IA y responder (con debounce de 5 segundos)
-      let debounceState = whatsappDebounceMap.get(senderNumber);
-      if (debounceState) {
-        clearTimeout(debounceState.timer);
-        debounceState.messages.push(userMessage);
-        debounceState.pushName = pushName;
-        debounceState.baseUrl = baseUrl;
-      } else {
-        debounceState = {
-          messages: [userMessage],
-          pushName,
-          baseUrl,
-          timer: null
-        };
-        whatsappDebounceMap.set(senderNumber, debounceState);
-      }
-
-      debounceState.timer = setTimeout(async () => {
-        whatsappDebounceMap.delete(senderNumber);
-        
-        const combinedMessage = debounceState.messages.join(" ").trim();
-        console.log(`[WHATSAPP DEBOUNCE] Procesando mensajes combinados para ${senderNumber} ("${debounceState.pushName}"): "${combinedMessage}"`);
-
-        try {
-          const aiResponse = await processWhatsappMessage(combinedMessage, senderNumber, debounceState.pushName, debounceState.baseUrl);
-          
-          if (aiResponse.ignored) {
-            console.log(`[WHATSAPP DEBOUNCE] Respuesta de IA ignorada (bot pausado) para ${senderNumber}.`);
-            return;
-          }
-
-          // Enviar a WhatsApp
-          await sendWhatsAppMessage(senderNumber, aiResponse.text);
-          
-          // Si hay imágenes, enviarlas todas
-          if (aiResponse.imageUrls && aiResponse.imageUrls.length > 0) {
-            for (const imgUrl of aiResponse.imageUrls) {
-              await sendWhatsAppImage(senderNumber, imgUrl);
-              console.log(`[WHATSAPP] Imagen de IA enviada a ${senderNumber}: ${imgUrl}`);
-            }
-          }
-          console.log(`[WHATSAPP] Respuesta de IA enviada a ${senderNumber}`);
-        } catch (e) {
-          console.error("[ERROR WHATSAPP AI]:", e);
-        }
-      }, 5000);
     }
 
     return NextResponse.json({ status: "success" });
