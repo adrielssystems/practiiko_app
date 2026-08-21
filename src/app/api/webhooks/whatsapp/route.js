@@ -124,7 +124,13 @@ export async function POST(req) {
   try {
     const body = await req.json();
     
-    // Loguear el webhook
+    // Debug en consola para ver exactamente qué envía Meta
+    console.log("=========================================");
+    console.log("[WEBHOOK WA INTRANTE] Payload recibido:");
+    console.log(JSON.stringify(body, null, 2));
+    console.log("=========================================");
+
+    // Loguear el webhook en la base de datos
     await query("INSERT INTO webhook_logs (event_type, payload) VALUES ($1, $2)", ['whatsapp_cloud', JSON.stringify(body)]);
 
     if (body.object === "whatsapp_business_account") {
