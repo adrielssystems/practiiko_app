@@ -113,8 +113,8 @@ export async function POST(req) {
       const wim = body.whatsappInboundMessage;
       if (!wim) return NextResponse.json({ status: "success" });
 
-      const senderNumber = wim.from; // Número del cliente
-      const messageData = wim.data; // Metadata oficial del Graph API que viene embebida en Ycloud
+      const senderNumber = wim.from.replace('+', ''); // Quitar el '+' para la DB
+      const messageData = wim; // YCloud pone type y text directo en wim
 
       // 1. Extraer texto o imagen
       let userMessage = "";
@@ -151,9 +151,7 @@ export async function POST(req) {
 
       if (!userMessage && !isImage) return NextResponse.json({ status: "no_text" });
 
-      // YCloud no siempre incluye contactos en el Inbound Message payload de manera directa, 
-      // usaremos fallback.
-      const pushName = "Cliente WhatsApp";
+      const pushName = wim.customerProfile?.name || "Cliente WhatsApp";
 
       console.log(`[WHATSAPP] Mensaje de ${pushName} (${senderNumber}): ${userMessage}`);
 
