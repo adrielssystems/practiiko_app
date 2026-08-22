@@ -9,27 +9,25 @@ export async function POST(req) {
       return NextResponse.json({ error: "Faltan datos (to, text)" }, { status: 400 });
     }
 
-    const phoneId = process.env.WHATSAPP_PHONE_ID;
-    const token = process.env.WHATSAPP_CLOUD_ACCESS_TOKEN;
+    const phone = process.env.WHATSAPP_PHONE_ID; // Debe ser el numero, ej. 584248948664
+    const token = process.env.YCLOUD_API_KEY;
 
-    if (!phoneId || !token) {
-      return NextResponse.json({ error: "Meta WhatsApp API no configurada (faltan variables de entorno)" }, { status: 500 });
+    if (!phone || !token) {
+      return NextResponse.json({ error: "YCloud API no configurada (faltan variables de entorno)" }, { status: 500 });
     }
 
-    // 1. Enviar a través de Graph API de Meta
-    const response = await fetch(`https://graph.facebook.com/v21.0/${phoneId}/messages`, {
+    // 1. Enviar a través de API de YCloud
+    const response = await fetch(`https://api.ycloud.com/v2/whatsapp/messages/sendDirectly`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        'X-API-Key': token
       },
       body: JSON.stringify({
-        messaging_product: "whatsapp",
-        recipient_type: "individual",
+        from: phone,
         to: to,
         type: "text",
         text: {
-          preview_url: true,
           body: text
         }
       })
@@ -37,7 +35,8 @@ export async function POST(req) {
 
     const data = await response.json();
 
-    if (response.ok && !data.error) {
+    // YCloud devuelve un ID de mensaje o un error
+    if (response.ok && !data.errorCode) {
       // 2. Guardar en la base de datos como mensaje del asistente (manual)
       await query(
         "INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)",
@@ -52,9 +51,9 @@ export async function POST(req) {
 
       return NextResponse.json({ success: true, data });
     } else {
-      console.error("[WHATSAPP SEND META ERROR]:", JSON.stringify(data));
-      const metaErrMsg = data.error?.message || data.error?.error?.data?.details || "Meta API rechazó el envío de mensaje.";
-      return NextResponse.json({ success: false, error: metaErrMsg, metaError: data }, { status: 500 });
+      console.error("[WHATSAPP SEND YCLOUD ERROR]:", JSON.stringify(data));
+      const errMsg = data.errorMessage || data.message || "YCloud API rechazó el envío de mensaje.";
+      return NextResponse.json({ success: false, error: errMsg, ycloudError: data }, { status: 500 });
     }
 
   } catch (error) {
