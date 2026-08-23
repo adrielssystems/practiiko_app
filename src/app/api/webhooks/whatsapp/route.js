@@ -272,7 +272,7 @@ export async function POST(req) {
               parameters: [
                 {
                   type: "image",
-                  image: { link: "https://dummyimage.com/600x400/000/fff.png" } // Imagen de prueba
+                  image: { link: "https://auto.practiiko.com/logo-p.jpeg" } // Cambiar a la foto del sofá cuando la tengamos
                 }
               ]
             }
@@ -334,14 +334,14 @@ export async function POST(req) {
       if (isFirstContact) {
         await delay(1500); // Retraso simulado
         
-        // La plantilla 'welcome' exige un header de imagen, debemos proveerlo en el payload
+        // La plantilla 'welcome' exige un header de imagen
         const headerComponent = [
           {
             type: "header",
             parameters: [
               {
                 type: "image",
-                image: { link: "https://dummyimage.com/600x400/000/fff.png" } // Link de prueba público garantizado
+                image: { link: "https://auto.practiiko.com/logo-p.jpeg" }
               }
             ]
           }
