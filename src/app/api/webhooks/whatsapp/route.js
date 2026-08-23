@@ -138,7 +138,10 @@ async function sendMediaFile(to, type, mediaUrl) {
 async function sendTemplate(to, templateName) {
   const phoneId = getPhoneId();
   const token = getApiKey();
-  if (!phoneId || !token) return;
+  if (!phoneId || !token) {
+    console.error("[WHATSAPP TEMPLATE] Faltan credenciales (phoneId o token).");
+    return;
+  }
 
   try {
     const payload = {
@@ -147,18 +150,24 @@ async function sendTemplate(to, templateName) {
       type: "template",
       template: {
         name: templateName,
-        language: { code: "es" } // Ajusta según el idioma de la plantilla
-        // No pasamos components porque el carrusel es estático (sus botones y media vienen pre-aprobados en YCloud)
+        language: { code: "es_ES" } // <-- A veces Meta exige el locale completo (es_ES o es_LA)
       }
     };
+    
+    console.log(`[YCLOUD DEBUG] Enviando Plantilla '${templateName}' a ${to}. Payload:`, JSON.stringify(payload));
 
     const response = await fetch(`https://api.ycloud.com/v2/whatsapp/messages/sendDirectly`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-API-Key': token },
       body: JSON.stringify(payload)
     });
+    
     const data = await response.json();
-    if (data.errorCode) console.error(`[WHATSAPP TEMPLATE ERROR - ${templateName}]:`, data);
+    console.log(`[YCLOUD DEBUG] Respuesta de YCloud para plantilla '${templateName}':`, JSON.stringify(data));
+    
+    if (data.errorCode || !response.ok) {
+      console.error(`[WHATSAPP TEMPLATE ERROR - ${templateName}]:`, data);
+    }
   } catch (error) {
     console.error(`[WHATSAPP TEMPLATE EXCEPTION]:`, error);
   }
