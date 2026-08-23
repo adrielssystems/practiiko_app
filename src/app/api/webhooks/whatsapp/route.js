@@ -326,7 +326,7 @@ export async function POST(req) {
             parameters: [
               {
                 type: "image",
-                image: { link: "https://auto.practiiko.com/logo-p.jpeg" }
+                image: { link: "https://dummyimage.com/600x400/000/fff.png" } // Link de prueba público garantizado
               }
             ]
           }
