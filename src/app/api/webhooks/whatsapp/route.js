@@ -304,15 +304,16 @@ export async function POST(req) {
       const mNorm = userMessage.toLowerCase().trim();
       let isFirstContact = false;
       
-      // Si el cliente dice hola y no hay historial o el historial reciente no tiene mensajes del bot
-      if (mNorm.includes("hola") || mNorm.includes("buen") || mNorm.includes("menu")) {
-        const hasAssistantMsg = historyRes.rows.some(r => {
-          try {
-            const msg = typeof r.message === 'string' ? JSON.parse(r.message) : r.message;
-            return msg && msg.role === 'assistant';
-          } catch(e) { return false; }
-        });
-        if (!hasAssistantMsg || mNorm === "menu") isFirstContact = true;
+      const hasAssistantMsg = historyRes.rows.some(r => {
+        try {
+          const msg = typeof r.message === 'string' ? JSON.parse(r.message) : r.message;
+          return msg && msg.role === 'assistant';
+        } catch(e) { return false; }
+      });
+
+      // Si es su primer mensaje (el bot nunca le ha respondido) o manda "menu", lanzamos la bienvenida
+      if (!hasAssistantMsg || mNorm === "menu" || mNorm.includes("hola")) {
+        isFirstContact = true;
       }
 
       if (isFirstContact) {
