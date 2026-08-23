@@ -272,7 +272,7 @@ export async function POST(req) {
               parameters: [
                 {
                   type: "image",
-                  image: { link: "https://auto.practiiko.com/logo-p.jpeg" } // Cambiar a la foto del sofá cuando la tengamos
+                  image: { link: "https://auto.practiiko.com/api/media/logo-practiiko.jpeg" } // Cambiar a la foto del sofá cuando la tengamos
                 }
               ]
             }
@@ -341,7 +341,7 @@ export async function POST(req) {
             parameters: [
               {
                 type: "image",
-                image: { link: "https://auto.practiiko.com/logo-p.jpeg" }
+                image: { link: "https://auto.practiiko.com/api/media/logo-practiiko.jpeg" }
               }
             ]
           }
