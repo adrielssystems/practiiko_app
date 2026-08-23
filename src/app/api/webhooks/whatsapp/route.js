@@ -135,7 +135,7 @@ async function sendMediaFile(to, type, mediaUrl) {
 }
 
 // NUEVA FUNCION: Enviar Plantilla de Carrusel (Fase 3 Ruta B)
-async function sendTemplate(to, templateName) {
+async function sendTemplate(to, templateName, components = null) {
   const phoneId = getPhoneId();
   const token = getApiKey();
   if (!phoneId || !token) {
@@ -144,14 +144,20 @@ async function sendTemplate(to, templateName) {
   }
 
   try {
+    const templateObj = {
+      name: templateName,
+      language: { code: "es" }
+    };
+    
+    if (components && components.length > 0) {
+      templateObj.components = components;
+    }
+
     const payload = {
       from: phoneId,
       to: to,
       type: "template",
-      template: {
-        name: templateName,
-        language: { code: "es" } // Ojo: Meta es estricto con el idioma. Si creaste en "es", esto debe ser "es"
-      }
+      template: templateObj
     };
     
     console.log(`[YCLOUD DEBUG] Enviando Plantilla '${templateName}' a ${to}. Payload:`, JSON.stringify(payload));
@@ -312,7 +318,20 @@ export async function POST(req) {
       if (isFirstContact) {
         await delay(1500); // Retraso simulado
         
-        await sendTemplate(senderNumber, "welcome");
+        // La plantilla 'welcome' exige un header de imagen, debemos proveerlo en el payload
+        const headerComponent = [
+          {
+            type: "header",
+            parameters: [
+              {
+                type: "image",
+                image: { link: "https://auto.practiiko.com/logo-p.jpeg" }
+              }
+            ]
+          }
+        ];
+        
+        await sendTemplate(senderNumber, "welcome", headerComponent);
         
         await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [senderNumber, JSON.stringify({ role: 'assistant', content: "[Sistema] Plantilla 'welcome' enviada." })]);
         return NextResponse.json({ status: "funnel_fase2_template" });
