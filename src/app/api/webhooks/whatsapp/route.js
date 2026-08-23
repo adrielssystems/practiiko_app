@@ -9,35 +9,26 @@ const whatsappDebounceMap = new Map();
 const getPhoneId = () => process.env.WHATSAPP_PHONE_ID; // Ej. 584248948664
 const getApiKey = () => process.env.YCLOUD_API_KEY;
 
+// --- FUNCIONES DE ENVÍO DE YCLOUD ---
+
 async function sendWhatsAppMessage(to, text) {
   const phoneId = getPhoneId();
   const token = getApiKey();
-  
-  if (!phoneId || !token) {
-    console.error("[WHATSAPP YCLOUD ERROR]: Falta WHATSAPP_PHONE_ID o YCLOUD_API_KEY.");
-    return;
-  }
+  if (!phoneId || !token) return;
   
   try {
     const response = await fetch(`https://api.ycloud.com/v2/whatsapp/messages/sendDirectly`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': token
-      },
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': token },
       body: JSON.stringify({
         from: phoneId,
         to: to,
         type: "text",
-        text: {
-          body: text
-        }
+        text: { body: text }
       })
     });
     const data = await response.json();
-    if (data.errorCode) {
-      console.error("[WHATSAPP SEND ERROR]:", data);
-    }
+    if (data.errorCode) console.error("[WHATSAPP SEND ERROR]:", data);
     return data;
   } catch (error) {
     console.error("[WHATSAPP SEND EXCEPTION]:", error);
@@ -47,15 +38,10 @@ async function sendWhatsAppMessage(to, text) {
 async function sendWhatsAppImage(to, imageUrl) {
   const phoneId = getPhoneId();
   const token = getApiKey();
-  
-  if (!phoneId || !token) {
-    console.error("[WHATSAPP YCLOUD ERROR]: Falta WHATSAPP_PHONE_ID o YCLOUD_API_KEY.");
-    return;
-  }
+  if (!phoneId || !token) return;
 
   try {
     let mediaPayload = imageUrl;
-    
     if (imageUrl.includes("/api/media/")) {
       const parts = imageUrl.split('/');
       const originalFilename = parts[parts.length - 1];
@@ -67,93 +53,159 @@ async function sendWhatsAppImage(to, imageUrl) {
       from: phoneId,
       to: to,
       type: "image",
-      image: {
-        link: mediaPayload
-      }
+      image: { link: mediaPayload }
     };
-
-    console.log(`[WHATSAPP] Enviando imagen via URL pública dinámica a ${to}: ${mediaPayload}`);
 
     const response = await fetch(`https://api.ycloud.com/v2/whatsapp/messages/sendDirectly`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': token
-      },
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': token },
       body: JSON.stringify(payloadBody)
     });
     
     const data = await response.json();
     if (data.errorCode) {
       console.error(`[WHATSAPP IMAGE SEND ERROR]`, data);
-      await sendWhatsAppMessage(to, `[SISTEMA-DEBUG] Falló envío de imagen. API rechazó el enlace.`);
+      await sendWhatsAppMessage(to, `[SISTEMA-DEBUG] Falló envío de imagen.`);
       return null;
     }
-    
     return data;
   } catch (error) {
     console.error("[WHATSAPP IMAGE SEND EXCEPTION]:", error);
   }
 }
 
+// NUEVA FUNCION: Enviar Menú Interactivo de 3 botones (Fase 2)
+async function sendInteractiveMenu(to) {
+  const phoneId = getPhoneId();
+  const token = getApiKey();
+  if (!phoneId || !token) return;
+
+  try {
+    const payload = {
+      from: phoneId,
+      to: to,
+      type: "interactive",
+      interactive: {
+        type: "button",
+        body: { text: "Para atenderte lo más rápido, dinos... ¿Qué quieres ver?" },
+        action: {
+          buttons: [
+            { type: "reply", reply: { id: "btn_sofas", title: "SOFÁS" } },
+            { type: "reply", reply: { id: "btn_colchones", title: "COLCHONES" } },
+            { type: "reply", reply: { id: "btn_velas", title: "VELAS PERLADAS" } }
+          ]
+        }
+      }
+    };
+
+    await fetch(`https://api.ycloud.com/v2/whatsapp/messages/sendDirectly`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': token },
+      body: JSON.stringify(payload)
+    });
+  } catch (error) {
+    console.error("[WHATSAPP INTERACTIVE ERROR]:", error);
+  }
+}
+
+// NUEVA FUNCION: Enviar Video o Audio (Fase 3 Ruta A)
+async function sendMediaFile(to, type, mediaUrl) {
+  const phoneId = getPhoneId();
+  const token = getApiKey();
+  if (!phoneId || !token) return;
+
+  try {
+    const payload = {
+      from: phoneId,
+      to: to,
+      type: type,
+    };
+    
+    // YCloud/Meta docs: the key name is the same as the type ('video' or 'audio')
+    payload[type] = { link: mediaUrl };
+
+    await fetch(`https://api.ycloud.com/v2/whatsapp/messages/sendDirectly`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': token },
+      body: JSON.stringify(payload)
+    });
+  } catch (error) {
+    console.error(`[WHATSAPP ${type.toUpperCase()} ERROR]:`, error);
+  }
+}
+
+// NUEVA FUNCION: Enviar Plantilla de Carrusel (Fase 3 Ruta B)
+async function sendTemplate(to, templateName) {
+  const phoneId = getPhoneId();
+  const token = getApiKey();
+  if (!phoneId || !token) return;
+
+  try {
+    const payload = {
+      from: phoneId,
+      to: to,
+      type: "template",
+      template: {
+        name: templateName,
+        language: { code: "es" } // Ajusta según el idioma de la plantilla
+        // No pasamos components porque el carrusel es estático (sus botones y media vienen pre-aprobados en YCloud)
+      }
+    };
+
+    const response = await fetch(`https://api.ycloud.com/v2/whatsapp/messages/sendDirectly`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': token },
+      body: JSON.stringify(payload)
+    });
+    const data = await response.json();
+    if (data.errorCode) console.error(`[WHATSAPP TEMPLATE ERROR - ${templateName}]:`, data);
+  } catch (error) {
+    console.error(`[WHATSAPP TEMPLATE EXCEPTION]:`, error);
+  }
+}
+
+const delay = ms => new Promise(res => setTimeout(res, ms));
+
 export async function POST(req) {
   try {
     const body = await req.json();
-    
-    console.log("=========================================");
-    console.log("[WEBHOOK WA INTRANTE - YCLOUD] Payload recibido:");
-    console.log(JSON.stringify(body, null, 2));
-    console.log("=========================================");
 
     // Loguear el webhook
     await query("INSERT INTO webhook_logs (event_type, payload) VALUES ($1, $2)", ['whatsapp_ycloud', JSON.stringify(body)]);
 
-    // Procesar evento de mensaje entrante (cliente -> negocio)
     if (body.type === "whatsapp.inbound_message.received") {
       const wim = body.whatsappInboundMessage;
       if (!wim) return NextResponse.json({ status: "success" });
 
       const senderNumber = wim.from.replace('+', ''); // Quitar el '+' para la DB
-      const messageData = wim; // YCloud pone type y text directo en wim
+      const messageData = wim; 
+      const pushName = wim.customerProfile?.name || "Cliente WhatsApp";
 
-      // 1. Extraer texto o imagen
+      // 1. Extraer texto o botones interactivos
       let userMessage = "";
+      let interactiveId = null;
       let isImage = false;
       
       if (messageData.type === "text") {
         userMessage = messageData.text?.body || "";
-      } else if (messageData.type === "image") {
-        isImage = true;
-        userMessage = messageData.image?.caption || "[Imagen]";
       } else if (messageData.type === "interactive") {
         if (messageData.interactive?.type === "button_reply") {
-          userMessage = messageData.interactive.button_reply.title || messageData.interactive.button_reply.id;
+          userMessage = messageData.interactive.button_reply.title;
+          interactiveId = messageData.interactive.button_reply.id;
         } else if (messageData.interactive?.type === "list_reply") {
-          userMessage = messageData.interactive.list_reply.title || messageData.interactive.list_reply.id;
+          userMessage = messageData.interactive.list_reply.title;
+          interactiveId = messageData.interactive.list_reply.id;
         }
-      } else if (messageData.type === "video") {
+      } else if (messageData.type === "image" || messageData.type === "video") {
         isImage = true;
-        userMessage = messageData.video?.caption || "[Video]";
+        userMessage = `[Multimedia: ${messageData.type}]`;
       } else {
         userMessage = `[Multimedia/Otro formato: ${messageData.type}]`;
       }
 
-      if (isImage) {
-        const mNorm = userMessage.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        const triggersHumanOrBuy = 
-          mNorm.includes("asesor") || mNorm.includes("humano") || mNorm.includes("persona") || mNorm.includes("atenderme") || mNorm.includes("hablar con alguien") ||
-          mNorm.includes("comprar") || mNorm.includes("pagar") || mNorm.includes("transferencia") || mNorm.includes("pago") || mNorm.includes("deposito") || mNorm.includes("cuenta") || mNorm.includes("quiero") || mNorm.includes("llevar") || mNorm.includes("zelle");
-
-        if (!triggersHumanOrBuy) {
-          userMessage = `[${messageData.type === 'video' ? 'Video' : 'Imagen'}]`;
-        }
-      }
-
       if (!userMessage && !isImage) return NextResponse.json({ status: "no_text" });
 
-      const pushName = wim.customerProfile?.name || "Cliente WhatsApp";
-
-      console.log(`[WHATSAPP] Mensaje de ${pushName} (${senderNumber}): ${userMessage}`);
+      console.log(`[WHATSAPP] Mensaje de ${pushName} (${senderNumber}): ${userMessage} (ID: ${interactiveId || 'N/A'})`);
 
       // 2. Guardar/Actualizar cliente
       await query(
@@ -163,67 +215,110 @@ export async function POST(req) {
         [senderNumber, pushName]
       );
 
-      // 3. GUARDAR MENSAJE DEL USUARIO INMEDIATAMENTE
+      // 3. GUARDAR MENSAJE DEL USUARIO
       await query(
         `INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`,
         [senderNumber, JSON.stringify({ role: 'user', content: userMessage })]
       );
 
-      // 4. Verificar Breaker Global
+      // 4. Verificar Breaker Global y Bot Pausado
       const globalRes = await query("SELECT value FROM app_settings WHERE key = 'global_bot_enabled'");
       const isGlobalEnabled = globalRes.rows.length > 0 ? globalRes.rows[0].value === 'true' : true;
-      
-      const TEST_NUMBERS = [];
-      const isTester = TEST_NUMBERS.includes(senderNumber);
-
-      if (!isGlobalEnabled && !isTester) {
-        console.log(`[WHATSAPP] BREAKER GLOBAL ACTIVADO. IA pausada.`);
-        return NextResponse.json({ status: "global_paused" });
-      }
-
-      // 5. Verificar si el bot está pausado individualmente
       const customerRes = await query("SELECT ai_enabled, followup_status FROM whatsapp_customers WHERE id = $1", [senderNumber]);
       const isAiEnabled = customerRes.rows[0]?.ai_enabled ?? true;
-      const followupStatus = customerRes.rows[0]?.followup_status ?? 'none';
-
-      if (!isAiEnabled) {
-        console.log(`[WHATSAPP] Bot pausado para ${senderNumber}.`);
-        return NextResponse.json({ status: "bot_paused" });
+      
+      if (!isGlobalEnabled || !isAiEnabled) {
+        return NextResponse.json({ status: "paused" });
       }
 
-      // --- INTERCEPCIÓN DE RESPUESTA A SEGUIMIENTO ---
-      if (followupStatus === 'sent') {
-        console.log(`[WHATSAPP] Cliente ${senderNumber} respondió al seguimiento. Pausando bot.`);
+      // ==========================================
+      // 🚀 FUNNEL STATE MACHINE (MÁQUINA DE ESTADOS)
+      // ==========================================
+
+      // A) EVALUAR INTERCEPTACIÓN POR BOTONES (FASE 3)
+      if (interactiveId || userMessage) {
+        const msgText = userMessage.toUpperCase();
         
-        await query(
-          "UPDATE whatsapp_customers SET followup_status = 'replied', ai_enabled = false, requires_human = true WHERE id = $1",
-          [senderNumber]
-        );
+        if (interactiveId === "btn_sofas" || msgText === "SOFÁS" || msgText === "SOFAS") {
+          const responseMsg = "[Sistema] Envió beneficios genéricos y luego plantilla: template_marketing_20260822212224";
+          await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [senderNumber, JSON.stringify({ role: 'assistant', content: responseMsg })]);
+          
+          await sendMediaFile(senderNumber, "video", "https://auto.practiiko.com/media/benef2.mp4");
+          await delay(2000);
+          await sendMediaFile(senderNumber, "audio", "https://auto.practiiko.com/media/voice_beneficios.ogg");
+          await delay(2000);
+          await sendTemplate(senderNumber, "template_marketing_20260822212224");
+          return NextResponse.json({ status: "funnel_ruta_a_sofas" });
 
-        const notifyText = `🚨 RESPUESTA A SEGUIMIENTO\n\n*Canal:* WHATSAPP\n*Cliente:* ${pushName} (+${senderNumber})\n*Mensaje:* "${userMessage}"\n\n👇 Responde aquí:\nhttps://auto.practiiko.com/whatsapp/${senderNumber}`;
-        const adminPhone = "584248068515";
-        const groupId = process.env.NOTIFICATIONS_GROUP_ID;
+        } else if (interactiveId === "btn_colchones" || msgText === "COLCHONES") {
+          const responseMsg = "[Sistema] Envió beneficios genéricos y luego media de Colchones.";
+          await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [senderNumber, JSON.stringify({ role: 'assistant', content: responseMsg })]);
+          
+          await sendMediaFile(senderNumber, "video", "https://auto.practiiko.com/media/benef2.mp4");
+          await delay(2000);
+          await sendMediaFile(senderNumber, "audio", "https://auto.practiiko.com/media/voice_beneficios.ogg");
+          await delay(2000);
+          await sendMediaFile(senderNumber, "video", "https://auto.practiiko.com/media/video_colchones.mp4");
+          await delay(2000);
+          await sendMediaFile(senderNumber, "audio", "https://auto.practiiko.com/media/voice_colchones.mp3");
+          return NextResponse.json({ status: "funnel_ruta_a_colchones" });
 
-        try {
-          await sendWhatsAppMessage(adminPhone, notifyText);
-          if (groupId) {
-            await sendWhatsAppMessage(groupId, notifyText);
-          }
-        } catch (e) {
-          console.error("Error notificando respuesta a seguimiento WA:", e);
+        } else if (interactiveId === "btn_velas" || msgText === "VELAS PERLADAS") {
+          const responseMsg = "[Sistema] Envió beneficios genéricos y luego Carrusel de Velas Perladas.";
+          await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [senderNumber, JSON.stringify({ role: 'assistant', content: responseMsg })]);
+          
+          await sendMediaFile(senderNumber, "video", "https://auto.practiiko.com/media/benef2.mp4");
+          await delay(2000);
+          await sendMediaFile(senderNumber, "audio", "https://auto.practiiko.com/media/voice_beneficios.ogg");
+          await delay(2000);
+          await sendTemplate(senderNumber, "carrusel_velas_a");
+          return NextResponse.json({ status: "funnel_ruta_b" });
+        } else if (interactiveId === "btn_ver_colores") {
+          // Fase 3 - Ruta B (Profundización): Carrusel B
+          const responseMsg = "[Sistema] Envió Carrusel B de Velas (Colores).";
+          await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [senderNumber, JSON.stringify({ role: 'assistant', content: responseMsg })]);
+          
+          await sendTemplate(senderNumber, "carrusel_velas_b");
+          return NextResponse.json({ status: "funnel_ruta_b_colores" });
         }
-
-        return NextResponse.json({ status: "followup_replied_takeover" });
       }
+
+      // B) EVALUAR INTERCEPTACIÓN DE PRIMER CONTACTO (FASE 2)
+      // Cargamos el historial corto para saber si es el primer mensaje de la sesión actual
+      const historyRes = await query(`SELECT message FROM whatsapp_messages WHERE session_id = $1 ORDER BY created_at DESC LIMIT 6`, [senderNumber]);
+      const mNorm = userMessage.toLowerCase().trim();
+      let isFirstContact = false;
+      
+      // Si el cliente dice hola y no hay historial o el historial reciente no tiene mensajes del bot
+      if (mNorm.includes("hola") || mNorm.includes("buen") || mNorm.includes("menu")) {
+        const hasAssistantMsg = historyRes.rows.some(r => {
+          try {
+            const msg = typeof r.message === 'string' ? JSON.parse(r.message) : r.message;
+            return msg && msg.role === 'assistant';
+          } catch(e) { return false; }
+        });
+        if (!hasAssistantMsg || mNorm === "menu") isFirstContact = true;
+      }
+
+      if (isFirstContact) {
+        await delay(1500); // Retraso simulado
+        
+        await sendTemplate(senderNumber, "welcome");
+        
+        await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [senderNumber, JSON.stringify({ role: 'assistant', content: "[Sistema] Plantilla 'welcome' enviada." })]);
+        return NextResponse.json({ status: "funnel_fase2_template" });
+      }
+
+      // ==========================================
+      // FIN DEL FUNNEL. SI EL MENSAJE NO ENCAJÓ EN NADA DE ARRIBA, VA A DEEPSEEK (FALLBACK)
+      // ==========================================
 
       const protocol = req.headers.get("x-forwarded-proto") || "https";
       const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "auto.practiiko.com";
       let baseUrl = `${protocol}://${host}`;
-      if (baseUrl.includes("localhost") || baseUrl.includes("practiiko_app") || baseUrl.includes("127.0.0.1") || baseUrl.includes("::1")) {
-        baseUrl = "https://auto.practiiko.com";
-      }
+      if (baseUrl.includes("localhost") || baseUrl.includes("practiiko_app")) baseUrl = "https://auto.practiiko.com";
 
-      // 6. Procesar con IA y responder (con debounce de 5 segundos)
+      // Procesar con IA y responder (con debounce de 5 segundos)
       let debounceState = whatsappDebounceMap.get(senderNumber);
       if (debounceState) {
         clearTimeout(debounceState.timer);
@@ -242,16 +337,13 @@ export async function POST(req) {
 
       debounceState.timer = setTimeout(async () => {
         whatsappDebounceMap.delete(senderNumber);
-        
         const combinedMessage = debounceState.messages.join(" ").trim();
         
         try {
           const aiResponse = await processWhatsappMessage(combinedMessage, senderNumber, debounceState.pushName, debounceState.baseUrl);
-          
           if (aiResponse.ignored) return;
 
           await sendWhatsAppMessage(senderNumber, aiResponse.text);
-          
           if (aiResponse.imageUrls && aiResponse.imageUrls.length > 0) {
             for (const imgUrl of aiResponse.imageUrls) {
               await sendWhatsAppImage(senderNumber, imgUrl);
@@ -262,25 +354,15 @@ export async function POST(req) {
         }
       }, 5000);
       
-    } else if (body.type === "whatsapp.message.echo" || (body.whatsappInboundMessage && body.whatsappInboundMessage.data && body.whatsappInboundMessage.data.type === "smb_message_echoes")) {
-      // Intentamos atrapar los ecos de coexistencia si Ycloud los retransmite.
-      // YCloud docs dicen que los ecos usualmente caen como un webhook distinto si los habilitas
-      console.log(`[WHATSAPP COEXISTENCIA YCLOUD] Echo capturado. Pausando bot.`);
+    } else if (body.type === "whatsapp.message.echo" || (body.whatsappInboundMessage?.data?.type === "smb_message_echoes")) {
       const wim = body.whatsappInboundMessage || body.message;
       if (wim && wim.to) {
-        const customerNumber = wim.to; // En echo el destinatario es el cliente
-        await query(
-          `INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`,
-          [customerNumber, JSON.stringify({ role: 'assistant', content: "[Asesor intervino desde App Móvil (YCloud)]", manual: true })]
-        );
-        await query(
-          `UPDATE whatsapp_customers SET ai_enabled = false WHERE id = $1`,
-          [customerNumber]
-        );
+        const customerNumber = wim.to.replace('+', '');
+        await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [customerNumber, JSON.stringify({ role: 'assistant', content: "[Asesor intervino desde App Móvil (YCloud)]", manual: true })]);
+        await query(`UPDATE whatsapp_customers SET ai_enabled = false WHERE id = $1`, [customerNumber]);
       }
     }
 
-    // YCloud exige retornar 200 inmediatamente.
     return NextResponse.json({ status: "success" });
   } catch (error) {
     console.error("[WHATSAPP YCLOUD WEBHOOK ERROR]:", error);
