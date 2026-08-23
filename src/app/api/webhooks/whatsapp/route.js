@@ -150,7 +150,7 @@ async function sendTemplate(to, templateName) {
       type: "template",
       template: {
         name: templateName,
-        language: { code: "es_ES" } // <-- A veces Meta exige el locale completo (es_ES o es_LA)
+        language: { code: "es" } // Ojo: Meta es estricto con el idioma. Si creaste en "es", esto debe ser "es"
       }
     };
     
