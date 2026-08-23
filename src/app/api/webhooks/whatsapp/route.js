@@ -266,7 +266,18 @@ export async function POST(req) {
           await delay(2000);
           await sendMediaFile(senderNumber, "audio", "https://auto.practiiko.com/media/voice_beneficios.ogg");
           await delay(2000);
-          await sendTemplate(senderNumber, "template_marketing_20260822212224");
+          const headerComponent = [
+            {
+              type: "header",
+              parameters: [
+                {
+                  type: "image",
+                  image: { link: "https://dummyimage.com/600x400/000/fff.png" } // Imagen de prueba
+                }
+              ]
+            }
+          ];
+          await sendTemplate(senderNumber, "template_marketing_20260822212224", headerComponent);
           return NextResponse.json({ status: "funnel_ruta_a_sofas" });
 
         } else if (interactiveId === "btn_colchones" || msgText === "COLCHONES") {
