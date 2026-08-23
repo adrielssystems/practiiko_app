@@ -203,6 +203,10 @@ export async function POST(req) {
       
       if (messageData.type === "text") {
         userMessage = messageData.text?.body || "";
+      } else if (messageData.type === "button") {
+        // Botones de respuesta rápida de una Plantilla de Meta
+        userMessage = messageData.button?.text || "";
+        interactiveId = messageData.button?.payload || null;
       } else if (messageData.type === "interactive") {
         if (messageData.interactive?.type === "button_reply") {
           userMessage = messageData.interactive.button_reply.title;
