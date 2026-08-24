@@ -243,6 +243,17 @@
 - **Ampliación de Límite de Peticiones HTTP en Subida de Videos:** Se configuró `experimental.proxyClientMaxBodySize: '250mb'` en `next.config.mjs`. Esto resolvió la advertencia y el truncamiento a 10MB que aplicaba Next.js App Router en `/api/products/upload`, permitiendo subir archivos de video pesados por completo.
 - **Corrección de Sintaxis de Build para Turbopack:** Se corrigió un error tipográfico de comillas (`"type": "web_url"`) en la definición del objeto de la plantilla de Instagram en `route.js`, garantizando la compilación limpia del proyecto en Docker/Easypanel.
 
+## Tareas Realizadas (22-23 de Agosto de 2026)
+
+### 1. Resolución de Bloqueo de Imágenes en Plantillas de Meta (Cloud API)
+- **Diagnóstico del Problema:** Se identificó que las plantillas de WhatsApp con imágenes en la cabecera (header) eran rechazadas por Meta. La causa raíz fue que el servidor Next.js en modo `standalone` sobre Easypanel no estaba sirviendo la carpeta estática `/public` correctamente, devolviendo la plantilla HTML principal en su lugar, lo cual rompía el formato esperado por el crawler de Meta (`facebookexternalhit`).
+- **Implementación de API Media Interna:** Para forzar la entrega correcta del archivo a Meta, se movió `logo-practiiko.jpeg` a `public/uploads/products/` y se modificó el webhook (`route.js`) para que las plantillas consuman las imágenes a través de la API local (`/api/media/logo-practiiko.jpeg`), la cual lee el archivo con `fs` y garantiza la cabecera `Content-Type: image/jpeg`.
+- **Intento de Subida a YCloud:** Previamente, se diseñó un script temporal seguro en Node.js (`uploadMedia.mjs`) que utilizaba la interfaz `readline` de la consola para obtener dinámicamente un `media_id` de YCloud sin exponer llaves privadas, como plan de contingencia (el cual se descartó en favor de usar nuestro propio dominio).
+
+### 2. Captura de Botones de Respuesta Rápida en Webhook
+- **Interceptación de Payload (`type === "button"`):** Se parcheó la lógica del enrutador en `src/app/api/webhooks/whatsapp/route.js` para extraer correctamente las interacciones con botones nativos de plantillas de WhatsApp (ej. botón "SOFÁS").
+- **Flujo Aislado:** Se diferenció la gestión de botones para interceptar los clics predefinidos *antes* de que ingresen al flujo conversacional del modelo LLM (DeepSeek), activando de manera correcta el embudo de ventas para esa categoría (videos y templates posteriores).
+
 ## Planificación en Espera (Pendiente de Aprobación Comercial)
 
 ### Migración a API Oficial de WhatsApp (Cloud API - Modo Coexistencia)
