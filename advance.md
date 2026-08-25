@@ -254,6 +254,23 @@
 - **Interceptación de Payload (`type === "button"`):** Se parcheó la lógica del enrutador en `src/app/api/webhooks/whatsapp/route.js` para extraer correctamente las interacciones con botones nativos de plantillas de WhatsApp (ej. botón "SOFÁS").
 - **Flujo Aislado:** Se diferenció la gestión de botones para interceptar los clics predefinidos *antes* de que ingresen al flujo conversacional del modelo LLM (DeepSeek), activando de manera correcta el embudo de ventas para esa categoría (videos y templates posteriores).
 
+## Tareas Realizadas (24-25 de Agosto de 2026)
+
+### 1. Embudo Interactivo de WhatsApp con Meta / YCloud Cloud API
+- **Entrega de Plantilla de Bienvenida (`welcome`):** Se resolvió el bloqueo de imágenes en la cabecera sirviendo el logo con acceso directo y libre para el crawler de Meta (`https://www.practiiko.com/logo-p.jpeg`). Se eliminó el menú interactivo redundante para que solo se despache la plantilla oficial.
+- **Soporte de Plantillas Carrusel Multimedia:** Se estructuró el payload de la API de Meta (`type: "carousel"` con array de `cards` e `image`) para la plantilla `template_marketing_20260822212224` (2 tarjetas interactivas de Sofás), validada exitosamente por Meta.
+- **Secuencia Automatizada Multimedia:** Al seleccionar una categoría (ej: "SOFÁS"), el sistema ejecuta la secuencia: Video de beneficios (`benef2.mp4`) ➡️ Nota de voz de beneficios (`voice_beneficios.ogg`) ➡️ Plantilla Carrusel de productos.
+- **Soporte de Audio y Video en la API de Medios (`/api/media/[...path]`):** Se agregaron los tipos MIME necesarios (`audio/ogg; codecs=opus`, `audio/mpeg`, `audio/mp4`, `video/mp4`) y la búsqueda transparente en `public/media/` para que los reproductores nativos de WhatsApp procesen las notas de voz y videos sin autenticación.
+
+### 2. Inyección de Promoción "Renovación de Inventario (45 Días)" en el Motor de IA
+- **Conocimiento de Promoción en System Prompts (`src/lib/ai/prompts.js`):**
+  - **Descuentos y Plazos:** Se incorporó la información de liquidación de inventario ante la llegada de la nueva colección en 45 días (20%, 30% y hasta 40% de descuento).
+  - **Condiciones Cashea:** Se integró la tabla de iniciales según nivel (Nivel 6: 0% inicial | Nivel 5: 10% | Nivel 4: 20% | Nivel 3: 30% | Nivel 2: 40% | Nivel 1: 50%) y financiamiento en hasta 6 cuotas sin interés.
+  - **Obsequio:** Set de perlas de velas aromáticas de regalo por compra.
+- **Direccionamiento Estratégico a Asesor Humano / Llamada:**
+  - **En Instagram:** La IA invita proactivamente a continuar por el WhatsApp Oficial de Ventas (`https://wa.me/584248948664`) para que un asesor humano lo atienda por llamada o chat directo y le reserve su modelo con descuento y regalo.
+  - **En WhatsApp:** Cuando el cliente manifiesta intención de compra, consulta por cuotas Cashea o pide aprovechar la promoción, la IA lo conecta con el asesor de ventas mediante el token `[TRANSFER]` para coordinar la llamada y el cierre de la venta.
+
 ## Planificación en Espera (Pendiente de Aprobación Comercial)
 
 ### Migración a API Oficial de WhatsApp (Cloud API - Modo Coexistencia)
