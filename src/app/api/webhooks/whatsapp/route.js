@@ -262,11 +262,42 @@ export async function POST(req) {
           const responseMsg = "[Sistema] Envió beneficios genéricos y luego plantilla: template_marketing_20260822212224";
           await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [senderNumber, JSON.stringify({ role: 'assistant', content: responseMsg })]);
           
-          await sendMediaFile(senderNumber, "video", "https://auto.practiiko.com/media/benef2.mp4");
-          await delay(2000);
-          await sendMediaFile(senderNumber, "audio", "https://auto.practiiko.com/media/voice_beneficios.ogg");
-          await delay(2000);
-          await sendTemplate(senderNumber, "template_marketing_20260822212224");
+          const carouselComponents = [
+            {
+              type: "carousel",
+              cards: [
+                {
+                  card_index: 0,
+                  components: [
+                    {
+                      type: "header",
+                      parameters: [
+                        {
+                          type: "image",
+                          image: { link: "https://www.practiiko.com/logo-p.jpeg" }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  card_index: 1,
+                  components: [
+                    {
+                      type: "header",
+                      parameters: [
+                        {
+                          type: "image",
+                          image: { link: "https://www.practiiko.com/logo-p.jpeg" }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ];
+          await sendTemplate(senderNumber, "template_marketing_20260822212224", carouselComponents);
           return NextResponse.json({ status: "funnel_ruta_a_sofas" });
 
         } else if (interactiveId === "btn_colchones" || msgText === "COLCHONES") {
