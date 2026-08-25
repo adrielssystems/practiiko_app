@@ -272,7 +272,7 @@ export async function POST(req) {
               parameters: [
                 {
                   type: "image",
-                  image: { link: "https://auto.practiiko.com/api/media/logo-practiiko.jpeg" } // Cambiar a la foto del sofá cuando la tengamos
+                  image: { link: "https://www.practiiko.com/logo-p.jpeg" } // Logo público en la web - siempre accesible por Meta
                 }
               ]
             }
@@ -341,15 +341,17 @@ export async function POST(req) {
             parameters: [
               {
                 type: "image",
-                image: { link: "https://auto.practiiko.com/api/media/logo-practiiko.jpeg" }
+                image: { link: "https://www.practiiko.com/logo-p.jpeg" } // Logo público en la web - siempre accesible por Meta
               }
             ]
           }
         ];
         
         await sendTemplate(senderNumber, "welcome", headerComponent);
+        await delay(2000); // Esperar a que la plantilla se entregue antes de enviar el menú
+        await sendInteractiveMenu(senderNumber);
         
-        await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [senderNumber, JSON.stringify({ role: 'assistant', content: "[Sistema] Plantilla 'welcome' enviada." })]);
+        await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [senderNumber, JSON.stringify({ role: 'assistant', content: "[Sistema] Plantilla 'welcome' + menú interactivo enviados." })]);
         return NextResponse.json({ status: "funnel_fase2_template" });
       }
 

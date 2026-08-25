@@ -1,27 +1,11 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(req) {
-  try {
-    const filePath = path.join(process.cwd(), 'public', 'logo-p.jpeg');
-    
-    if (!fs.existsSync(filePath)) {
-      return new NextResponse('File not found', { status: 404 });
-    }
-
-    const fileBuffer = await fs.promises.readFile(filePath);
-    
-    return new NextResponse(fileBuffer, {
-      status: 200,
-      headers: {
-        'Content-Type': 'image/jpeg',
-        'Cache-Control': 'no-cache',
-      },
-    });
-  } catch (error) {
-    return new NextResponse('Error', { status: 500 });
-  }
+// Redirige al logo canónico en la web pública de Practiiko.
+// Esto garantiza que el crawler de Meta/YCloud siempre pueda obtener la imagen
+// sin depender de volúmenes de Easypanel ni rutas internas de Docker.
+export async function GET() {
+  return NextResponse.redirect('https://www.practiiko.com/logo-p.jpeg', { status: 301 });
 }
+
