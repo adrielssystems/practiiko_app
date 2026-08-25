@@ -348,10 +348,8 @@ export async function POST(req) {
         ];
         
         await sendTemplate(senderNumber, "welcome", headerComponent);
-        await delay(2000); // Esperar a que la plantilla se entregue antes de enviar el menú
-        await sendInteractiveMenu(senderNumber);
         
-        await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [senderNumber, JSON.stringify({ role: 'assistant', content: "[Sistema] Plantilla 'welcome' + menú interactivo enviados." })]);
+        await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [senderNumber, JSON.stringify({ role: 'assistant', content: "[Sistema] Plantilla 'welcome' enviada." })]);
         return NextResponse.json({ status: "funnel_fase2_template" });
       }
 
