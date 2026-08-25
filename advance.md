@@ -271,6 +271,17 @@
   - **En Instagram:** La IA invita proactivamente a continuar por el WhatsApp Oficial de Ventas (`https://wa.me/584248948664`) para que un asesor humano lo atienda por llamada o chat directo y le reserve su modelo con descuento y regalo.
   - **En WhatsApp:** Cuando el cliente manifiesta intención de compra, consulta por cuotas Cashea o pide aprovechar la promoción, la IA lo conecta con el asesor de ventas mediante el token `[TRANSFER]` para coordinar la llamada y el cierre de la venta.
 
+### 3. Contexto Inteligente de Publicaciones en Instagram (DMs y Comentarios)
+- **Captura Automática de Publicación (`media_id` / `caption`):**
+  - Se implementó la función `getInstagramMediaCaption` conectada a Meta Graph API (`/v21.0/{media_id}?fields=caption`).
+  - **En DMs:** Si el cliente hace clic en "Enviar mensaje" desde un Reel, Post o Anuncio (`messaging.referral` o `reply_to.story`), el sistema descarga la descripción del post y se la inyecta a la IA.
+  - **En Comentarios:** Al comentar cualquier publicación, el webhook extrae el caption del post publicado.
+- **Respuesta Hiper-Personalizada:** Si el cliente solo escribe *"Precio"*, el bot ya no pregunta *"¿qué modelo busca?"*, sino que identifica el modelo directamente del post (ej: Sofá Merey o Colchón), busca su precio a tasa BCV y responde directamente sobre ese producto.
+
+### 4. Soporte Nativo de Audio MP3 y Comandos de Prueba Directos
+- **Migración a MP3 Universal:** Se reemplazó el archivo Vorbis `.ogg` por `voice_beneficios.mp3` para compatibilidad nativa con los reproductores de WhatsApp en iOS y Android.
+- **Comandos de Prueba:** Se habilitaron los comandos `TESTAUDIO` (o `AUDIO`) y `TESTVIDEO` (o `VIDEO`) para realizar auditorías inmediatas de entrega multimedia.
+
 ## Planificación en Espera (Pendiente de Aprobación Comercial)
 
 ### Migración a API Oficial de WhatsApp (Cloud API - Modo Coexistencia)
