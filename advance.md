@@ -259,10 +259,21 @@
 ### 1. Embudo Interactivo de WhatsApp con Meta / YCloud Cloud API
 - **Entrega de Plantilla de Bienvenida (`welcome`):** Se resolvió el bloqueo de imágenes en la cabecera sirviendo el logo con acceso directo y libre para el crawler de Meta (`https://www.practiiko.com/logo-p.jpeg`). Se eliminó el menú interactivo redundante para que solo se despache la plantilla oficial.
 - **Soporte de Plantillas Carrusel Multimedia:** Se estructuró el payload de la API de Meta (`type: "carousel"` con array de `cards` e `image`) para la plantilla `template_marketing_20260822212224` (2 tarjetas interactivas de Sofás), validada exitosamente por Meta.
-- **Secuencia Automatizada Multimedia:** Al seleccionar una categoría (ej: "SOFÁS"), el sistema ejecuta la secuencia: Video de beneficios (`benef2.mp4`) ➡️ Nota de voz de beneficios (`voice_beneficios.ogg`) ➡️ Plantilla Carrusel de productos.
-- **Soporte de Audio y Video en la API de Medios (`/api/media/[...path]`):** Se agregaron los tipos MIME necesarios (`audio/ogg; codecs=opus`, `audio/mpeg`, `audio/mp4`, `video/mp4`) y la búsqueda transparente en `public/media/` para que los reproductores nativos de WhatsApp procesen las notas de voz y videos sin autenticación.
+- **Secuencia Automatizada Multimedia:** Al seleccionar una categoría (ej: "SOFÁS"), el sistema ejecuta la secuencia: Video de beneficios (`benef2.mp4`) ➡️ Nota de voz de beneficios (`voice_beneficios.mp3`) ➡️ Plantilla Carrusel de productos.
+- **Soporte de Audio y Video en la API de Medios (`/api/media/[...path]`):** Se agregaron los tipos MIME necesarios (`audio/mpeg`, `audio/mp4`, `video/mp4`, `audio/ogg`) y la búsqueda transparente en `public/media/` para que los reproductores nativos de WhatsApp procesen las notas de voz y videos sin requerir autenticación.
 
-### 2. Inyección de Promoción "Renovación de Inventario (45 Días)" en el Motor de IA
+### 2. Corrección en la Expresión de Precios y Tasa BCV (Lenguaje Natural)
+- **Diagnóstico:** La IA estaba tratando "BCV" como si fuera el nombre literal de una moneda (*"Precio BCV es de $610.00"*).
+- **Solución Implementada (`prompts.js`, `whatsappAgent.js` y `instagramAgent.js`):**
+  - Se instruyó al motor que todos los precios base están fijados en **dólares ($)** y que "a tasa BCV" es la condición de pago oficial en bolívares.
+  - Se prohibió la sintaxis rígida *"Precio BCV"* y se estableció la redacción natural y elegante: **"Tiene un precio de $610 a tasa BCV"** o **"su precio es de $610 (a tasa oficial BCV)"**.
+  - Se actualizó la etiqueta inyectada al LLM de `- Precio BCV: $...` a `- Precio (a tasa BCV): $...`.
+
+### 3. Sanitización de Enlaces y Formato en DMs de Instagram y WhatsApp
+- **Limpieza de URLs:** Se implementó una regla regex en `instagramAgent.js` y `whatsappAgent.js` que remueve los puntos finales pegados a los enlaces (`https://wa.me/584248948664.` ➡️ `https://wa.me/584248948664`), evitando que los navegadores móviles rompan los hipervínculos.
+- **Limpieza de Markdown:** Se eliminaron marcas de formato crudo (`**` o `__`) en los DMs de Instagram para una lectura limpia.
+
+### 4. Inyección de Promoción "Renovación de Inventario (45 Días)" en el Motor de IA
 - **Conocimiento de Promoción en System Prompts (`src/lib/ai/prompts.js`):**
   - **Descuentos y Plazos:** Se incorporó la información de liquidación de inventario ante la llegada de la nueva colección en 45 días (20%, 30% y hasta 40% de descuento).
   - **Condiciones Cashea:** Se integró la tabla de iniciales según nivel (Nivel 6: 0% inicial | Nivel 5: 10% | Nivel 4: 20% | Nivel 3: 30% | Nivel 2: 40% | Nivel 1: 50%) y financiamiento en hasta 6 cuotas sin interés.
@@ -271,14 +282,14 @@
   - **En Instagram:** La IA invita proactivamente a continuar por el WhatsApp Oficial de Ventas (`https://wa.me/584248948664`) para que un asesor humano lo atienda por llamada o chat directo y le reserve su modelo con descuento y regalo.
   - **En WhatsApp:** Cuando el cliente manifiesta intención de compra, consulta por cuotas Cashea o pide aprovechar la promoción, la IA lo conecta con el asesor de ventas mediante el token `[TRANSFER]` para coordinar la llamada y el cierre de la venta.
 
-### 3. Contexto Inteligente de Publicaciones en Instagram (DMs y Comentarios)
+### 5. Contexto Inteligente de Publicaciones en Instagram (DMs y Comentarios)
 - **Captura Automática de Publicación (`media_id` / `caption`):**
   - Se implementó la función `getInstagramMediaCaption` conectada a Meta Graph API (`/v21.0/{media_id}?fields=caption`).
   - **En DMs:** Si el cliente hace clic en "Enviar mensaje" desde un Reel, Post o Anuncio (`messaging.referral` o `reply_to.story`), el sistema descarga la descripción del post y se la inyecta a la IA.
   - **En Comentarios:** Al comentar cualquier publicación, el webhook extrae el caption del post publicado.
 - **Respuesta Hiper-Personalizada:** Si el cliente solo escribe *"Precio"*, el bot ya no pregunta *"¿qué modelo busca?"*, sino que identifica el modelo directamente del post (ej: Sofá Merey o Colchón), busca su precio a tasa BCV y responde directamente sobre ese producto.
 
-### 4. Soporte Nativo de Audio MP3 y Comandos de Prueba Directos
+### 6. Soporte Nativo de Audio MP3 y Comandos de Prueba Directos
 - **Migración a MP3 Universal:** Se reemplazó el archivo Vorbis `.ogg` por `voice_beneficios.mp3` para compatibilidad nativa con los reproductores de WhatsApp en iOS y Android.
 - **Comandos de Prueba:** Se habilitaron los comandos `TESTAUDIO` (o `AUDIO`) y `TESTVIDEO` (o `VIDEO`) para realizar auditorías inmediatas de entrega multimedia.
 
