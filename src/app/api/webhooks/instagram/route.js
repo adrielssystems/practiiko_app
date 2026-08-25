@@ -23,6 +23,25 @@ export async function GET(req) {
   return new Response("Forbidden", { status: 403 });
 }
 
+async function getInstagramMediaCaption(mediaId) {
+  const PAGE_ACCESS_TOKEN = process.env.INSTAGRAM_PAGE_ACCESS_TOKEN?.trim();
+  if (!PAGE_ACCESS_TOKEN || !mediaId) return null;
+
+  try {
+    const url = `https://graph.instagram.com/v21.0/${mediaId}?fields=caption,media_type,permalink&access_token=${PAGE_ACCESS_TOKEN}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.error) {
+      console.warn("[FETCH MEDIA NOTICE]:", data.error.message);
+      return null;
+    }
+    return data.caption || null;
+  } catch (e) {
+    console.error("[FETCH MEDIA EXCEPTION]:", e);
+    return null;
+  }
+}
+
 // POST: Recepción de mensajes y comentarios de Instagram
 export async function POST(req) {
   try {
@@ -96,8 +115,19 @@ export async function POST(req) {
 
             const isImageAttachment = messaging.message?.attachments?.some(att => att.type === 'image');
 
-            if (messaging.message?.text || isImageAttachment) {
+            if (messaging.message?.text || isImageAttachment || messaging.referral) {
               let userMessage = messaging.message?.text || "";
+
+              // Detectar si el DM proviene de un post, reel, anuncio o historia
+              let postContext = null;
+              const referralMediaId = messaging.referral?.target_id || messaging.referral?.post_id || messaging.message?.reply_to?.story?.id;
+              if (referralMediaId) {
+                const caption = await getInstagramMediaCaption(referralMediaId);
+                if (caption) {
+                  postContext = caption;
+                  console.log(`[INSTAGRAM DM REFERRAL] Contexto de publicación detectado (${referralMediaId}): "${caption.slice(0, 80)}..."`);
+                }
+              }
 
               if (isImageAttachment) {
                 const mNorm = userMessage.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -207,11 +237,15 @@ export async function POST(req) {
                 debounceState.messages.push(userMessage);
                 debounceState.customerName = customerName;
                 debounceState.baseUrl = baseUrl;
+                if (postContext && !debounceState.postContext) {
+                  debounceState.postContext = postContext;
+                }
               } else {
                 debounceState = {
                   messages: [userMessage],
                   customerName,
                   baseUrl,
+                  postContext,
                   timer: null
                 };
                 instagramDebounceMap.set(senderId, debounceState);
@@ -224,7 +258,7 @@ export async function POST(req) {
                 console.log(`[INSTAGRAM DM DEBOUNCE] Procesando mensajes combinados para ${senderId} ("${debounceState.customerName}"): "${combinedMessage}"`);
 
                 try {
-                  const aiResponse = await processInstagramMessage(combinedMessage, senderId, debounceState.customerName, debounceState.baseUrl, 'dm', null);
+                  const aiResponse = await processInstagramMessage(combinedMessage, senderId, debounceState.customerName, debounceState.baseUrl, 'dm', null, debounceState.postContext);
                   
                   if (aiResponse.ignored) {
                     console.log(`[INSTAGRAM DM DEBOUNCE] Respuesta de IA ignorada (bot pausado) para ${senderId}.`);
@@ -254,6 +288,7 @@ export async function POST(req) {
             if (change.field === "comments") {
               const commentId = change.value.id;
               const senderId = change.value.from?.id;
+              const mediaId = change.value.media?.id;
 
               // FILTRO CRÍTICO: Solo procesar cuando se AGREGAN nuevos comentarios (evita responder a likes, reacciones, ediciones o eliminaciones)
               if (change.value.verb && change.value.verb !== "add") {
@@ -270,7 +305,16 @@ export async function POST(req) {
               const userMessage = change.value.text;
               const username = change.value.from?.username;
 
-              console.log(`[INSTAGRAM COMMENT] Nuevo de @${username} en ${commentId}: ${userMessage}`);
+              console.log(`[INSTAGRAM COMMENT] Nuevo de @${username} en ${commentId} (Media: ${mediaId || 'N/A'}): ${userMessage}`);
+
+              // Obtener el caption de la publicación comentada para darle contexto al bot
+              let postContext = null;
+              if (mediaId) {
+                postContext = await getInstagramMediaCaption(mediaId);
+                if (postContext) {
+                  console.log(`[INSTAGRAM COMMENT MEDIA] Contexto del post detectado: "${postContext.slice(0, 80)}..."`);
+                }
+              }
 
               // Guardar cliente
               await query(
@@ -308,7 +352,7 @@ export async function POST(req) {
                 return NextResponse.json({ status: "bot_paused" });
               }
 
-              processInstagramMessage(userMessage, senderId, username || 'Cliente', baseUrl, 'comment', commentId).then(async (aiResponse) => {
+              processInstagramMessage(userMessage, senderId, username || 'Cliente', baseUrl, 'comment', commentId, postContext).then(async (aiResponse) => {
                 if (aiResponse.text) {
                   // 1. Responder públicamente al comentario con la frase aleatoria elegida
                   await replyToInstagramComment(commentId, aiResponse.text);

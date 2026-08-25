@@ -263,7 +263,7 @@ async function getInventory(terms, currentIntent) {
   }
 }
 
-async function buildResponse(message, customerName, inventory, historyMessages, dynamicKnowledge = "", isFallback = false, isGeneralPriceQuery = false, source = "instagram") {
+async function buildResponse(message, customerName, inventory, historyMessages, dynamicKnowledge = "", isFallback = false, isGeneralPriceQuery = false, source = "instagram", postContext = null) {
   const prompt = getInstagramPrompt(inventory.text, dynamicKnowledge, isFallback);
 
   try {
@@ -291,10 +291,19 @@ async function buildResponse(message, customerName, inventory, historyMessages, 
       ...historyMessages
     ];
 
-    if (source === 'comment' || isGeneralPriceQuery) {
+    if (postContext) {
+      finalMessages.push(new SystemMessage(
+        `CONTEXTO DE PUBLICACIÓN DE INSTAGRAM (CRÍTICO):\n` +
+        `El cliente está escribiendo en respuesta a una publicación específica de nuestra cuenta de Instagram.\n` +
+        `Texto / Descripción de la publicación:\n"${postContext}"\n\n` +
+        `INSTRUCCIÓN: Utiliza este contexto para identificar de inmediato cuál producto o categoría está consultando el cliente (por ejemplo, si el post habla de un Sofá Cama, Colchón o Sofá específico), y respóndele directamente sobre ese modelo con su precio a tasa BCV y detalles sin pedirle que nombre el modelo.`
+      ));
+    }
+
+    if ((source === 'comment' || isGeneralPriceQuery) && !postContext) {
       finalMessages.push(new SystemMessage(
         "REGLA DE COMENTARIOS / CONSULTA GENERAL DE PRECIO (INSTAGRAM):\n" +
-        "El cliente ha escrito un comentario o solicita precio sin nombrar un modelo específico.\n" +
+        "El cliente ha escrito un comentario o solicita precio sin nombrar un modelo específico y sin contexto de post.\n" +
         "1. Queda TERMINANTEMENTE PROHIBIDO pedirle al cliente que te indique el nombre o modelo del producto (el cliente no conoce los nombres).\n" +
         "2. Dale una bienvenida cordial y atenta.\n" +
         "3. Envíale OBLIGATORIAMENTE el enlace al catálogo web oficial: https://www.practiiko.com/catalogo\n" +
@@ -378,7 +387,7 @@ async function notifyAdvisorsOfInstagramTransfer(sessionId, customerName, messag
   }
 }
 
-export async function processInstagramMessage(message, sessionId, customerName = "Cliente", baseUrl = "", source = "instagram", commentId = null) {
+export async function processInstagramMessage(message, sessionId, customerName = "Cliente", baseUrl = "", source = "instagram", commentId = null, postContext = null) {
   try {
     // 1. Verificar si el bot está pausado para este cliente
     const customerRes = await query("SELECT ai_enabled FROM instagram_customers WHERE id = $1", [sessionId]);
@@ -433,7 +442,7 @@ export async function processInstagramMessage(message, sessionId, customerName =
 
     // Si detectamos saludo ("hola", "buenas"), solo enviamos el mensaje duro de bienvenida si NO hay historial de chat previo.
     // Si ya hay conversación, dejamos que la IA responda de forma natural y respetuosa.
-    if (intent === "GREETING" && !hasChatHistory) {
+    if (intent === "GREETING" && !hasChatHistory && !postContext) {
       const greetingResponse = `¡Con gusto le ayudo! ⭐\n📖 Mire nuestra coleccion completa y precios en el siguiente enlace para guiarlo mejor por su espacio🛋️🛏️\n\n👉 https://www.practiiko.com/catalogo 👈`;
 
       if (source === 'dm') {
@@ -586,7 +595,6 @@ export async function processInstagramMessage(message, sessionId, customerName =
 
     // 3. Manejo de HUMAN_REQUEST y AD_OR_NEW_MODEL_QUERY (Fast Path) - Instagram
     // Solo para solicitudes EXPLICITAS de atención humana en este mismo chat o consultas de publicidad/preventas.
-    // NO se envían notificaciones al grupo de WhatsApp — el bot ya redirige a WA por su propia cuenta.
     if (currentIntent === "HUMAN_REQUEST" || currentIntent === "AD_OR_NEW_MODEL_QUERY") {
       let response = "Con mucho gusto. Le atiendo por este mismo chat en breve. Uno de nuestros asesores se comunicará con usted aquí.";
       if (currentIntent === "AD_OR_NEW_MODEL_QUERY") {
@@ -596,7 +604,6 @@ export async function processInstagramMessage(message, sessionId, customerName =
       const motivo = currentIntent === "AD_OR_NEW_MODEL_QUERY" ? "📢 CONSULTA PUBLICIDAD/PREVENTA (INSTAGRAM)" : "🚨 SOLICITUD HUMANA (INSTAGRAM)";
       await notifyAdvisorsOfInstagramTransfer(sessionId, customerName, message, motivo, baseUrl);
 
-      // Solo marcamos en DB para el panel de monitoreo interno
       try {
         await query("UPDATE instagram_customers SET ai_enabled = false, requires_human = true WHERE id = $1", [sessionId]);
       } catch(e) {
@@ -609,7 +616,7 @@ export async function processInstagramMessage(message, sessionId, customerName =
       return { text: response, imageUrls: [] };
     }
 
-    // 4. Buscar Inventario (con soporte de referencias contextuales)
+    // 4. Buscar Inventario (con soporte de referencias contextuales y postContext)
     const isContextRef = detectContextReference(message);
     let terms;
     if (isContextRef) {
@@ -618,6 +625,16 @@ export async function processInstagramMessage(message, sessionId, customerName =
     } else {
       terms = extractKeywords(message);
     }
+
+    // Si el mensaje viene de un post/anuncio específico, enriquecer los términos de búsqueda con el postContext
+    if (postContext && (!terms || terms.length === 0)) {
+      const postTerms = extractKeywords(postContext);
+      if (postTerms && postTerms.length > 0) {
+        terms = postTerms;
+        console.log(`[INSTAGRAM AGENT] Keywords deducidos del postContext:`, terms);
+      }
+    }
+
     const inventory = await getInventory(terms, currentIntent);
 
     // 5. Cargar instrucciones personalizadas
@@ -632,8 +649,8 @@ export async function processInstagramMessage(message, sessionId, customerName =
     }
 
     // 6. Invocar LLM
-    const isGeneralPriceQuery = intent === "PRICE_INFO" && (!terms || terms.length === 0);
-    const rawResponse = await buildResponse(message, customerName, inventory, historyMessages, dynamicKnowledge, inventory.isFallback, isGeneralPriceQuery, source);
+    const isGeneralPriceQuery = intent === "PRICE_INFO" && (!terms || terms.length === 0) && !postContext;
+    const rawResponse = await buildResponse(message, customerName, inventory, historyMessages, dynamicKnowledge, inventory.isFallback, isGeneralPriceQuery, source, postContext);
 
     console.log(`[DEBUG INSTAGRAM LLM RAW]\n${rawResponse}\n[DEBUG INSTAGRAM LLM RAW END]`);
 
