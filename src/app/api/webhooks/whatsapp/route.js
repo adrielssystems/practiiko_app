@@ -267,9 +267,9 @@ export async function POST(req) {
         
         // 🧪 COMANDOS DE PRUEBA DIRECTOS
         if (msgText === "TESTAUDIO" || msgText === "AUDIO") {
-          console.log(`[TEST] Enviando audio de prueba voice_beneficios.ogg a ${senderNumber}`);
-          const res = await sendMediaFile(senderNumber, "audio", "https://auto.practiiko.com/api/media/voice_beneficios.ogg");
-          await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [senderNumber, JSON.stringify({ role: 'assistant', content: "[Sistema] Audio de prueba 'voice_beneficios.ogg' enviado." })]);
+          console.log(`[TEST] Enviando audio de prueba voice_beneficios.mp3 a ${senderNumber}`);
+          const res = await sendMediaFile(senderNumber, "audio", "https://auto.practiiko.com/api/media/voice_beneficios.mp3");
+          await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [senderNumber, JSON.stringify({ role: 'assistant', content: "[Sistema] Audio de prueba 'voice_beneficios.mp3' enviado." })]);
           return NextResponse.json({ status: "test_audio_sent", result: res });
         }
 
@@ -286,7 +286,7 @@ export async function POST(req) {
           
           await sendMediaFile(senderNumber, "video", "https://auto.practiiko.com/api/media/benef2.mp4");
           await delay(2500);
-          await sendMediaFile(senderNumber, "audio", "https://auto.practiiko.com/api/media/voice_beneficios.ogg");
+          await sendMediaFile(senderNumber, "audio", "https://auto.practiiko.com/api/media/voice_beneficios.mp3");
           await delay(2500);
 
           const carouselComponents = [
@@ -331,22 +331,22 @@ export async function POST(req) {
           const responseMsg = "[Sistema] Envió beneficios genéricos y luego media de Colchones.";
           await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [senderNumber, JSON.stringify({ role: 'assistant', content: responseMsg })]);
           
-          await sendMediaFile(senderNumber, "video", "https://auto.practiiko.com/media/benef2.mp4");
+          await sendMediaFile(senderNumber, "video", "https://auto.practiiko.com/api/media/benef2.mp4");
           await delay(2000);
-          await sendMediaFile(senderNumber, "audio", "https://auto.practiiko.com/media/voice_beneficios.ogg");
+          await sendMediaFile(senderNumber, "audio", "https://auto.practiiko.com/api/media/voice_beneficios.mp3");
           await delay(2000);
-          await sendMediaFile(senderNumber, "video", "https://auto.practiiko.com/media/video_colchones.mp4");
+          await sendMediaFile(senderNumber, "video", "https://auto.practiiko.com/api/media/video_colchones.mp4");
           await delay(2000);
-          await sendMediaFile(senderNumber, "audio", "https://auto.practiiko.com/media/voice_colchones.mp3");
+          await sendMediaFile(senderNumber, "audio", "https://auto.practiiko.com/api/media/voice_colchones.mp3");
           return NextResponse.json({ status: "funnel_ruta_a_colchones" });
 
         } else if (interactiveId === "btn_velas" || msgText === "VELAS PERLADAS") {
           const responseMsg = "[Sistema] Envió beneficios genéricos y luego Carrusel de Velas Perladas.";
           await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [senderNumber, JSON.stringify({ role: 'assistant', content: responseMsg })]);
           
-          await sendMediaFile(senderNumber, "video", "https://auto.practiiko.com/media/benef2.mp4");
+          await sendMediaFile(senderNumber, "video", "https://auto.practiiko.com/api/media/benef2.mp4");
           await delay(2000);
-          await sendMediaFile(senderNumber, "audio", "https://auto.practiiko.com/media/voice_beneficios.ogg");
+          await sendMediaFile(senderNumber, "audio", "https://auto.practiiko.com/api/media/voice_beneficios.mp3");
           await delay(2000);
           await sendTemplate(senderNumber, "carrusel_velas_a");
           return NextResponse.json({ status: "funnel_ruta_b" });
