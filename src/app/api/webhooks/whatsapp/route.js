@@ -119,9 +119,9 @@ async function sendMediaFile(to, type, mediaUrl) {
       from: phoneId,
       to: to,
       type: type,
+      [type]: { link: mediaUrl }
     };
     
-    // YCloud/Meta docs: the key name is the same as the type ('video' or 'audio')
     console.log(`[YCLOUD DEBUG] Enviando ${type.toUpperCase()} a ${to}. Payload:`, JSON.stringify(payload));
 
     const response = await fetch(`https://api.ycloud.com/v2/whatsapp/messages/sendDirectly`, {
