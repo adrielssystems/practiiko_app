@@ -122,15 +122,22 @@ async function sendMediaFile(to, type, mediaUrl) {
     };
     
     // YCloud/Meta docs: the key name is the same as the type ('video' or 'audio')
-    payload[type] = { link: mediaUrl };
+    console.log(`[YCLOUD DEBUG] Enviando ${type.toUpperCase()} a ${to}. Payload:`, JSON.stringify(payload));
 
-    await fetch(`https://api.ycloud.com/v2/whatsapp/messages/sendDirectly`, {
+    const response = await fetch(`https://api.ycloud.com/v2/whatsapp/messages/sendDirectly`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-API-Key': token },
       body: JSON.stringify(payload)
     });
+    
+    const data = await response.json();
+    console.log(`[YCLOUD DEBUG] Respuesta de YCloud para ${type.toUpperCase()}:`, JSON.stringify(data));
+    if (data.errorCode || !response.ok) {
+      console.error(`[WHATSAPP ${type.toUpperCase()} ERROR]:`, data);
+    }
+    return data;
   } catch (error) {
-    console.error(`[WHATSAPP ${type.toUpperCase()} ERROR]:`, error);
+    console.error(`[WHATSAPP ${type.toUpperCase()} EXCEPTION]:`, error);
   }
 }
 
@@ -259,9 +266,14 @@ export async function POST(req) {
         const msgText = userMessage.toUpperCase();
         
         if (interactiveId === "btn_sofas" || msgText === "SOFÁS" || msgText === "SOFAS") {
-          const responseMsg = "[Sistema] Envió beneficios genéricos y luego plantilla: template_marketing_20260822212224";
+          const responseMsg = "[Sistema] Envió beneficios genéricos y luego plantilla carrusel de Sofás.";
           await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [senderNumber, JSON.stringify({ role: 'assistant', content: responseMsg })]);
           
+          await sendMediaFile(senderNumber, "video", "https://auto.practiiko.com/api/media/benef2.mp4");
+          await delay(2500);
+          await sendMediaFile(senderNumber, "audio", "https://auto.practiiko.com/api/media/voice_beneficios.ogg");
+          await delay(2500);
+
           const carouselComponents = [
             {
               type: "carousel",

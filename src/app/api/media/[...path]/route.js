@@ -6,7 +6,19 @@ import sharp from 'sharp';
 export async function GET(req, { params }) {
   try {
     const { path: pathArray } = await params;
-    const filePath = path.join(process.cwd(), 'public', 'uploads', 'products', ...pathArray);
+    let filePath = path.join(process.cwd(), 'public', 'uploads', 'products', ...pathArray);
+    
+    // Si no existe en public/uploads/products, buscar en public/media o public
+    if (!fs.existsSync(filePath)) {
+      const mediaPath = path.join(process.cwd(), 'public', 'media', ...pathArray);
+      const publicPath = path.join(process.cwd(), 'public', ...pathArray);
+      if (fs.existsSync(mediaPath)) {
+        filePath = mediaPath;
+      } else if (fs.existsSync(publicPath)) {
+        filePath = publicPath;
+      }
+    }
+
     const ext = path.extname(filePath).toLowerCase();
 
     // Si se pide una imagen JPEG/JPG pero el archivo físico no existe (y sí existe en WebP)
