@@ -679,6 +679,13 @@ export async function processInstagramMessage(message, sessionId, customerName =
         .trim();
     }
 
+    // Sanitizar enlaces de WhatsApp para evitar puntos finales pegados que rompen la URL en móviles
+    cleanResponse = cleanResponse
+      .replace(/(https:\/\/wa\.me\/[0-9]+)\.+/gi, "$1")
+      .replace(/(https:\/\/[^\s]+\.com\/[^\s]*)\.+(\s|$)/gi, "$1$2")
+      .replace(/(\*\*|__)/g, "") // Eliminar formato markdown bold residual que en IG DMs puede verse crudo
+      .trim();
+
     // Fallback de extracción de imágenes
     if (imageUrls.length === 0 && inventory.found && inventory.rows) {
       const textHistory = historyMessages.map(m => m.content || "").join(" ");

@@ -633,6 +633,12 @@ https://www.practiiko.com/catalogo
         .trim();
     }
 
+    // Sanitizar enlaces y formato
+    cleanResponse = cleanResponse
+      .replace(/(https:\/\/[^\s]+\.com\/[^\s]*)\.+(\s|$)/gi, "$1$2")
+      .replace(/(\*\*|__)/g, "")
+      .trim();
+
     // Fallback de extracción de imágenes
     if (imageUrls.length === 0 && inventory.found && inventory.rows) {
       const textHistory = historyMessages.map(m => m.content || "").join(" ");
