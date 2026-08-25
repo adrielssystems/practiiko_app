@@ -245,7 +245,7 @@ async function getInventory(terms, currentIntent) {
 - Código: ${p.code || "N/A"}
 - Categoría: ${p.categoria || "N/A"}
 - Descripción: ${p.description || "N/A"}
-- Precio BCV: $${p.price_bcv}
+- Precio (a tasa BCV): $${p.price_bcv}
 - Imagen: (URL_FOTO: ${imageUrl})`;
     }).join("\n\n");
 
