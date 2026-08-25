@@ -261,10 +261,25 @@ export async function POST(req) {
       // 🚀 FUNNEL STATE MACHINE (MÁQUINA DE ESTADOS)
       // ==========================================
 
-      // A) EVALUAR INTERCEPTACIÓN POR BOTONES (FASE 3)
+      // A) EVALUAR INTERCEPTACIÓN POR BOTONES O COMANDOS DE PRUEBA (FASE 3)
       if (interactiveId || userMessage) {
-        const msgText = userMessage.toUpperCase();
+        const msgText = userMessage.toUpperCase().trim();
         
+        // 🧪 COMANDOS DE PRUEBA DIRECTOS
+        if (msgText === "TESTAUDIO" || msgText === "AUDIO") {
+          console.log(`[TEST] Enviando audio de prueba voice_beneficios.ogg a ${senderNumber}`);
+          const res = await sendMediaFile(senderNumber, "audio", "https://auto.practiiko.com/api/media/voice_beneficios.ogg");
+          await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [senderNumber, JSON.stringify({ role: 'assistant', content: "[Sistema] Audio de prueba 'voice_beneficios.ogg' enviado." })]);
+          return NextResponse.json({ status: "test_audio_sent", result: res });
+        }
+
+        if (msgText === "TESTVIDEO" || msgText === "VIDEO") {
+          console.log(`[TEST] Enviando video de prueba benef2.mp4 a ${senderNumber}`);
+          const res = await sendMediaFile(senderNumber, "video", "https://auto.practiiko.com/api/media/benef2.mp4");
+          await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [senderNumber, JSON.stringify({ role: 'assistant', content: "[Sistema] Video de prueba 'benef2.mp4' enviado." })]);
+          return NextResponse.json({ status: "test_video_sent", result: res });
+        }
+
         if (interactiveId === "btn_sofas" || msgText === "SOFÁS" || msgText === "SOFAS") {
           const responseMsg = "[Sistema] Envió beneficios genéricos y luego plantilla carrusel de Sofás.";
           await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [senderNumber, JSON.stringify({ role: 'assistant', content: responseMsg })]);
