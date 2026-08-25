@@ -55,7 +55,8 @@ export async function GET(req, { params }) {
     else if (ext === '.jpg' || ext === '.jpeg') contentType = 'image/jpeg';
     else if (ext === '.mp4') contentType = 'video/mp4';
     else if (ext === '.webm') contentType = 'video/webm';
-    else if (ext === '.ogg' || ext === '.opus') contentType = 'audio/ogg; codecs=opus';
+    else if (ext === '.ogg') contentType = 'audio/ogg';
+    else if (ext === '.opus') contentType = 'audio/ogg; codecs=opus';
     else if (ext === '.mp3') contentType = 'audio/mpeg';
     else if (ext === '.m4a' || ext === '.aac') contentType = 'audio/mp4';
 
