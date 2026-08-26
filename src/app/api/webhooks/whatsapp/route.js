@@ -373,8 +373,8 @@ export async function POST(req) {
         } catch(e) { return false; }
       });
 
-      // Si es su primer mensaje (el bot nunca le ha respondido) o manda "menu", lanzamos la bienvenida
-      if (!hasAssistantMsg || mNorm === "menu" || mNorm.includes("hola")) {
+      // Si es su primer mensaje (el bot nunca le ha respondido), o manda "menu", o viene de Instagram, lanzamos la bienvenida
+      if (!hasAssistantMsg || mNorm === "menu" || mNorm.includes("hola") || mNorm.includes("quiero transformar mi hogar")) {
         isFirstContact = true;
       }
 

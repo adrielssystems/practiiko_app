@@ -266,9 +266,11 @@ export async function POST(req) {
                   }
 
                   if (aiResponse.isWelcomeTemplate) {
-                    const audioUrl = `${debounceState.baseUrl}/api/media/voice_beneficios.mp3`;
-                    await sendInstagramAudio(senderId, audioUrl);
-                    await new Promise(r => setTimeout(r, 1000)); // Breve pausa para asegurar el orden
+                    // El audio se desactivó temporalmente porque Meta IG API rechaza formatos MP3 nativos (error 2534080)
+                    // const audioUrl = `${debounceState.baseUrl}/api/media/voice_beneficios.mp3`;
+                    // await sendInstagramAudio(senderId, audioUrl);
+                    // await new Promise(r => setTimeout(r, 1000));
+                    
                     await sendInstagramWelcomeTemplate(senderId, aiResponse.text);
                   } else {
                     await sendInstagramMessage(senderId, aiResponse.text);
