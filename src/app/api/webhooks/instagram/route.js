@@ -679,8 +679,7 @@ async function sendInstagramAudio(recipientId, audioUrl) {
           attachment: {
             type: "audio",
             payload: {
-              url: audioUrl,
-              is_reusable: true
+              url: audioUrl
             }
           }
         },

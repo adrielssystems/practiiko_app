@@ -440,9 +440,9 @@ export async function processInstagramMessage(message, sessionId, customerName =
 
     const intent = detectIntent(message);
 
-    // Si detectamos saludo ("hola", "buenas"), solo enviamos el mensaje duro de bienvenida si NO hay historial de chat previo.
+    // Enviar el flujo estricto de bienvenida para el PRIMER mensaje del cliente, sin importar qué diga.
     // Si ya hay conversación, dejamos que la IA responda de forma natural y respetuosa.
-    if (intent === "GREETING" && !hasChatHistory && !postContext) {
+    if (!hasChatHistory && !postContext) {
       const greetingResponse = `Estás solo a un CLIC de distancia para transformar tu hogar.\n\nDescubre nuestros productos modernos, funcionales, innovadores y de tendencia; creados para darle a su hogar el estilo y confort que se merece.`;
 
       if (source === 'dm') {
