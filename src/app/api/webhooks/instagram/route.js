@@ -265,10 +265,17 @@ export async function POST(req) {
                     return;
                   }
 
-                  await sendInstagramMessage(senderId, aiResponse.text);
-                  if (aiResponse.imageUrls && aiResponse.imageUrls.length > 0) {
-                    for (const imgUrl of aiResponse.imageUrls) {
-                      await sendInstagramImage(senderId, imgUrl);
+                  if (aiResponse.isWelcomeTemplate) {
+                    const audioUrl = `${debounceState.baseUrl}/api/media/voice_beneficios.mp3`;
+                    await sendInstagramAudio(senderId, audioUrl);
+                    await new Promise(r => setTimeout(r, 1000)); // Breve pausa para asegurar el orden
+                    await sendInstagramWelcomeTemplate(senderId, aiResponse.text);
+                  } else {
+                    await sendInstagramMessage(senderId, aiResponse.text);
+                    if (aiResponse.imageUrls && aiResponse.imageUrls.length > 0) {
+                      for (const imgUrl of aiResponse.imageUrls) {
+                        await sendInstagramImage(senderId, imgUrl);
+                      }
                     }
                   }
                   console.log(`[INSTAGRAM DM] Respuesta de IA enviada a ${senderId}`);
@@ -651,5 +658,91 @@ async function sendInstagramImage(recipientId, imageUrl) {
     }
   } catch (e) {
     console.error("[ERROR SENDING INSTAGRAM IMAGE]:", e);
+  }
+}
+
+async function sendInstagramAudio(recipientId, audioUrl) {
+  const PAGE_ACCESS_TOKEN = process.env.INSTAGRAM_PAGE_ACCESS_TOKEN?.trim();
+  if (!PAGE_ACCESS_TOKEN) return;
+
+  const url = `https://graph.instagram.com/v21.0/me/messages`;
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${PAGE_ACCESS_TOKEN}`
+      },
+      body: JSON.stringify({
+        recipient: { id: recipientId },
+        message: {
+          attachment: {
+            type: "audio",
+            payload: {
+              url: audioUrl,
+              is_reusable: true
+            }
+          }
+        },
+      }),
+    });
+    const data = await response.json();
+    if (data.error) console.error("[ERROR INSTAGRAM AUDIO]:", data.error);
+    else console.log(`[INSTAGRAM] Audio enviado a ${recipientId}`);
+  } catch (e) {
+    console.error("[ERROR SENDING INSTAGRAM AUDIO]:", e);
+  }
+}
+
+async function sendInstagramWelcomeTemplate(recipientId, text) {
+  const PAGE_ACCESS_TOKEN = process.env.INSTAGRAM_PAGE_ACCESS_TOKEN?.trim();
+  if (!PAGE_ACCESS_TOKEN) return;
+
+  const url = `https://graph.instagram.com/v21.0/me/messages`;
+  
+  const templatePayload = {
+    recipient: { id: recipientId },
+    message: {
+      attachment: {
+        type: "template",
+        payload: {
+          template_type: "generic",
+          elements: [
+            {
+              title: "Practiiko 💎",
+              subtitle: text || "¡Hola! Gracias por comunicarte.",
+              buttons: [
+                {
+                  type: "web_url",
+                  url: "https://wa.me/584248948664?text=Quiero%20transformar%20mi%20hogar",
+                  title: "📲 PULSA ACÁ"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  };
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${PAGE_ACCESS_TOKEN}`
+      },
+      body: JSON.stringify(templatePayload),
+    });
+    const data = await response.json();
+    if (data.error) {
+      console.warn("[WELCOME TEMPLATE WARN]:", data.error);
+      // Fallback
+      await sendInstagramMessage(recipientId, text + "\n\n👉 https://wa.me/584248948664?text=Quiero%20transformar%20mi%20hogar");
+    } else {
+      console.log(`[INSTAGRAM] Welcome Template enviado a ${recipientId}`);
+    }
+  } catch (e) {
+    console.error("[ERROR SENDING WELCOME TEMPLATE]:", e);
   }
 }

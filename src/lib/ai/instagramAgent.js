@@ -408,7 +408,7 @@ export async function processInstagramMessage(message, sessionId, customerName =
       ];
 
       const publicCommentResponse = commentResponses[Math.floor(Math.random() * commentResponses.length)];
-      const privateDmResponse = `Con gusto le compartimos toda la información 💎\n\n📖 Catálogo Web:\nhttps://practiiko.com/catalogo\n\n💬 WhatsApp Oficial de Ventas:\nhttps://wa.me/584248948664\n\n¿Está buscando renovar su espacio con un sofá, sofá cama o colchón? Con gusto le orientamos.`;
+      const privateDmResponse = `¡Hola! Estás solo a un CLIC de distancia para transformar tu hogar 💎\n\nDescubre nuestros productos modernos, funcionales, innovadores y de tendencia; creados para darle a su hogar el estilo y confort que se merece.\n\n📲 Escríbenos directo al WhatsApp para atención inmediata y conocer todas nuestras promociones:\n👉 https://wa.me/584248948664?text=Quiero%20transformar%20mi%20hogar\n\n📖 O mira nuestra colección completa y precios aquí:\nhttps://practiiko.com/catalogo`;
 
       await query(
         `INSERT INTO instagram_messages (session_id, message, source, comment_id) VALUES ($1, $2, $3, $4)`,
@@ -443,7 +443,7 @@ export async function processInstagramMessage(message, sessionId, customerName =
     // Si detectamos saludo ("hola", "buenas"), solo enviamos el mensaje duro de bienvenida si NO hay historial de chat previo.
     // Si ya hay conversación, dejamos que la IA responda de forma natural y respetuosa.
     if (intent === "GREETING" && !hasChatHistory && !postContext) {
-      const greetingResponse = `¡Con gusto le ayudo! ⭐\n📖 Mire nuestra coleccion completa y precios en el siguiente enlace para guiarlo mejor por su espacio🛋️🛏️\n\n👉 https://www.practiiko.com/catalogo 👈`;
+      const greetingResponse = `Estás solo a un CLIC de distancia para transformar tu hogar.\n\nDescubre nuestros productos modernos, funcionales, innovadores y de tendencia; creados para darle a su hogar el estilo y confort que se merece.`;
 
       if (source === 'dm') {
         const scheduledAt = new Date();
@@ -459,7 +459,7 @@ export async function processInstagramMessage(message, sessionId, customerName =
       await query(`INSERT INTO instagram_messages (session_id, message, source, comment_id) VALUES ($1, $2, $3, $4)`,
         [sessionId, JSON.stringify({ role: 'assistant', content: greetingResponse }), source, commentId]);
 
-      return { text: greetingResponse, imageUrls: [] };
+      return { text: greetingResponse, imageUrls: [], isWelcomeTemplate: (source === 'dm') };
     }
 
     // --- Fast-paths de Inteligencia Emocional ---
