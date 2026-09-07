@@ -40,12 +40,37 @@ export default function BotSimulator() {
       });
       const data = await response.json();
       
-      if (data.success) {
         const botText = typeof data.bot_response === 'string' 
           ? data.bot_response 
           : (data.bot_response?.text || '');
         const imageUrls = data.bot_response?.imageUrls || [];
-        setMessages(prev => [...prev, { role: 'assistant', content: botText, imageUrls }]);
+        const audioUrl = data.bot_response?.audioUrl || null;
+        const isWelcomeTemplate = !!data.bot_response?.isWelcomeTemplate;
+
+        if (audioUrl) {
+          setMessages(prev => [
+            ...prev,
+            { 
+              role: 'assistant', 
+              isAudio: true, 
+              audioUrl,
+              audioTitle: '🎙️ Nota de voz: Beneficios Practiiko' 
+            },
+            { 
+              role: 'assistant', 
+              content: botText, 
+              imageUrls, 
+              isWelcomeTemplate 
+            }
+          ]);
+        } else {
+          setMessages(prev => [...prev, { 
+            role: 'assistant', 
+            content: botText, 
+            imageUrls, 
+            isWelcomeTemplate 
+          }]);
+        }
       } else {
         setMessages(prev => [...prev, { role: 'assistant', content: '❌ Error: No se pudo procesar la respuesta.' }]);
       }
@@ -191,38 +216,123 @@ export default function BotSimulator() {
             </p>
           </div>
         )}
-        {messages.map((m, i) => (
-          <div key={i} style={{ 
-            alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start',
-            maxWidth: '85%',
-            padding: '0.75rem 1rem',
-            borderRadius: '15px',
-            background: m.role === 'user' ? 'var(--primary)' : 'white',
-            color: m.role === 'user' ? 'white' : 'black',
-            boxShadow: '0 2px 5px rgba(0,0,0,0.05)',
-            fontSize: '0.9rem',
-            border: m.role === 'assistant' ? '1px solid var(--border)' : 'none',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '0.5rem',
-            whiteSpace: 'pre-wrap'
-          }}>
-            <div>{m.content}</div>
-            {m.imageUrls && m.imageUrls.map((url, imgIdx) => (
-              <img 
-                key={imgIdx} 
-                src={url} 
-                alt="Product" 
-                style={{ 
-                  maxWidth: '100%', 
-                  borderRadius: '10px', 
-                  marginTop: '0.25rem',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-                }} 
-              />
-            ))}
-          </div>
-        ))}
+        {messages.map((m, i) => {
+          if (m.isAudio) {
+            return (
+              <div key={i} style={{
+                alignSelf: 'flex-start',
+                maxWidth: '85%',
+                padding: '0.65rem 0.85rem',
+                borderRadius: '16px',
+                background: 'white',
+                border: '1px solid #e2e8f0',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.4rem'
+              }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  {m.audioTitle || '🎙️ Nota de voz'}
+                </div>
+                <audio controls src={m.audioUrl} style={{ width: '100%', height: '32px', outline: 'none' }}>
+                  Tu navegador no soporta el reproductor de audio.
+                </audio>
+              </div>
+            );
+          }
+
+          const showButtons = m.isWelcomeTemplate || 
+            (m.role === 'assistant' && (m.content?.includes('wa.me') || m.content?.includes('catalogo')));
+
+          return (
+            <div key={i} style={{ 
+              alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start',
+              maxWidth: '85%',
+              padding: '0.75rem 1rem',
+              borderRadius: '15px',
+              background: m.role === 'user' ? 'var(--primary)' : 'white',
+              color: m.role === 'user' ? 'white' : 'black',
+              boxShadow: '0 2px 5px rgba(0,0,0,0.05)',
+              fontSize: '0.88rem',
+              border: m.role === 'assistant' ? '1px solid var(--border)' : 'none',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.5rem',
+              whiteSpace: 'pre-wrap'
+            }}>
+              <div>{m.content}</div>
+
+              {/* Botones Nativos de Instagram */}
+              {showButtons && (
+                <div style={{ 
+                  marginTop: '0.5rem', 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  gap: '0.4rem', 
+                  borderTop: '1px solid #f1f5f9', 
+                  paddingTop: '0.5rem' 
+                }}>
+                  <a 
+                    href="https://wa.me/584248948664?text=Quiero%20transformar%20mi%20hogar" 
+                    target="_blank" 
+                    rel="noreferrer"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.4rem',
+                      background: '#25D366',
+                      color: 'white',
+                      padding: '0.55rem 0.75rem',
+                      borderRadius: '8px',
+                      textDecoration: 'none',
+                      fontWeight: 700,
+                      fontSize: '0.8rem',
+                      boxShadow: '0 2px 6px rgba(37,211,102,0.25)'
+                    }}
+                  >
+                    💬 Chat de WhatsApp
+                  </a>
+                  <a 
+                    href="https://practiiko.com/catalogo" 
+                    target="_blank" 
+                    rel="noreferrer"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.4rem',
+                      background: '#f8fafc',
+                      color: '#0f172a',
+                      border: '1px solid #cbd5e1',
+                      padding: '0.55rem 0.75rem',
+                      borderRadius: '8px',
+                      textDecoration: 'none',
+                      fontWeight: 700,
+                      fontSize: '0.8rem'
+                    }}
+                  >
+                    📖 Ver Catálogo Web
+                  </a>
+                </div>
+              )}
+
+              {m.imageUrls && m.imageUrls.map((url, imgIdx) => (
+                <img 
+                  key={imgIdx} 
+                  src={url} 
+                  alt="Product" 
+                  style={{ 
+                    maxWidth: '100%', 
+                    borderRadius: '10px', 
+                    marginTop: '0.25rem',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                  }} 
+                />
+              ))}
+            </div>
+          );
+        })}
         {isLoading && (
           <div style={{ alignSelf: 'flex-start', padding: '0.5rem 1rem', background: 'white', borderRadius: '15px', fontSize: '0.8rem', color: 'var(--muted-foreground)' }}>
             El bot está pensando...

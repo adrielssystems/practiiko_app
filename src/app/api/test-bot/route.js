@@ -52,9 +52,18 @@ export async function POST(req) {
       null
     );
     
+    // Si es plantilla de bienvenida, adjuntar el audio de beneficios
+    let audioUrl = null;
+    if (aiResponse.isWelcomeTemplate) {
+      audioUrl = `${baseUrl}/api/media/voice_beneficios.mp3`;
+    }
+
     return NextResponse.json({ 
       success: true, 
-      bot_response: aiResponse 
+      bot_response: {
+        ...aiResponse,
+        audioUrl
+      }
     });
   } catch (error) {
     console.error("Simulator API Error:", error);
