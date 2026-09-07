@@ -40,6 +40,7 @@ export default function BotSimulator() {
       });
       const data = await response.json();
       
+      if (data.success) {
         const botText = typeof data.bot_response === 'string' 
           ? data.bot_response 
           : (data.bot_response?.text || '');
