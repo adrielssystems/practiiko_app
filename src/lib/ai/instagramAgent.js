@@ -443,7 +443,7 @@ export async function processInstagramMessage(message, sessionId, customerName =
     // Enviar el flujo estricto de bienvenida para el PRIMER mensaje del cliente, sin importar qué diga.
     // Si ya hay conversación, dejamos que la IA responda de forma natural y respetuosa.
     if (!hasChatHistory && !postContext) {
-      const greetingResponse = `Estás solo a un CLIC de distancia para transformar tu hogar.\n\nDescubre nuestros productos modernos, funcionales, innovadores y de tendencia; creados para darle a su hogar el estilo y confort que se merece.`;
+      const greetingResponse = `✨ ¡Estás solo a un CLIC de distancia para transformar tu hogar! 🛋️💎\n\nDescubre nuestros productos modernos, funcionales, innovadores y de tendencia; creados para darle a su hogar el estilo y confort que se merece. 🏠✨`;
 
       if (source === 'dm') {
         const scheduledAt = new Date();
@@ -462,15 +462,15 @@ export async function processInstagramMessage(message, sessionId, customerName =
       return { text: greetingResponse, imageUrls: [], isWelcomeTemplate: (source === 'dm') };
     }
 
-    // --- Fast-paths de Inteligencia Emocional ---
+    // --- Fast-paths de Inteligencia Emocional con Emojis ---
     // Manejan respuestas sociales/emocionales sin llamar al LLM ni al inventario.
 
     if (intent === "GRATITUDE_EXPERIENCE") {
       const name = customerName && customerName !== "Cliente" ? ` ${customerName}` : "";
       const options = [
-        `¡Qué alegría escuchar eso${name}! Saber que su visita fue especial nos llena de orgullo. En Practiiko cada detalle cuenta, y usted merece lo mejor. ¡Gracias por confiar en nosotros!`,
-        `Eso nos hace muy felices${name}. Su satisfacción es nuestra mayor recompensa. ¡Fue un placer atenderle, le esperamos pronto con más novedades!`,
-        `¡Muchísimas gracias${name}! Comentarios como el suyo nos motivan a seguir dando lo mejor cada día. ¡Es siempre bienvenido a Practiiko!`
+        `¡Qué alegría escuchar eso${name}! 🥰 Saber que su visita fue especial nos llena de orgullo. En Practiiko cada detalle cuenta, ¡y usted merece lo mejor! 💎 Gracias por confiar en nosotros. ✨`,
+        `¡Eso nos hace muy felices${name}! 💫 Su satisfacción es nuestra mayor recompensa. Fue un placer atenderle, ¡le esperamos pronto con más novedades! 🛋️✨`,
+        `¡Muchísimas gracias${name}! 🙌 Comentarios como el suyo nos motivan a seguir dando lo mejor cada día. ¡Siempre bienvenido a la familia Practiiko! 🏠💎`
       ];
       const resp = options[Math.floor(Math.random() * options.length)];
       await query(`INSERT INTO instagram_messages (session_id, message, source, comment_id) VALUES ($1, $2, $3, $4)`,
@@ -480,7 +480,7 @@ export async function processInstagramMessage(message, sessionId, customerName =
 
     if (intent === "POSITIVE_FEEDBACK") {
       const name = customerName && customerName !== "Cliente" ? ` ${customerName}` : "";
-      const resp = `¡Nos alegra muchísimo${name}! Comentarios como el suyo nos inspiran a seguir ofreciendo la mejor experiencia. Si en algún momento necesita algo más, aquí estaremos.`;
+      const resp = `¡Nos alegra muchísimo${name}! 🎉 Comentarios como el suyo nos inspiran a seguir ofreciendo la mejor experiencia. Si en algún momento necesita algo más, ¡aquí estaremos para servirle! 💬💎`;
       await query(`INSERT INTO instagram_messages (session_id, message, source, comment_id) VALUES ($1, $2, $3, $4)`,
         [sessionId, JSON.stringify({ role: 'assistant', content: resp }), source, commentId]);
       return { text: resp, imageUrls: [] };
@@ -488,7 +488,7 @@ export async function processInstagramMessage(message, sessionId, customerName =
 
     if (intent === "FAREWELL") {
       const name = customerName && customerName !== "Cliente" ? ` ${customerName}` : "";
-      const resp = `¡Hasta pronto${name}! Fue un placer atenderle. Recuerde que en Practiiko siempre le esperamos.`;
+      const resp = `¡Hasta pronto${name}! 👋 Fue un verdadero placer atenderle. Recuerde que en Practiiko siempre le esperamos con los brazos abiertos. 🛋️✨`;
       await query(`INSERT INTO instagram_messages (session_id, message, source, comment_id) VALUES ($1, $2, $3, $4)`,
         [sessionId, JSON.stringify({ role: 'assistant', content: resp }), source, commentId]);
       return { text: resp, imageUrls: [] };
@@ -546,11 +546,8 @@ export async function processInstagramMessage(message, sessionId, customerName =
     });
 
     const isLoopDetected = 
-      // Solo disparar cuando hay MUCHAS referencias al catálogo sin avanzar (umbral alto = 3)
       (catalogRefCount >= 3) ||
-      // O cuando la IA repitió la pregunta del nombre del modelo 2+ veces
       (modelNameRefCount >= 2) ||
-      // O cuando hay combinación de ambas (suma >= 3 pero requiriendo al menos 1 de cada tipo)
       (catalogRefCount >= 1 && modelNameRefCount >= 1 && catalogRefCount + modelNameRefCount >= 3);
 
     // BYPASS CRÍTICO: Si el cliente envió un nombre de producto/modelo específico,
@@ -560,9 +557,8 @@ export async function processInstagramMessage(message, sessionId, customerName =
       (intent === "PRICE_INFO" && earlyKeywords && earlyKeywords.length > 0);
 
     if (isLoopDetected && !isProductSearch) {
-
       console.log(`[INSTAGRAM AGENT] Guardrail Anti-Bucle activado para ${sessionId}. Forzando transferencia.`);
-      const loopResponse = "¡Entendido perfectamente! Veo que no logramos identificar el modelo exacto que busca por este medio automático. No se preocupe en lo absoluto: en este mismo instante le estoy transfiriendo con uno de nuestros asesores de ventas especializados para que le atienda de forma personalizada por este mismo chat en breve. ¡Muchas gracias por su paciencia!";
+      const loopResponse = "¡Entendido perfectamente! 🤝 Le estoy comunicando de inmediato con uno de nuestros asesores de ventas especializados para atenderle de forma directa y personalizada por este mismo chat en breve. ¡Muchas gracias por su paciencia! ⏳✨";
 
       const motivo = "🚨 GUARDRAIL ANTI-BUCLE (TRANSFERENCIA) (INSTAGRAM)";
       await notifyAdvisorsOfInstagramTransfer(sessionId, customerName, message, motivo, baseUrl);
@@ -596,9 +592,9 @@ export async function processInstagramMessage(message, sessionId, customerName =
     // 3. Manejo de HUMAN_REQUEST y AD_OR_NEW_MODEL_QUERY (Fast Path) - Instagram
     // Solo para solicitudes EXPLICITAS de atención humana en este mismo chat o consultas de publicidad/preventas.
     if (currentIntent === "HUMAN_REQUEST" || currentIntent === "AD_OR_NEW_MODEL_QUERY") {
-      let response = "Con mucho gusto. Le atiendo por este mismo chat en breve. Uno de nuestros asesores se comunicará con usted aquí.";
+      let response = "¡Con mucho gusto! 🤝 Le atiendo por este mismo chat en breve. Uno de nuestros asesores especializados se comunicará con usted aquí. 💬✨";
       if (currentIntent === "AD_OR_NEW_MODEL_QUERY") {
-        response = "¡Entiendo perfectamente! A veces publicamos adelantos de temporada, preventas exclusivas o campañas de nuevos modelos que aún no están subidos a nuestro catálogo web. Para brindarle todos los detalles y confirmar disponibilidad de esa publicidad, le transferiré de inmediato con uno de nuestros asesores por este chat. Le atenderá en breve.";
+        response = "¡Entiendo perfectamente! 📣 A veces publicamos adelantos de temporada, preventas exclusivas o campañas de nuevos modelos. Para brindarle todos los detalles y confirmar disponibilidad, le transferiré de inmediato con uno de nuestros asesores por este chat. ¡Le atenderá en breve! 🛋️💎";
       }
 
       const motivo = currentIntent === "AD_OR_NEW_MODEL_QUERY" ? "📢 CONSULTA PUBLICIDAD/PREVENTA (INSTAGRAM)" : "🚨 SOLICITUD HUMANA (INSTAGRAM)";
@@ -616,212 +612,16 @@ export async function processInstagramMessage(message, sessionId, customerName =
       return { text: response, imageUrls: [] };
     }
 
-    // 4. Buscar Inventario (con soporte de referencias contextuales y postContext)
-    const isContextRef = detectContextReference(message);
-    let terms;
-    if (isContextRef) {
-      terms = extractLastUserKeywords(historyMessagesRaw) || extractKeywords(message);
-      console.log(`[INSTAGRAM AGENT] Referencia contextual detectada. Keywords recuperados del historial:`, terms);
-    } else {
-      terms = extractKeywords(message);
-    }
-
-    // Si el mensaje viene de un post/anuncio específico, enriquecer los términos de búsqueda con el postContext
-    if (postContext && (!terms || terms.length === 0)) {
-      const postTerms = extractKeywords(postContext);
-      if (postTerms && postTerms.length > 0) {
-        terms = postTerms;
-        console.log(`[INSTAGRAM AGENT] Keywords deducidos del postContext:`, terms);
-      }
-    }
-
-    const inventory = await getInventory(terms, currentIntent);
-
-    // 5. Cargar instrucciones personalizadas
-    let dynamicKnowledge = "";
-    try {
-      const settingsRes = await query("SELECT value FROM app_settings WHERE key = 'ai_custom_instructions'");
-      if (settingsRes.rows.length > 0) {
-        dynamicKnowledge = settingsRes.rows[0].value;
-      }
-    } catch (e) {
-      console.warn("No se pudo cargar ai_custom_instructions de la BD:", e.message);
-    }
-
-    // 6. Invocar LLM
-    const isGeneralPriceQuery = intent === "PRICE_INFO" && (!terms || terms.length === 0) && !postContext;
-    const rawResponse = await buildResponse(message, customerName, inventory, historyMessages, dynamicKnowledge, inventory.isFallback, isGeneralPriceQuery, source, postContext);
-
-    console.log(`[DEBUG INSTAGRAM LLM RAW]\n${rawResponse}\n[DEBUG INSTAGRAM LLM RAW END]`);
-
-    let cleanResponse = rawResponse;
-    let shouldTransfer = false;
-
-    if (cleanResponse.includes("[TRANSFER]")) {
-      shouldTransfer = true;
-      cleanResponse = cleanResponse.replace(/\[TRANSFER\]/gi, "").trim();
-    }
-
-    if (shouldTransfer) {
-      const motivo = "🚨 SOLICITUD HUMANA (IA) (INSTAGRAM)";
-      await notifyAdvisorsOfInstagramTransfer(sessionId, customerName, message, motivo, baseUrl);
-
-      try {
-        await query("UPDATE instagram_customers SET ai_enabled = false, requires_human = true WHERE id = $1", [sessionId]);
-      } catch(e) {
-        console.warn("Columna requires_human no detectada en instagram_customers, actualizando solo ai_enabled:", e.message);
-        await query("UPDATE instagram_customers SET ai_enabled = false WHERE id = $1", [sessionId]);
-      }
-    }
-
-    // Extraer URLs de imágenes
-    let imageUrls = [];
-    const imgMatches = [...cleanResponse.matchAll(/URL_FOTO:\s*([^\s]+)/gi)];
-    if (imgMatches.length > 0) {
-      const seenUrls = new Set();
-      imgMatches.forEach(m => {
-        let url = m[1].trim();
-        if (url.startsWith('/') && baseUrl) {
-          url = `${baseUrl}${url}`;
-        }
-        if (!seenUrls.has(url)) {
-          seenUrls.add(url);
-          imageUrls.push(url);
-        }
-      });
-      cleanResponse = cleanResponse
-        .replace(/URL_FOTO:\s*[^\s]+/gi, "")
-        .replace(/:\s*\n\s*\n/g, ":\n")
-        .replace(/\n\s*\n\s*\n+/g, "\n\n")
-        .trim();
-    }
-
-    // Sanitizar enlaces de WhatsApp para evitar puntos finales pegados que rompen la URL en móviles
-    cleanResponse = cleanResponse
-      .replace(/(https:\/\/wa\.me\/[0-9]+)\.+/gi, "$1")
-      .replace(/(https:\/\/[^\s]+\.com\/[^\s]*)\.+(\s|$)/gi, "$1$2")
-      .replace(/(\*\*|__)/g, "") // Eliminar formato markdown bold residual que en IG DMs puede verse crudo
-      .trim();
-
-    // Fallback de extracción de imágenes
-    if (imageUrls.length === 0 && inventory.found && inventory.rows) {
-      const textHistory = historyMessages.map(m => m.content || "").join(" ");
-      const normalizeMsg = normalize(message);
-      const normalizeRawResp = normalize(rawResponse);
-      const normalizeHistory = normalize(textHistory);
-      const fullContext = normalizeHistory + " " + normalizeMsg + " " + normalizeRawResp;
-
-      const userPideFotos = normalizeMsg.includes("foto") || 
-                            normalizeMsg.includes("imagen") || 
-                            normalizeMsg.includes("imagenes") || 
-                            normalizeMsg.includes("ver") || 
-                            normalizeMsg.includes("mostra") || 
-                            normalizeMsg.includes("muestr") ||
-                            normalizeMsg.includes("si") ||
-                            normalizeMsg.includes("claro") ||
-                            normalizeMsg.includes("dale") ||
-                            normalizeMsg.includes("por favor");
-                            
-      const botEntregaFotos = (normalizeRawResp.includes("foto") || 
-                              normalizeRawResp.includes("imagen") || 
-                              normalizeRawResp.includes("imagenes") ||
-                              normalizeRawResp.includes("color") ||
-                              normalizeRawResp.includes("colores")) && 
-                             (normalizeRawResp.includes("aqui tiene") || 
-                              normalizeRawResp.includes("aqui esta") || 
-                              normalizeRawResp.includes("te muestro") || 
-                              normalizeRawResp.includes("le muestro") ||
-                              normalizeRawResp.includes("muestro") ||
-                              normalizeRawResp.includes("te envio") || 
-                              normalizeRawResp.includes("foto de") || 
-                              normalizeRawResp.includes("imagen de") || 
-                              normalizeRawResp.includes("estas son") ||
-                              normalizeRawResp.includes("opciones de color") ||
-                              normalizeRawResp.includes("aqui adjunto") ||
-                              normalizeRawResp.includes("en la imagen"));
-
-      if (userPideFotos || botEntregaFotos) {
-        let mentionedColor = "";
-        const COLORS_LIST = ["blanco", "negro", "gris", "beige", "azul", "verde", "arena", "crema", "rosado", "naranja", "oliva"];
-        for (const col of COLORS_LIST) {
-          if (normalizeMsg.includes(col) || normalizeRawResp.includes(col)) {
-            mentionedColor = col;
-            break;
-          }
-        }
-
-        const GENERIC_WORDS = [
-          "sofa", "sofas", "sofá", "sofás", "modular", "mueble", "muebles", "poltrona", "butaca", 
-          "sillon", "sillón", "mesa", "juego", "para", "tres", "puestos", "asientos", 
-          "gris", "claro", "medio", "verde", "oliva", "arena", "blanco", "beige", 
-          "azul", "negro", "crema", "naranja", "rosado"
-        ];
-        
-        let foundSpecificColor = false;
-
-        inventory.rows.forEach(r => {
-          if (r.image_url) {
-            const prodName = normalize(r.name);
-            const prodCode = normalize(r.code || "");
-            const prodPseudonimo = normalize(r.pseudonimo || "");
-            
-            const nameWords = prodName.split(" ").filter(word => !GENERIC_WORDS.includes(word));
-            
-            const nameMentioned = (nameWords.some(word => word.length >= 3 && fullContext.includes(word))) || 
-                                  (prodPseudonimo && fullContext.includes(prodPseudonimo)) ||
-                                  (prodCode && fullContext.includes(prodCode));
-            
-            let matchesColor = true;
-            if (mentionedColor) {
-              matchesColor = prodName.includes(mentionedColor);
-            }
-            
-            if (nameMentioned && matchesColor) {
-              foundSpecificColor = true;
-              let url = r.image_url.trim();
-              if (url.startsWith('/') && baseUrl) {
-                url = `${baseUrl}${url}`;
-              }
-              if (!imageUrls.includes(url)) {
-                imageUrls.push(url);
-              }
-            }
-          }
-        });
-
-        // Si no se encontró un producto con el color específico en el nombre, enviar las fotos del producto mencionado en la conversación
-        if (!foundSpecificColor && imageUrls.length === 0) {
-          inventory.rows.forEach(r => {
-            if (r.image_url) {
-              const prodName = normalize(r.name);
-              const prodCode = normalize(r.code || "");
-              const prodPseudonimo = normalize(r.pseudonimo || "");
-              const nameWords = prodName.split(" ").filter(word => !GENERIC_WORDS.includes(word));
-              
-              const nameMentioned = (nameWords.some(word => word.length >= 3 && fullContext.includes(word))) || 
-                                    (prodPseudonimo && fullContext.includes(prodPseudonimo)) ||
-                                    (prodCode && fullContext.includes(prodCode));
-              
-              if (nameMentioned) {
-                let url = r.image_url.trim();
-                if (url.startsWith('/') && baseUrl) {
-                  url = `${baseUrl}${url}`;
-                }
-                if (!imageUrls.includes(url)) {
-                  imageUrls.push(url);
-                }
-              }
-            }
-          });
-        }
-      }
-    }
+    // 4. EMBUDO DETERMINISTA INSTAGRAM (DEEPSEEK APAGADO)
+    // Cualquier otra consulta por DM se responde con redirección directa a WhatsApp y catálogo.
+    const name = customerName && customerName !== "Cliente" ? ` ${customerName}` : "";
+    const redirectResponse = `¡Con mucho gusto${name}! 🛋️✨\n\nPara brindarle atención personalizada, consultar disponibilidad inmediata de modelos, precios a tasa oficial BCV y coordinar su pedido con facilidades de pago, le invitamos a escribirnos directamente a nuestro canal oficial de WhatsApp:\n\n📲 Chat Directo de Ventas:\n👉 https://wa.me/584248948664?text=Quiero%20transformar%20mi%20hogar\n\n📖 O si lo prefiere, explore toda nuestra colección y modelos disponibles aquí:\n👉 https://practiiko.com/catalogo\n\n¡Le esperamos con gusto para consentir su hogar! 💎🏠`;
 
     // Guardar en DB
     await query(`INSERT INTO instagram_messages (session_id, message, source, comment_id) VALUES ($1, $2, $3, $4)`,
-      [sessionId, JSON.stringify({ role: 'assistant', content: cleanResponse }), source, commentId]);
+      [sessionId, JSON.stringify({ role: 'assistant', content: redirectResponse }), source, commentId]);
 
-    return { text: cleanResponse, imageUrls };
+    return { text: redirectResponse, imageUrls: [] };
 
   } catch (error) {
     console.error("CRITICAL INSTAGRAM AGENT ERROR:", error);

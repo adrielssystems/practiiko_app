@@ -131,87 +131,87 @@ export default async function OverviewPage() {
       <AutoRefresh interval={10000} />
       
       {/* HEADER SECTION */}
-      <header style={{ marginBottom: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+      <header style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', marginBottom: '0.2rem' }}>
-            <Zap size={14} fill="currentColor" />
-            <span style={{ fontWeight: 800, letterSpacing: '0.1em', fontSize: '0.65rem', textTransform: 'uppercase' }}>Sistema Operativo</span>
-          </div>
-          <h1 style={{ fontSize: '1.8rem', fontWeight: 900, letterSpacing: '-0.03em', margin: 0, color: '#0f172a' }}>Overview</h1>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 900, letterSpacing: '-0.03em', margin: 0, color: '#0f172a' }}>Overview</h1>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <GlobalBotBreaker initialEnabled={data.globalEnabled} />
           
           <div style={{ 
             background: 'white', 
-            padding: '0.5rem 1rem', 
-            borderRadius: '12px', 
-            boxShadow: '0 4px 15px rgba(0,0,0,0.03)',
+            padding: '0.35rem 0.75rem', 
+            borderRadius: '10px', 
+            boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
             border: '1px solid #f1f5f9',
             display: 'flex',
             alignItems: 'center',
-            gap: '0.75rem'
+            gap: '0.5rem'
           }}>
             <div style={{ textAlign: 'right' }}>
-              <p style={{ margin: 0, fontSize: '0.6rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>Webhook</p>
-              <p style={{ margin: 0, fontSize: '0.8rem', fontWeight: 800, color: data.status === 'ACTIVO' ? '#10b981' : '#f59e0b' }}>
+              <p style={{ margin: 0, fontSize: '0.55rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>Webhook</p>
+              <p style={{ margin: 0, fontSize: '0.7rem', fontWeight: 800, color: data.status === 'ACTIVO' ? '#10b981' : '#f59e0b' }}>
                 {data.status}
               </p>
             </div>
             <div style={{ 
-              width: '8px', 
-              height: '8px', 
+              width: '7px', 
+              height: '7px', 
               borderRadius: '50%', 
               background: data.status === 'ACTIVO' ? '#10b981' : '#f59e0b',
-              boxShadow: `0 0 10px ${data.status === 'ACTIVO' ? '#10b981' : '#f59e0b'}`
+              boxShadow: `0 0 8px ${data.status === 'ACTIVO' ? '#10b981' : '#f59e0b'}`
             }}></div>
           </div>
         </div>
       </header>
 
-      {/* METRICS GRID (3 columns after removing Audience) */}
+      {/* METRICS GRID (Compacto 50%) */}
       <div style={{ 
         display: 'grid', 
         gridTemplateColumns: 'repeat(3, 1fr)', 
-        gap: '1rem',
-        marginBottom: '1.5rem'
+        gap: '0.75rem',
+        marginBottom: '1rem'
       }}>
         {/* Metric 1: Products */}
-        <div style={cardStyle}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-            <div style={{ padding: '0.5rem', background: '#e0f2fe', color: '#0369a1', borderRadius: '10px' }}>
-              <Package size={20} />
+        <div style={{ ...cardStyle, padding: '0.65rem 0.9rem', borderRadius: '14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
+            <div style={{ padding: '0.3rem', background: '#e0f2fe', color: '#0369a1', borderRadius: '7px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Package size={14} />
             </div>
+            <span style={{ fontSize: '0.55rem', color: '#94a3b8' }}>Listos para venta</span>
           </div>
-          <h3 style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b', marginBottom: '0.1rem', textTransform: 'uppercase' }}>Catálogo</h3>
-          <p style={{ fontSize: '1.75rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>{data.products.toLocaleString('es-VE')}</p>
-          <p style={{ fontSize: '0.65rem', color: '#94a3b8', marginTop: '0.25rem' }}>Listos para venta</p>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Catálogo</span>
+            <span style={{ fontSize: '1.25rem', fontWeight: 900, color: '#0f172a' }}>{data.products.toLocaleString('es-VE')}</span>
+          </div>
         </div>
 
         {/* Metric 2: Instagram */}
-        <div style={cardStyle}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-            <div style={{ padding: '0.5rem', background: '#fdf2f8', color: '#be185d', borderRadius: '10px' }}>
-              <MessageCircle size={20} />
+        <div style={{ ...cardStyle, padding: '0.65rem 0.9rem', borderRadius: '14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
+            <div style={{ padding: '0.3rem', background: '#fdf2f8', color: '#be185d', borderRadius: '7px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <MessageCircle size={14} />
             </div>
-            <span style={{ fontSize: '0.55rem', fontWeight: 800, background: '#fdf2f8', color: '#be185d', padding: '2px 8px', borderRadius: '20px' }}>IG FEED</span>
+            <span style={{ fontSize: '0.5rem', fontWeight: 800, background: '#fdf2f8', color: '#be185d', padding: '1px 6px', borderRadius: '12px' }}>IG FEED</span>
           </div>
-          <h3 style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b', marginBottom: '0.1rem', textTransform: 'uppercase' }}>Interacciones</h3>
-          <p style={{ fontSize: '1.75rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>{data.igMessages.toLocaleString('es-VE')}</p>
-          <p style={{ fontSize: '0.65rem', color: '#94a3b8', marginTop: '0.25rem' }}>Mensajes y comentarios</p>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Interacciones</span>
+            <span style={{ fontSize: '1.25rem', fontWeight: 900, color: '#0f172a' }}>{data.igMessages.toLocaleString('es-VE')}</span>
+          </div>
         </div>
 
         {/* Metric 3: WhatsApp */}
-        <div style={cardStyle}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-            <div style={{ padding: '0.5rem', background: '#f0fdf4', color: '#15803d', borderRadius: '10px' }}>
-              <Smartphone size={20} />
+        <div style={{ ...cardStyle, padding: '0.65rem 0.9rem', borderRadius: '14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
+            <div style={{ padding: '0.3rem', background: '#f0fdf4', color: '#15803d', borderRadius: '7px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Smartphone size={14} />
             </div>
-            <span style={{ fontSize: '0.55rem', fontWeight: 800, background: '#f0fdf4', color: '#15803d', padding: '2px 8px', borderRadius: '20px' }}>WHA</span>
+            <span style={{ fontSize: '0.5rem', fontWeight: 800, background: '#f0fdf4', color: '#15803d', padding: '1px 6px', borderRadius: '12px' }}>WHA</span>
           </div>
-          <h3 style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b', marginBottom: '0.1rem', textTransform: 'uppercase' }}>WhatsApp</h3>
-          <p style={{ fontSize: '1.75rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>{data.waMessages.toLocaleString('es-VE')}</p>
-          <p style={{ fontSize: '0.65rem', color: '#94a3b8', marginTop: '0.25rem' }}>Conversaciones</p>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>WhatsApp</span>
+            <span style={{ fontSize: '1.25rem', fontWeight: 900, color: '#0f172a' }}>{data.waMessages.toLocaleString('es-VE')}</span>
+          </div>
         </div>
       </div>
 

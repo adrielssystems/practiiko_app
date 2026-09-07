@@ -258,6 +258,9 @@ export async function POST(req) {
                 console.log(`[INSTAGRAM DM DEBOUNCE] Procesando mensajes combinados para ${senderId} ("${debounceState.customerName}"): "${combinedMessage}"`);
 
                 try {
+                  // Activar indicador de "Escribiendo..." (puntos suspensivos) en el chat de Instagram
+                  await sendInstagramSenderAction(senderId, "typing_on");
+
                   const aiResponse = await processInstagramMessage(combinedMessage, senderId, debounceState.customerName, debounceState.baseUrl, 'dm', null, debounceState.postContext);
                   
                   if (aiResponse.ignored) {
@@ -265,11 +268,14 @@ export async function POST(req) {
                     return;
                   }
 
+                  // Pequeña pausa natural para que el usuario aprecie los puntos de "escribiendo..."
+                  await new Promise(r => setTimeout(r, 1200));
+
                   if (aiResponse.isWelcomeTemplate) {
-                    // El audio se desactivó temporalmente porque Meta IG API rechaza formatos MP3 nativos (error 2534080)
-                    // const audioUrl = `${debounceState.baseUrl}/api/media/voice_beneficios.mp3`;
-                    // await sendInstagramAudio(senderId, audioUrl);
-                    // await new Promise(r => setTimeout(r, 1000));
+                    // Enviar primero el audio de beneficios de la marca
+                    const audioUrl = `${debounceState.baseUrl}/api/media/voice_beneficios.mp3`;
+                    await sendInstagramAudio(senderId, audioUrl);
+                    await new Promise(r => setTimeout(r, 2000));
                     
                     await sendInstagramWelcomeTemplate(senderId, aiResponse.text);
                   } else {
@@ -280,11 +286,11 @@ export async function POST(req) {
                       }
                     }
                   }
-                  console.log(`[INSTAGRAM DM] Respuesta de IA enviada a ${senderId}`);
+                  console.log(`[INSTAGRAM DM] Respuesta enviada a ${senderId}`);
                 } catch (e) {
                   console.error("[ERROR ASYNC DM]:", e);
                 }
-              }, 5000);
+              }, 4000);
             }
           }
         }
@@ -434,6 +440,36 @@ async function getInstagramUserInfo(userId) {
   } catch (e) {
     console.error("[FETCH USER EXCEPTION]:", e);
     return null;
+  }
+}
+
+// Función para enviar acciones de remitente (animación de "Escribiendo..." y "Visto")
+async function sendInstagramSenderAction(recipientId, action = "typing_on") {
+  const PAGE_ACCESS_TOKEN = process.env.INSTAGRAM_PAGE_ACCESS_TOKEN?.trim();
+  if (!PAGE_ACCESS_TOKEN || !recipientId) return;
+
+  const url = `https://graph.instagram.com/v21.0/me/messages`;
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${PAGE_ACCESS_TOKEN}`
+      },
+      body: JSON.stringify({
+        recipient: { id: recipientId },
+        sender_action: action
+      })
+    });
+    const data = await response.json();
+    if (data.error) {
+      console.warn(`[INSTAGRAM SENDER ACTION WARN]:`, data.error.message);
+    } else {
+      console.log(`[INSTAGRAM SENDER ACTION] Acción '${action}' enviada a ${recipientId}`);
+    }
+  } catch (e) {
+    console.error(`[EXCEPTION SENDER ACTION]:`, e);
   }
 }
 
