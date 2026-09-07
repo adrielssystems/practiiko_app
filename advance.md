@@ -293,6 +293,39 @@
 - **Migración a MP3 Universal:** Se reemplazó el archivo Vorbis `.ogg` por `voice_beneficios.mp3` para compatibilidad nativa con los reproductores de WhatsApp en iOS y Android.
 - **Comandos de Prueba:** Se habilitaron los comandos `TESTAUDIO` (o `AUDIO`) y `TESTVIDEO` (o `VIDEO`) para realizar auditorías inmediatas de entrega multimedia.
 
+## Tareas Realizadas (07 de Septiembre de 2026)
+
+### 1. Desconexión de DeepSeek en Instagram y Embudo Determinista
+- **Apagado de Consultas al LLM (`src/lib/ai/instagramAgent.js`):**
+  - Se eliminaron por completo las llamadas al modelo DeepSeek (`buildResponse`) y las búsquedas automáticas a la base de datos de inventario en Instagram.
+  - Cero consumo de tokens de API y eliminación total de costos recurrentes de LLM en este canal.
+- **Embudo de Ventas Determinista para DMs:**
+  - **Primer contacto (Bienvenida):** Envía el mensaje institucional de bienvenida (*"¡Estás solo a un CLIC de distancia para transformar tu hogar!"*), disparando previamente la nota de voz oficial de beneficios y activando la tarjeta interactiva de Meta con botones nativos.
+  - **Respuestas de Cortesía / Emocionales:** Responde de forma instantánea a agradecimientos, felicitaciones o despedidas con mensajes cordiales preestablecidos.
+  - **Solicitud de Asesor Humano / Preventa:** Pausa la automatización (`ai_enabled = false`, `requires_human = true`) y notifica al equipo de ventas por WhatsApp.
+  - **Cualquier otra consulta en DM:** Despacha una respuesta predeterminada orientada a la conversión que redirige directamente al canal oficial de WhatsApp (`https://wa.me/584248948664?text=Quiero%20transformar%20mi%20hogar`) y al catálogo web (`https://practiiko.com/catalogo`).
+
+### 2. Animación de "Escribiendo..." (`typing_on`) y Emojis en Instagram
+- **Acción Nativa de Meta (`sender_action: typing_on`):**
+  - Se desarrolló la función `sendInstagramSenderAction` en `src/app/api/webhooks/instagram/route.js`.
+  - Ahora el bot envía la señal `typing_on` a Meta Graph API (`/v21.0/me/messages`), activando la animación visual nativa de los tres puntos parpadeando (*"Escribiendo..."*) en la app de Instagram del cliente antes de entregar la respuesta.
+- **Integración de Emojis Dinámicos:**
+  - Se incorporaron emojis acordes a la identidad de marca (💎, ✨, 🛋️, 🏠, 📲, 🤝, 🙌) en todos los textos de bienvenida, cortesía, transferencias y redirección.
+
+### 3. Rediseño Minimalista del Dashboard del Autogestor (`/` y `GlobalBotBreaker.js`)
+- **Limpieza del Encabezado (`src/app/page.js`):**
+  - Se eliminó el subtítulo *"Sistema Operativo"* y el ícono de rayo (`Zap`), dejando el título **Overview** limpio y alineado horizontalmente con el estado del Webhook y el breaker.
+- **Reducción de KPIs al 50%:**
+  - Se compactaron los paddings, fuentes y tamaños de íconos (a 14px) de las tarjetas de métricas (Catálogo, Interacciones y WhatsApp) en un diseño horizontal esbelto de una sola línea.
+  - Esto liberó más del 50% de espacio vertical, permitiendo que la sección de **Última Actividad y Mensajes Recientes** sea visible inmediatamente sin necesidad de scroll.
+- **Botón ON/OFF del Bot Minimalista (`src/components/Common/GlobalBotBreaker.js`):**
+  - Se transformó el botón tosco de bloque sólido en un botón compacto y elegante con bordes y fondos suaves en tonos pastel (`#ecfdf5` / `#fef2f2`), un indicador circular luminoso sutil y textos discretos (*"IA Activa"* / *"IA Apagada"*).
+
+### 4. Soporte Multimedia y Botones Nativos en el Simulador de Instagram
+- **Renderizado Fiel a Instagram (`BotSimulator.js` y `/api/test-bot`):**
+  - Se actualizó el endpoint de pruebas y el componente para renderizar un reproductor HTML5 con la nota de voz [`voice_beneficios.mp3`](file:///C:/Users/rhect/Documents/Proyectos/Practiiko/practiiko_app/public/media/voice_beneficios.mp3) cuando se recibe el primer mensaje.
+  - Se añadieron botones de estilo nativo clickeables (**💬 Chat de WhatsApp** con estilo verde oficial y **📖 Ver Catálogo Web**), permitiendo auditar y probar la experiencia exacta de Instagram directamente desde el panel administrativo.
+
 ## Planificación en Espera (Pendiente de Aprobación Comercial)
 
 ### Migración a API Oficial de WhatsApp (Cloud API - Modo Coexistencia)
