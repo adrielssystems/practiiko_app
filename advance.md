@@ -345,6 +345,8 @@
     - **Plantilla `welcome`:** Imagen del logo en cabecera, texto real y botones nativos (`SOFAS COMPRIMIDOS`, `COLCHONES`, `VELAS PERLADAS`).
     - **Media:** Reproductores nativos de video HTML5 (`benef2.mp4`) y notas de voz (`voice_beneficios.mp3`).
     - **Carruseles:** Vista previa interactiva con scroll horizontal de las tarjetas con sus videos y botones de acción (`Contactar a un asesor` y `Más Información`).
+- **Interceptación de Consultas de Precios y Catálogo en Texto Libre:**
+  - Se configuró el enrutador para que términos como *"precio"*, *"precios"*, *"cuánto"*, *"cuesta"*, *"vale"*, *"catálogo"* o *"más información"* despachen directamente el enlace oficial al catálogo web (`https://www.practiiko.com/catalogo`) indicando que los precios están fijados a tasa oficial BCV, evitando el reenvío repetitivo de la plantilla de bienvenida.
 
 ## Planificación en Espera (Pendiente de Aprobación Comercial)
 

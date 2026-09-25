@@ -516,9 +516,17 @@ export async function POST(req) {
           msgText.includes("MAS INFORMACION") ||
           msgText.includes("MÁS INFORMACIÓN") ||
           msgText.includes("MAS INFORMACIÓN") ||
-          msgText.includes("MÁS INFORMACION")
+          msgText.includes("MÁS INFORMACION") ||
+          msgText.includes("PRECIO") ||
+          msgText.includes("PRECIOS") ||
+          msgText.includes("CUANTO") ||
+          msgText.includes("CUÁNTO") ||
+          msgText.includes("CUESTA") ||
+          msgText.includes("VALE") ||
+          msgText.includes("CATALOGO") ||
+          msgText.includes("CATÁLOGO")
         ) {
-          const replyText = "Con gusto. Puede explorar todos nuestros modelos, medidas y precios directamente en nuestro catálogo oficial:\nhttps://www.practiiko.com/catalogo";
+          const replyText = "Con gusto. Puede consultar todos nuestros modelos, medidas y precios a tasa oficial BCV directamente en nuestro catálogo oficial:\nhttps://www.practiiko.com/catalogo";
           await sendWhatsAppMessage(senderNumber, replyText);
           await query(
             `INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`,
@@ -611,6 +619,14 @@ export async function POST(req) {
       );
       return NextResponse.json({ status: "funnel_reorient_welcome" });
       
+    } else if (body.type === "whatsapp.message.updated") {
+      const msg = body.whatsappMessage || body.message;
+      if (msg) {
+        console.log(`[YCLOUD STATUS] Mensaje ${msg.id} a ${msg.to} -> Estado: ${msg.status}`);
+        if (msg.status === "failed") {
+          console.error(`[YCLOUD DELIVERY FAILED]:`, JSON.stringify(msg.error || msg, null, 2));
+        }
+      }
     } else if (body.type === "whatsapp.message.echo" || (body.whatsappInboundMessage?.data?.type === "smb_message_echoes")) {
       const wim = body.whatsappInboundMessage || body.message;
       if (wim && wim.to) {
