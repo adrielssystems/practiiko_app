@@ -347,6 +347,21 @@
     - **Carruseles:** Vista previa interactiva con scroll horizontal de las tarjetas con sus videos y botones de acción (`Contactar a un asesor` y `Más Información`).
 - **Interceptación de Consultas de Precios y Catálogo en Texto Libre:**
   - Se configuró el enrutador para que términos como *"precio"*, *"precios"*, *"cuánto"*, *"cuesta"*, *"vale"*, *"catálogo"* o *"más información"* despachen directamente el enlace oficial al catálogo web (`https://www.practiiko.com/catalogo`) indicando que los precios están fijados a tasa oficial BCV, evitando el reenvío repetitivo de la plantilla de bienvenida.
+- **Renovación de Credenciales de Meta (Instagram Graph API):**
+  - Se renovó y actualizó el `INSTAGRAM_PAGE_ACCESS_TOKEN` de 60 días, restableciendo la comunicación fluida del embudo de bienvenida en Instagram DMs (nota de voz, tarjeta interactiva y animación de escritura).
+
+### 2. Re-codificación y Compresión Extrema de Medios (WhatsApp Cloud API / YCloud)
+- **Diagnóstico del Error `[131053]`:** Los servidores de Meta descargan todos los videos del carrusel en paralelo al momento de enviar la plantilla. Videos originales de 10-15 MB causaban timeout en el motor de escrutinio de Meta (`mediaEngineStatus: 0`), impidiendo la entrega y reproducción.
+- **Compresión con FFmpeg (Gyan.FFmpeg v9.0.2):**
+  - Se procesaron los **21 videos** (`benef2.mp4` + 20 videos de carrusel).
+  - Parámetros aplicados: `-c:v libx264 -crf 28 -preset fast -vf "scale='min(720,iw)':-2" -c:a aac -b:a 64k -movflags +faststart`.
+  - **Reducción de Peso masiva:**
+    - Tarjetas de colchones: de ~7.8 MB a **~260 - 420 KB**.
+    - Tarjetas de sofás: de ~10-14 MB a **~390 - 820 KB**.
+    - Tarjetas de velas: de ~10-13 MB a **~480 - 850 KB**.
+    - Video de beneficios (`benef2.mp4`): de 14.3 MB a **6.9 MB**.
+  - Validación completa: Todos los archivos tienen el átomo `moov` al inicio (`+faststart`) y fueron validados con `ffmpeg -v error -f null` con 0 errores de streams o NAL units.
+
 
 ## Planificación en Espera (Pendiente de Aprobación Comercial)
 
