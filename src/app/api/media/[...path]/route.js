@@ -61,6 +61,7 @@ export async function GET(req, { params }) {
     else if (ext === '.m4a' || ext === '.aac') contentType = 'audio/mp4';
 
     const range = req.headers.get('range');
+    const { Readable } = await import('stream');
 
     if (range) {
       const parts = range.replace(/bytes=/, "").split("-");
@@ -70,9 +71,10 @@ export async function GET(req, { params }) {
 
       const chunksize = (end - start) + 1;
 
-      const stream = fs.createReadStream(filePath, { start, end });
+      const nodeStream = fs.createReadStream(filePath, { start, end });
+      const webStream = Readable.toWeb(nodeStream);
 
-      return new NextResponse(stream, {
+      return new NextResponse(webStream, {
         status: 206,
         headers: {
           'Content-Range': `bytes ${start}-${end}/${fileSize}`,
