@@ -81,7 +81,7 @@ export async function GET(req, { params }) {
           'Accept-Ranges': 'bytes',
           'Content-Length': chunksize.toString(),
           'Content-Type': contentType,
-          'Cache-Control': 'public, max-age=31536000, immutable',
+          'Cache-Control': 'public, max-age=3600, must-revalidate',
         },
       });
     }
@@ -95,7 +95,7 @@ export async function GET(req, { params }) {
         'Accept-Ranges': 'bytes',
         'Content-Type': contentType,
         'Content-Length': fileSize.toString(),
-        'Cache-Control': 'public, max-age=31536000, immutable',
+        'Cache-Control': 'public, max-age=3600, must-revalidate',
       },
     });
 
