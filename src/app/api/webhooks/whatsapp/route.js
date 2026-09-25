@@ -303,16 +303,16 @@ export async function POST(req) {
           await delay(2500);
 
           const sofaVideos = [
-            { name: "Sofa Modular en L", file: "Tarjeta 1 Sofa Modular en L.mp4" },
-            { name: "Sofa Cama Tandem", file: "Tarjeta 2 Sofa Cama Tandem.mp4" },
-            { name: "Sofa Avila", file: "Tarjeta 3 Sofa Avila.mp4" },
-            { name: "Sofa Remanso", file: "Tarjeta 4 Sofa Remanso.mp4" },
-            { name: "Sofa Cama Plegable", file: "Tarjeta 5 Sofa Cama Plegable.mp4" },
-            { name: "Sofa Reclinable", file: "Tarjeta 6 Sofa Reclinable.mp4" },
-            { name: "Sofa Merey", file: "Tarjeta 7 Sofa Merey.mp4" },
-            { name: "Sofa Caterpillar", file: "Tarjeta 8 Sofa Caterpillar.mp4" },
-            { name: "Sofa Burbuja", file: "Tarjeta 9 Sofa Burbuja.mp4" },
-            { name: "Sofa Nube Modular", file: "Tarjeta 10 Sofa Nube Modular.mp4" }
+            { name: "Sofa Modular en L", file: "sofa_modular_l.mp4" },
+            { name: "Sofa Cama Tandem", file: "sofa_cama_tandem.mp4" },
+            { name: "Sofa Avila", file: "sofa_avila.mp4" },
+            { name: "Sofa Remanso", file: "sofa_remanso.mp4" },
+            { name: "Sofa Cama Plegable", file: "sofa_cama_plegable.mp4" },
+            { name: "Sofa Reclinable", file: "sofa_reclinable.mp4" },
+            { name: "Sofa Merey", file: "sofa_merey.mp4" },
+            { name: "Sofa Caterpillar", file: "sofa_caterpillar.mp4" },
+            { name: "Sofa Burbuja", file: "sofa_burbuja.mp4" },
+            { name: "Sofa Nube Modular", file: "sofa_nube_modular.mp4" }
           ];
 
           const carouselSofas = [
@@ -326,7 +326,7 @@ export async function POST(req) {
                     parameters: [
                       {
                         type: "video",
-                        video: { link: `https://auto.practiiko.com/api/media/${encodeURIComponent(item.file)}` }
+                        video: { link: `https://auto.practiiko.com/api/media/${item.file}` }
                       }
                     ]
                   }
@@ -345,7 +345,7 @@ export async function POST(req) {
               content: '🎠 Carrusel de Sofás Comprimidos (10 modelos con video)',
               cards: sofaVideos.map(s => ({
                 title: s.name,
-                videoUrl: `https://auto.practiiko.com/api/media/${encodeURIComponent(s.file)}`,
+                videoUrl: `https://auto.practiiko.com/api/media/${s.file}`,
                 buttons: ['Contactar a un asesor', 'Más Información']
               }))
             })
@@ -378,10 +378,10 @@ export async function POST(req) {
           await delay(2500);
 
           const colchonVideos = [
-            { name: "Colchón Individual", file: "Tarjeta 1 Individual.mp4" },
-            { name: "Colchón Matrimonial", file: "Tarjeta 2 Matrimonial.mp4" },
-            { name: "Colchón Queen", file: "Tarjeta 3 Queen.mp4" },
-            { name: "Colchón King", file: "Tarjeta 4 King.mp4" }
+            { name: "Colchón Individual", file: "colchon_individual.mp4" },
+            { name: "Colchón Matrimonial", file: "colchon_matrimonial.mp4" },
+            { name: "Colchón Queen", file: "colchon_queen.mp4" },
+            { name: "Colchón King", file: "colchon_king.mp4" }
           ];
 
           const carouselColchones = [
@@ -395,7 +395,7 @@ export async function POST(req) {
                     parameters: [
                       {
                         type: "video",
-                        video: { link: `https://auto.practiiko.com/api/media/${encodeURIComponent(item.file)}` }
+                        video: { link: `https://auto.practiiko.com/api/media/${item.file}` }
                       }
                     ]
                   }
@@ -414,7 +414,7 @@ export async function POST(req) {
               content: '🎠 Carrusel de Colchones (4 medidas con video)',
               cards: colchonVideos.map(c => ({
                 title: c.name,
-                videoUrl: `https://auto.practiiko.com/api/media/${encodeURIComponent(c.file)}`,
+                videoUrl: `https://auto.practiiko.com/api/media/${c.file}`,
                 buttons: ['Contactar a un asesor', 'Más Información']
               }))
             })
@@ -447,12 +447,12 @@ export async function POST(req) {
           await delay(2500);
 
           const velasVideos = [
-            { name: "Opulencia", file: "Tarjeta 1 Opulencia.mp4" },
-            { name: "Midas", file: "Tarjeta 2 Midas.mp4" },
-            { name: "Estoico", file: "Tarjeta 3 Estoico.mp4" },
-            { name: "Atenea", file: "Tarjeta 4 Atenea.mp4" },
-            { name: "Venus", file: "Tarjeta 5 Venus.mp4" },
-            { name: "Vigor", file: "Tarjeta 6 Vigor.mp4" }
+            { name: "Opulencia", file: "vela_opulencia.mp4" },
+            { name: "Midas", file: "vela_midas.mp4" },
+            { name: "Estoico", file: "vela_estoico.mp4" },
+            { name: "Atenea", file: "vela_atenea.mp4" },
+            { name: "Venus", file: "vela_venus.mp4" },
+            { name: "Vigor", file: "vela_vigor.mp4" }
           ];
 
           const carouselVelas = [
@@ -466,7 +466,7 @@ export async function POST(req) {
                     parameters: [
                       {
                         type: "video",
-                        video: { link: `https://auto.practiiko.com/api/media/${encodeURIComponent(item.file)}` }
+                        video: { link: `https://auto.practiiko.com/api/media/${item.file}` }
                       }
                     ]
                   }

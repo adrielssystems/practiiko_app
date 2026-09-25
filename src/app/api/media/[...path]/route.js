@@ -61,23 +61,18 @@ export async function GET(req, { params }) {
     else if (ext === '.m4a' || ext === '.aac') contentType = 'audio/mp4';
 
     const range = req.headers.get('range');
-    const { Readable } = require('stream');
 
     if (range) {
       const parts = range.replace(/bytes=/, "").split("-");
       const start = parseInt(parts[0], 10);
-      
-      // Límite de chunk a 2MB para evitar saturación del buffer de red en móviles
-      const MAX_CHUNK_SIZE = 2 * 1024 * 1024;
       let end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
-      
-      const chunksize = (end - start) + 1;
-      
-      // Leer el archivo a memoria y servir la porción solicitada (evita bugs de Readable.toWeb en Next.js)
-      const fileBuffer = await fs.promises.readFile(filePath);
-      const chunk = fileBuffer.subarray(start, end + 1);
+      if (end >= fileSize) end = fileSize - 1;
 
-      return new NextResponse(chunk, {
+      const chunksize = (end - start) + 1;
+
+      const stream = fs.createReadStream(filePath, { start, end });
+
+      return new NextResponse(stream, {
         status: 206,
         headers: {
           'Content-Range': `bytes ${start}-${end}/${fileSize}`,

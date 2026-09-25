@@ -334,11 +334,9 @@
   - Al seleccionar **`SOFAS COMPRIMIDOS`** (o presionar `btn_sofas` / escribir *"SOFAS COMPRIMIDOS"*): Se despacha el video de beneficios (`benef2.mp4`), la nota de voz (`voice_beneficios.mp3`) y la nueva plantilla carrusel **`krrusel_a`**.
   - Al seleccionar **`COLCHONES`** (o presionar `btn_colchones` / escribir *"COLCHONES"*): Se despacha el video de beneficios, la nota de voz y la nueva plantilla carrusel **`krrusel_a_c`**.
   - Al seleccionar **`VELAS PERLADAS`** (o presionar `btn_velas` / escribir *"VELAS PERLADAS"*): Se despacha el video de beneficios, la nota de voz y la nueva plantilla carrusel **`krrusel_a_v`**.
-- **Vinculación de Videos por Tarjeta en Plantillas Carrusel (Cloud API):**
-  - Se configuró la inyección de los parámetros de cabecera (`header component parameters`) con codificación URL para que Meta procese los videos alojados en `public/media/`:
-    - **`krrusel_a` (Sofás - 10 tarjetas):** Tarjeta 1 Sofa Modular en L, Tarjeta 2 Sofa Cama Tandem, Tarjeta 3 Sofa Avila, Tarjeta 4 Sofa Remanso, Tarjeta 5 Sofa Cama Plegable, Tarjeta 6 Sofa Reclinable, Tarjeta 7 Sofa Merey, Tarjeta 8 Sofa Caterpillar, Tarjeta 9 Sofa Burbuja y Tarjeta 10 Sofa Nube Modular.
-    - **`krrusel_a_c` (Colchones - 4 tarjetas):** Tarjeta 1 Individual, Tarjeta 2 Matrimonial, Tarjeta 3 Queen y Tarjeta 4 King.
-    - **`krrusel_a_v` (Velas Perladas - 6 tarjetas):** Tarjeta 1 Opulencia, Tarjeta 2 Midas, Tarjeta 3 Estoico, Tarjeta 4 Atenea, Tarjeta 5 Venus y Tarjeta 6 Vigor.
+- **Saneamiento de Archivos y Optimización Faststart (Web Streaming):**
+  - **Eliminación de Espacios en Nombres:** Se renombraron todos los videos en `public/media/` utilizando nomenclatura limpia `snake_case` (ej. `sofa_modular_l.mp4`, `colchon_individual.mp4`, `vela_opulencia.mp4`). Esto previene que los servidores de Meta y los proxies CDN rompan la descarga o invaliden el parámetro URL codificado.
+  - **Inyección de `moov atom` al Inicio (Faststart):** Se procesaron todos los videos MP4 para reubicar la cabecera `moov` antes de los datos binarios `mdat`, permitiendo que la app de WhatsApp reproduzca y descargue el video de forma instantánea sin requerir la descarga completa previa.
 - **Acciones Interactivas en Tarjetas de Carruseles:**
   - **`Contactar a un asesor`:** El sistema intercepta el botón, responde *"Entendido, en la brevedad posible uno de nuestros asesores lo contactara!"*, pausa la IA del cliente (`ai_enabled = false`) y activa la alerta para el equipo humano (`requires_human = true`).
 - **Visualización Multimedia y Carruseles en el Panel de Monitoreo (`/whatsapp/[id]`):**
