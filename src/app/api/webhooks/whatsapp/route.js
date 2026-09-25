@@ -286,7 +286,40 @@ export async function POST(req) {
           await sendMediaFile(senderNumber, "audio", "https://auto.practiiko.com/api/media/voice_beneficios.mp3");
           await delay(2500);
 
-          await sendTemplate(senderNumber, "krrusel_a");
+          const sofaVideos = [
+            "Tarjeta 1 Sofa Modular en L.mp4",
+            "Tarjeta 2 Sofa Cama Tandem.mp4",
+            "Tarjeta 3 Sofa Avila.mp4",
+            "Tarjeta 4 Sofa Remanso.mp4",
+            "Tarjeta 5 Sofa Cama Plegable.mp4",
+            "Tarjeta 6 Sofa Reclinable.mp4",
+            "Tarjeta 7 Sofa Merey.mp4",
+            "Tarjeta 8 Sofa Caterpillar.mp4",
+            "Tarjeta 9 Sofa Burbuja.mp4",
+            "Tarjeta 10 Sofa Nube Modular.mp4"
+          ];
+
+          const carouselSofas = [
+            {
+              type: "carousel",
+              cards: sofaVideos.map((videoFile, idx) => ({
+                card_index: idx,
+                components: [
+                  {
+                    type: "header",
+                    parameters: [
+                      {
+                        type: "video",
+                        video: { link: `https://auto.practiiko.com/api/media/${encodeURIComponent(videoFile)}` }
+                      }
+                    ]
+                  }
+                ]
+              }))
+            }
+          ];
+
+          await sendTemplate(senderNumber, "krrusel_a", carouselSofas);
           return NextResponse.json({ status: "funnel_ruta_a_sofas" });
 
         } else if (interactiveId === "btn_colchones" || msgText.includes("COLCHONES")) {
@@ -298,7 +331,34 @@ export async function POST(req) {
           await sendMediaFile(senderNumber, "audio", "https://auto.practiiko.com/api/media/voice_beneficios.mp3");
           await delay(2500);
 
-          await sendTemplate(senderNumber, "krrusel_a_c");
+          const colchonVideos = [
+            "Tarjeta 1 Individual.mp4",
+            "Tarjeta 2 Matrimonial.mp4",
+            "Tarjeta 3 Queen.mp4",
+            "Tarjeta 4 King.mp4"
+          ];
+
+          const carouselColchones = [
+            {
+              type: "carousel",
+              cards: colchonVideos.map((videoFile, idx) => ({
+                card_index: idx,
+                components: [
+                  {
+                    type: "header",
+                    parameters: [
+                      {
+                        type: "video",
+                        video: { link: `https://auto.practiiko.com/api/media/${encodeURIComponent(videoFile)}` }
+                      }
+                    ]
+                  }
+                ]
+              }))
+            }
+          ];
+
+          await sendTemplate(senderNumber, "krrusel_a_c", carouselColchones);
           return NextResponse.json({ status: "funnel_ruta_a_colchones" });
 
         } else if (interactiveId === "btn_velas" || msgText.includes("VELAS PERLADAS") || msgText.includes("VELAS")) {
@@ -310,7 +370,36 @@ export async function POST(req) {
           await sendMediaFile(senderNumber, "audio", "https://auto.practiiko.com/api/media/voice_beneficios.mp3");
           await delay(2500);
 
-          await sendTemplate(senderNumber, "krrusel_a_v");
+          const velasVideos = [
+            "Tarjeta 1 Opulencia.mp4",
+            "Tarjeta 2 Midas.mp4",
+            "Tarjeta 3 Estoico.mp4",
+            "Tarjeta 4 Atenea.mp4",
+            "Tarjeta 5 Venus.mp4",
+            "Tarjeta 6 Vigor.mp4"
+          ];
+
+          const carouselVelas = [
+            {
+              type: "carousel",
+              cards: velasVideos.map((videoFile, idx) => ({
+                card_index: idx,
+                components: [
+                  {
+                    type: "header",
+                    parameters: [
+                      {
+                        type: "video",
+                        video: { link: `https://auto.practiiko.com/api/media/${encodeURIComponent(videoFile)}` }
+                      }
+                    ]
+                  }
+                ]
+              }))
+            }
+          ];
+
+          await sendTemplate(senderNumber, "krrusel_a_v", carouselVelas);
           return NextResponse.json({ status: "funnel_ruta_b_velas" });
 
         } else if (
