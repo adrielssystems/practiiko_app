@@ -325,6 +325,22 @@
 - **Renderizado Fiel a Instagram (`BotSimulator.js` y `/api/test-bot`):**
   - Se actualizó el endpoint de pruebas y el componente para renderizar un reproductor HTML5 con la nota de voz [`voice_beneficios.mp3`](file:///C:/Users/rhect/Documents/Proyectos/Practiiko/practiiko_app/public/media/voice_beneficios.mp3) cuando se recibe el primer mensaje.
   - Se añadieron botones de estilo nativo clickeables (**💬 Chat de WhatsApp** con estilo verde oficial y **📖 Ver Catálogo Web**), permitiendo auditar y probar la experiencia exacta de Instagram directamente desde el panel administrativo.
+## Tareas Realizadas (24 de Septiembre de 2026)
+
+### 1. Actualización de Workflow y Nuevas Plantillas en WhatsApp (YCloud / Cloud API)
+- **Reconfiguración de Botones de Bienvenida:**
+  - Se alineó el enrutador del webhook con la plantilla oficial `welcome` actualizada en YCloud, cuyos 3 botones de respuesta rápida son: **`SOFAS COMPRIMIDOS`**, **`COLCHONES`** y **`VELAS PERLADAS`**.
+- **Vinculación de Nuevas Plantillas Carrusel:**
+  - Al seleccionar **`SOFAS COMPRIMIDOS`** (o presionar `btn_sofas` / escribir *"SOFAS COMPRIMIDOS"*): Se despacha el video de beneficios (`benef2.mp4`), la nota de voz (`voice_beneficios.mp3`) y la nueva plantilla carrusel **`krrusel_a`**.
+  - Al seleccionar **`COLCHONES`** (o presionar `btn_colchones` / escribir *"COLCHONES"*): Se despacha el video de beneficios, la nota de voz y la nueva plantilla carrusel **`krrusel_a_c`**.
+  - Al seleccionar **`VELAS PERLADAS`** (o presionar `btn_velas` / escribir *"VELAS PERLADAS"*): Se despacha el video de beneficios, la nota de voz y la nueva plantilla carrusel **`krrusel_a_v`**.
+- **Simplificación de Payloads:** Las plantillas de carrusel utilizan las imágenes y textos estáticos ya aprobados y almacenados en YCloud/Meta, agilizando el despacho y eliminando componentes dinámicos innecesarios.
+- **Acciones Interactivas en Tarjetas de Carruseles:**
+  - **`Contactar a un asesor`:** El sistema intercepta el botón, responde *"Entendido, en la brevedad posible uno de nuestros asesores lo contactara!"*, pausa la IA del cliente (`ai_enabled = false`) y activa la alerta para el equipo humano (`requires_human = true`).
+- **Desconexión Total de Modelos de IA Generativa (DeepSeek / Gemini):**
+  - A requerimiento de la dirección de Practiiko, se removieron todas las invocaciones a modelos de lenguaje (LLM) y el mecanismo de debounce en WhatsApp.
+  - Cero generación de respuestas alucinatorias o no estructuradas y cero consumo de tokens de IA en este canal.
+  - Ante cualquier mensaje de texto abierto que no corresponda a los botones del embudo, el bot responde reorientando amablemente al cliente mediante el reenvío de la plantilla interactiva `welcome`.
 
 ## Planificación en Espera (Pendiente de Aprobación Comercial)
 

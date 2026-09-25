@@ -1,10 +1,7 @@
 import { NextResponse } from "next/server";
 import { query } from "@/lib/db";
-import { processWhatsappMessage } from "@/lib/ai/whatsappAgent";
 
 export const dynamic = "force-dynamic";
-
-const whatsappDebounceMap = new Map();
 
 const getPhoneId = () => process.env.WHATSAPP_PHONE_ID; // Ej. 584248948664
 const getApiKey = () => process.env.YCLOUD_API_KEY;
@@ -90,7 +87,7 @@ async function sendInteractiveMenu(to) {
         body: { text: "Para atenderte lo más rápido, dinos... ¿Qué quieres ver?" },
         action: {
           buttons: [
-            { type: "reply", reply: { id: "btn_sofas", title: "SOFÁS" } },
+            { type: "reply", reply: { id: "btn_sofas", title: "SOFAS COMPRIMIDOS" } },
             { type: "reply", reply: { id: "btn_colchones", title: "COLCHONES" } },
             { type: "reply", reply: { id: "btn_velas", title: "VELAS PERLADAS" } }
           ]
@@ -280,8 +277,8 @@ export async function POST(req) {
           return NextResponse.json({ status: "test_video_sent", result: res });
         }
 
-        if (interactiveId === "btn_sofas" || msgText === "SOFÁS" || msgText === "SOFAS") {
-          const responseMsg = "[Sistema] Envió beneficios genéricos y luego plantilla carrusel de Sofás.";
+        if (interactiveId === "btn_sofas" || msgText.includes("SOFAS COMPRIMIDOS") || msgText === "SOFÁS" || msgText === "SOFAS") {
+          const responseMsg = "[Sistema] Envió beneficios y plantilla 'krrusel_a' (Sofás).";
           await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [senderNumber, JSON.stringify({ role: 'assistant', content: responseMsg })]);
           
           await sendMediaFile(senderNumber, "video", "https://auto.practiiko.com/api/media/benef2.mp4");
@@ -289,74 +286,66 @@ export async function POST(req) {
           await sendMediaFile(senderNumber, "audio", "https://auto.practiiko.com/api/media/voice_beneficios.mp3");
           await delay(2500);
 
-          const carouselComponents = [
-            {
-              type: "carousel",
-              cards: [
-                {
-                  card_index: 0,
-                  components: [
-                    {
-                      type: "header",
-                      parameters: [
-                        {
-                          type: "image",
-                          image: { link: "https://www.practiiko.com/logo-p.jpeg" }
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  card_index: 1,
-                  components: [
-                    {
-                      type: "header",
-                      parameters: [
-                        {
-                          type: "image",
-                          image: { link: "https://www.practiiko.com/logo-p.jpeg" }
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ];
-          await sendTemplate(senderNumber, "template_marketing_20260822212224", carouselComponents);
+          await sendTemplate(senderNumber, "krrusel_a");
           return NextResponse.json({ status: "funnel_ruta_a_sofas" });
 
-        } else if (interactiveId === "btn_colchones" || msgText === "COLCHONES") {
-          const responseMsg = "[Sistema] Envió beneficios genéricos y luego media de Colchones.";
+        } else if (interactiveId === "btn_colchones" || msgText.includes("COLCHONES")) {
+          const responseMsg = "[Sistema] Envió beneficios y plantilla 'krrusel_a_c' (Colchones).";
           await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [senderNumber, JSON.stringify({ role: 'assistant', content: responseMsg })]);
           
           await sendMediaFile(senderNumber, "video", "https://auto.practiiko.com/api/media/benef2.mp4");
-          await delay(2000);
+          await delay(2500);
           await sendMediaFile(senderNumber, "audio", "https://auto.practiiko.com/api/media/voice_beneficios.mp3");
-          await delay(2000);
-          await sendMediaFile(senderNumber, "video", "https://auto.practiiko.com/api/media/video_colchones.mp4");
-          await delay(2000);
-          await sendMediaFile(senderNumber, "audio", "https://auto.practiiko.com/api/media/voice_colchones.mp3");
+          await delay(2500);
+
+          await sendTemplate(senderNumber, "krrusel_a_c");
           return NextResponse.json({ status: "funnel_ruta_a_colchones" });
 
-        } else if (interactiveId === "btn_velas" || msgText === "VELAS PERLADAS") {
-          const responseMsg = "[Sistema] Envió beneficios genéricos y luego Carrusel de Velas Perladas.";
+        } else if (interactiveId === "btn_velas" || msgText.includes("VELAS PERLADAS") || msgText.includes("VELAS")) {
+          const responseMsg = "[Sistema] Envió beneficios y plantilla 'krrusel_a_v' (Velas Perladas).";
           await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [senderNumber, JSON.stringify({ role: 'assistant', content: responseMsg })]);
           
           await sendMediaFile(senderNumber, "video", "https://auto.practiiko.com/api/media/benef2.mp4");
-          await delay(2000);
+          await delay(2500);
           await sendMediaFile(senderNumber, "audio", "https://auto.practiiko.com/api/media/voice_beneficios.mp3");
-          await delay(2000);
-          await sendTemplate(senderNumber, "carrusel_velas_a");
-          return NextResponse.json({ status: "funnel_ruta_b" });
-        } else if (interactiveId === "btn_ver_colores") {
-          // Fase 3 - Ruta B (Profundización): Carrusel B
-          const responseMsg = "[Sistema] Envió Carrusel B de Velas (Colores).";
-          await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [senderNumber, JSON.stringify({ role: 'assistant', content: responseMsg })]);
-          
-          await sendTemplate(senderNumber, "carrusel_velas_b");
-          return NextResponse.json({ status: "funnel_ruta_b_colores" });
+          await delay(2500);
+
+          await sendTemplate(senderNumber, "krrusel_a_v");
+          return NextResponse.json({ status: "funnel_ruta_b_velas" });
+
+        } else if (
+          (interactiveId && (interactiveId.includes("asesor") || interactiveId.includes("contactar"))) ||
+          msgText.includes("CONTACTAR A UN ASESOR") ||
+          msgText.includes("CONTACTAR ASESOR") ||
+          msgText.includes("ASESOR")
+        ) {
+          const replyText = "Entendido, en la brevedad posible uno de nuestros asesores lo contactara!";
+          await sendWhatsAppMessage(senderNumber, replyText);
+          await query(
+            `INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`,
+            [senderNumber, JSON.stringify({ role: 'assistant', content: replyText })]
+          );
+          // Pausar IA y marcar que requiere asesor humano
+          await query(
+            `UPDATE whatsapp_customers SET ai_enabled = false, requires_human = true WHERE id = $1`,
+            [senderNumber]
+          );
+          return NextResponse.json({ status: "funnel_contactar_asesor" });
+
+        } else if (
+          (interactiveId && (interactiveId.includes("info") || interactiveId.includes("mas_info") || interactiveId.includes("catalogo"))) ||
+          msgText.includes("MAS INFORMACION") ||
+          msgText.includes("MÁS INFORMACIÓN") ||
+          msgText.includes("MAS INFORMACIÓN") ||
+          msgText.includes("MÁS INFORMACION")
+        ) {
+          const replyText = "Con gusto. Puede explorar todos nuestros modelos, medidas y precios directamente en nuestro catálogo oficial:\nhttps://www.practiiko.com/catalogo";
+          await sendWhatsAppMessage(senderNumber, replyText);
+          await query(
+            `INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`,
+            [senderNumber, JSON.stringify({ role: 'assistant', content: replyText })]
+          );
+          return NextResponse.json({ status: "funnel_mas_informacion" });
         }
       }
 
@@ -401,49 +390,27 @@ export async function POST(req) {
       }
 
       // ==========================================
-      // FIN DEL FUNNEL. SI EL MENSAJE NO ENCAJÓ EN NADA DE ARRIBA, VA A DEEPSEEK (FALLBACK)
+      // MENSAJES LIBRES NO CUBIERTOS: REORIENTAR AL FLUJO DETERMINISTA
+      // (Se desconectó DeepSeek/Gemini a petición de la dirección de la empresa)
       // ==========================================
-
-      const protocol = req.headers.get("x-forwarded-proto") || "https";
-      const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "auto.practiiko.com";
-      let baseUrl = `${protocol}://${host}`;
-      if (baseUrl.includes("localhost") || baseUrl.includes("practiiko_app")) baseUrl = "https://auto.practiiko.com";
-
-      // Procesar con IA y responder (con debounce de 5 segundos)
-      let debounceState = whatsappDebounceMap.get(senderNumber);
-      if (debounceState) {
-        clearTimeout(debounceState.timer);
-        debounceState.messages.push(userMessage);
-        debounceState.pushName = pushName;
-        debounceState.baseUrl = baseUrl;
-      } else {
-        debounceState = {
-          messages: [userMessage],
-          pushName,
-          baseUrl,
-          timer: null
-        };
-        whatsappDebounceMap.set(senderNumber, debounceState);
-      }
-
-      debounceState.timer = setTimeout(async () => {
-        whatsappDebounceMap.delete(senderNumber);
-        const combinedMessage = debounceState.messages.join(" ").trim();
-        
-        try {
-          const aiResponse = await processWhatsappMessage(combinedMessage, senderNumber, debounceState.pushName, debounceState.baseUrl);
-          if (aiResponse.ignored) return;
-
-          await sendWhatsAppMessage(senderNumber, aiResponse.text);
-          if (aiResponse.imageUrls && aiResponse.imageUrls.length > 0) {
-            for (const imgUrl of aiResponse.imageUrls) {
-              await sendWhatsAppImage(senderNumber, imgUrl);
+      await delay(1000);
+      const headerComponent = [
+        {
+          type: "header",
+          parameters: [
+            {
+              type: "image",
+              image: { link: "https://www.practiiko.com/logo-p.jpeg" }
             }
-          }
-        } catch (e) {
-          console.error("[ERROR WHATSAPP AI]:", e);
+          ]
         }
-      }, 5000);
+      ];
+      await sendTemplate(senderNumber, "welcome", headerComponent);
+      await query(
+        `INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`,
+        [senderNumber, JSON.stringify({ role: 'assistant', content: "[Sistema] Reorientación: Plantilla 'welcome' enviada." })]
+      );
+      return NextResponse.json({ status: "funnel_reorient_welcome" });
       
     } else if (body.type === "whatsapp.message.echo" || (body.whatsappInboundMessage?.data?.type === "smb_message_echoes")) {
       const wim = body.whatsappInboundMessage || body.message;
