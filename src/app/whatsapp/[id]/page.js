@@ -118,10 +118,15 @@ export default async function WhatsAppChatPage({ params }) {
             const data = typeof m.message === 'string' ? JSON.parse(m.message) : m.message;
             const isBot = data.role === 'assistant';
             
+            const isVideo = data.type === 'video' || (data.mediaUrl && data.mediaUrl.endsWith('.mp4'));
+            const isAudio = data.type === 'audio' || (data.mediaUrl && data.mediaUrl.endsWith('.mp3'));
+            const isTemplate = data.type === 'template' || data.isWelcomeTemplate;
+            const isCarousel = data.type === 'carousel';
+
             return (
               <div key={idx} style={{ 
                 alignSelf: isBot ? 'flex-start' : 'flex-end',
-                maxWidth: '80%',
+                maxWidth: isCarousel ? '92%' : '80%',
                 padding: '1rem 1.25rem',
                 borderRadius: isBot ? '20px 20px 20px 5px' : '20px 20px 5px 20px',
                 background: isBot ? 'white' : '#25D366',
@@ -129,9 +134,133 @@ export default async function WhatsAppChatPage({ params }) {
                 boxShadow: '0 2px 5px rgba(0,0,0,0.05)',
                 position: 'relative'
               }}>
+                {/* 1. Header con Imagen para Plantillas (Welcome) */}
+                {isTemplate && data.imageUrl && (
+                  <div style={{ marginBottom: '0.75rem', borderRadius: '12px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                    <img 
+                      src={data.imageUrl} 
+                      alt="Encabezado" 
+                      style={{ width: '100%', maxHeight: '180px', objectFit: 'cover', display: 'block' }} 
+                    />
+                  </div>
+                )}
+
+                {/* 2. Reproductor de Video */}
+                {isVideo && (
+                  <div style={{ marginBottom: '0.75rem', borderRadius: '12px', overflow: 'hidden', background: '#000' }}>
+                    <video 
+                      controls 
+                      playsInline 
+                      preload="metadata"
+                      src={data.mediaUrl} 
+                      style={{ width: '100%', maxHeight: '260px', display: 'block' }}
+                    >
+                      Tu navegador no soporta el reproductor de video.
+                    </video>
+                  </div>
+                )}
+
+                {/* 3. Reproductor de Audio (Nota de Voz) */}
+                {isAudio && (
+                  <div style={{ marginBottom: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#059669', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      🎙️ Nota de voz enviada
+                    </div>
+                    <audio 
+                      controls 
+                      src={data.mediaUrl} 
+                      style={{ width: '100%', height: '36px', outline: 'none' }}
+                    >
+                      Tu navegador no soporta audio.
+                    </audio>
+                  </div>
+                )}
+
+                {/* 4. Carrusel Horizontal de Tarjetas */}
+                {isCarousel && data.cards && data.cards.length > 0 && (
+                  <div style={{ 
+                    display: 'flex', 
+                    gap: '1rem', 
+                    overflowX: 'auto', 
+                    paddingBottom: '0.5rem',
+                    marginBottom: '0.5rem',
+                    maxWidth: '100%'
+                  }}>
+                    {data.cards.map((card, cIdx) => (
+                      <div key={cIdx} style={{
+                        flex: '0 0 200px',
+                        background: '#f8fafc',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '14px',
+                        overflow: 'hidden',
+                        display: 'flex',
+                        flexDirection: 'column'
+                      }}>
+                        {card.videoUrl && (
+                          <div style={{ background: '#000', height: '140px' }}>
+                            <video 
+                              controls 
+                              playsInline 
+                              preload="metadata"
+                              src={card.videoUrl} 
+                              style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                            />
+                          </div>
+                        )}
+                        <div style={{ padding: '0.75rem', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.5rem' }}>
+                            {card.title}
+                          </span>
+                          {card.buttons && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                              {card.buttons.map((bName, bIdx) => (
+                                <div key={bIdx} style={{
+                                  background: '#fff',
+                                  border: '1px solid #cbd5e1',
+                                  borderRadius: '8px',
+                                  padding: '0.35rem 0.5rem',
+                                  fontSize: '0.72rem',
+                                  textAlign: 'center',
+                                  color: '#2563eb',
+                                  fontWeight: 600
+                                }}>
+                                  {bName}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Texto del Mensaje */}
                 <div style={{ fontSize: '0.95rem', lineHeight: '1.5', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                   {renderMessageWithLinks(data.content)}
                 </div>
+
+                {/* Botones de Respuesta Rápida (para plantillas como Welcome) */}
+                {isTemplate && data.buttons && data.buttons.length > 0 && (
+                  <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                    {data.buttons.map((btnTitle, bIdx) => (
+                      <div key={bIdx} style={{
+                        background: '#f1f5f9',
+                        border: '1px solid #cbd5e1',
+                        borderRadius: '10px',
+                        padding: '0.5rem',
+                        fontSize: '0.8rem',
+                        textAlign: 'center',
+                        color: '#059669',
+                        fontWeight: 700,
+                        letterSpacing: '0.3px'
+                      }}>
+                        ↩ {btnTitle}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 <div style={{ 
                   fontSize: '0.65rem', 
                   marginTop: '0.4rem', 

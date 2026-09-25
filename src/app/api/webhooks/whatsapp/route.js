@@ -278,31 +278,47 @@ export async function POST(req) {
         }
 
         if (interactiveId === "btn_sofas" || msgText.includes("SOFAS COMPRIMIDOS") || msgText === "SOFÁS" || msgText === "SOFAS") {
-          const responseMsg = "[Sistema] Envió beneficios y plantilla 'krrusel_a' (Sofás).";
-          await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [senderNumber, JSON.stringify({ role: 'assistant', content: responseMsg })]);
-          
           await sendMediaFile(senderNumber, "video", "https://auto.practiiko.com/api/media/benef2.mp4");
+          await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [
+            senderNumber, 
+            JSON.stringify({ 
+              role: 'assistant', 
+              type: 'video',
+              mediaUrl: 'https://auto.practiiko.com/api/media/benef2.mp4',
+              content: '📹 Video de beneficios: Sofás Comprimidos en Caja' 
+            })
+          ]);
           await delay(2500);
+
           await sendMediaFile(senderNumber, "audio", "https://auto.practiiko.com/api/media/voice_beneficios.mp3");
+          await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [
+            senderNumber, 
+            JSON.stringify({ 
+              role: 'assistant', 
+              type: 'audio',
+              mediaUrl: 'https://auto.practiiko.com/api/media/voice_beneficios.mp3',
+              content: '🎙️ Nota de voz de beneficios' 
+            })
+          ]);
           await delay(2500);
 
           const sofaVideos = [
-            "Tarjeta 1 Sofa Modular en L.mp4",
-            "Tarjeta 2 Sofa Cama Tandem.mp4",
-            "Tarjeta 3 Sofa Avila.mp4",
-            "Tarjeta 4 Sofa Remanso.mp4",
-            "Tarjeta 5 Sofa Cama Plegable.mp4",
-            "Tarjeta 6 Sofa Reclinable.mp4",
-            "Tarjeta 7 Sofa Merey.mp4",
-            "Tarjeta 8 Sofa Caterpillar.mp4",
-            "Tarjeta 9 Sofa Burbuja.mp4",
-            "Tarjeta 10 Sofa Nube Modular.mp4"
+            { name: "Sofa Modular en L", file: "Tarjeta 1 Sofa Modular en L.mp4" },
+            { name: "Sofa Cama Tandem", file: "Tarjeta 2 Sofa Cama Tandem.mp4" },
+            { name: "Sofa Avila", file: "Tarjeta 3 Sofa Avila.mp4" },
+            { name: "Sofa Remanso", file: "Tarjeta 4 Sofa Remanso.mp4" },
+            { name: "Sofa Cama Plegable", file: "Tarjeta 5 Sofa Cama Plegable.mp4" },
+            { name: "Sofa Reclinable", file: "Tarjeta 6 Sofa Reclinable.mp4" },
+            { name: "Sofa Merey", file: "Tarjeta 7 Sofa Merey.mp4" },
+            { name: "Sofa Caterpillar", file: "Tarjeta 8 Sofa Caterpillar.mp4" },
+            { name: "Sofa Burbuja", file: "Tarjeta 9 Sofa Burbuja.mp4" },
+            { name: "Sofa Nube Modular", file: "Tarjeta 10 Sofa Nube Modular.mp4" }
           ];
 
           const carouselSofas = [
             {
               type: "carousel",
-              cards: sofaVideos.map((videoFile, idx) => ({
+              cards: sofaVideos.map((item, idx) => ({
                 card_index: idx,
                 components: [
                   {
@@ -310,7 +326,7 @@ export async function POST(req) {
                     parameters: [
                       {
                         type: "video",
-                        video: { link: `https://auto.practiiko.com/api/media/${encodeURIComponent(videoFile)}` }
+                        video: { link: `https://auto.practiiko.com/api/media/${encodeURIComponent(item.file)}` }
                       }
                     ]
                   }
@@ -320,28 +336,58 @@ export async function POST(req) {
           ];
 
           await sendTemplate(senderNumber, "krrusel_a", carouselSofas);
+          await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [
+            senderNumber, 
+            JSON.stringify({ 
+              role: 'assistant', 
+              type: 'carousel',
+              template: 'krrusel_a',
+              content: '🎠 Carrusel de Sofás Comprimidos (10 modelos con video)',
+              cards: sofaVideos.map(s => ({
+                title: s.name,
+                videoUrl: `https://auto.practiiko.com/api/media/${encodeURIComponent(s.file)}`,
+                buttons: ['Contactar a un asesor', 'Más Información']
+              }))
+            })
+          ]);
           return NextResponse.json({ status: "funnel_ruta_a_sofas" });
 
         } else if (interactiveId === "btn_colchones" || msgText.includes("COLCHONES")) {
-          const responseMsg = "[Sistema] Envió beneficios y plantilla 'krrusel_a_c' (Colchones).";
-          await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [senderNumber, JSON.stringify({ role: 'assistant', content: responseMsg })]);
-          
           await sendMediaFile(senderNumber, "video", "https://auto.practiiko.com/api/media/benef2.mp4");
+          await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [
+            senderNumber, 
+            JSON.stringify({ 
+              role: 'assistant', 
+              type: 'video',
+              mediaUrl: 'https://auto.practiiko.com/api/media/benef2.mp4',
+              content: '📹 Video de beneficios: Colchones' 
+            })
+          ]);
           await delay(2500);
+
           await sendMediaFile(senderNumber, "audio", "https://auto.practiiko.com/api/media/voice_beneficios.mp3");
+          await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [
+            senderNumber, 
+            JSON.stringify({ 
+              role: 'assistant', 
+              type: 'audio',
+              mediaUrl: 'https://auto.practiiko.com/api/media/voice_beneficios.mp3',
+              content: '🎙️ Nota de voz de beneficios' 
+            })
+          ]);
           await delay(2500);
 
           const colchonVideos = [
-            "Tarjeta 1 Individual.mp4",
-            "Tarjeta 2 Matrimonial.mp4",
-            "Tarjeta 3 Queen.mp4",
-            "Tarjeta 4 King.mp4"
+            { name: "Colchón Individual", file: "Tarjeta 1 Individual.mp4" },
+            { name: "Colchón Matrimonial", file: "Tarjeta 2 Matrimonial.mp4" },
+            { name: "Colchón Queen", file: "Tarjeta 3 Queen.mp4" },
+            { name: "Colchón King", file: "Tarjeta 4 King.mp4" }
           ];
 
           const carouselColchones = [
             {
               type: "carousel",
-              cards: colchonVideos.map((videoFile, idx) => ({
+              cards: colchonVideos.map((item, idx) => ({
                 card_index: idx,
                 components: [
                   {
@@ -349,7 +395,7 @@ export async function POST(req) {
                     parameters: [
                       {
                         type: "video",
-                        video: { link: `https://auto.practiiko.com/api/media/${encodeURIComponent(videoFile)}` }
+                        video: { link: `https://auto.practiiko.com/api/media/${encodeURIComponent(item.file)}` }
                       }
                     ]
                   }
@@ -359,30 +405,60 @@ export async function POST(req) {
           ];
 
           await sendTemplate(senderNumber, "krrusel_a_c", carouselColchones);
+          await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [
+            senderNumber, 
+            JSON.stringify({ 
+              role: 'assistant', 
+              type: 'carousel',
+              template: 'krrusel_a_c',
+              content: '🎠 Carrusel de Colchones (4 medidas con video)',
+              cards: colchonVideos.map(c => ({
+                title: c.name,
+                videoUrl: `https://auto.practiiko.com/api/media/${encodeURIComponent(c.file)}`,
+                buttons: ['Contactar a un asesor', 'Más Información']
+              }))
+            })
+          ]);
           return NextResponse.json({ status: "funnel_ruta_a_colchones" });
 
         } else if (interactiveId === "btn_velas" || msgText.includes("VELAS PERLADAS") || msgText.includes("VELAS")) {
-          const responseMsg = "[Sistema] Envió beneficios y plantilla 'krrusel_a_v' (Velas Perladas).";
-          await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [senderNumber, JSON.stringify({ role: 'assistant', content: responseMsg })]);
-          
           await sendMediaFile(senderNumber, "video", "https://auto.practiiko.com/api/media/benef2.mp4");
+          await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [
+            senderNumber, 
+            JSON.stringify({ 
+              role: 'assistant', 
+              type: 'video',
+              mediaUrl: 'https://auto.practiiko.com/api/media/benef2.mp4',
+              content: '📹 Video de beneficios: Velas Perladas' 
+            })
+          ]);
           await delay(2500);
+
           await sendMediaFile(senderNumber, "audio", "https://auto.practiiko.com/api/media/voice_beneficios.mp3");
+          await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [
+            senderNumber, 
+            JSON.stringify({ 
+              role: 'assistant', 
+              type: 'audio',
+              mediaUrl: 'https://auto.practiiko.com/api/media/voice_beneficios.mp3',
+              content: '🎙️ Nota de voz de beneficios' 
+            })
+          ]);
           await delay(2500);
 
           const velasVideos = [
-            "Tarjeta 1 Opulencia.mp4",
-            "Tarjeta 2 Midas.mp4",
-            "Tarjeta 3 Estoico.mp4",
-            "Tarjeta 4 Atenea.mp4",
-            "Tarjeta 5 Venus.mp4",
-            "Tarjeta 6 Vigor.mp4"
+            { name: "Opulencia", file: "Tarjeta 1 Opulencia.mp4" },
+            { name: "Midas", file: "Tarjeta 2 Midas.mp4" },
+            { name: "Estoico", file: "Tarjeta 3 Estoico.mp4" },
+            { name: "Atenea", file: "Tarjeta 4 Atenea.mp4" },
+            { name: "Venus", file: "Tarjeta 5 Venus.mp4" },
+            { name: "Vigor", file: "Tarjeta 6 Vigor.mp4" }
           ];
 
           const carouselVelas = [
             {
               type: "carousel",
-              cards: velasVideos.map((videoFile, idx) => ({
+              cards: velasVideos.map((item, idx) => ({
                 card_index: idx,
                 components: [
                   {
@@ -390,7 +466,7 @@ export async function POST(req) {
                     parameters: [
                       {
                         type: "video",
-                        video: { link: `https://auto.practiiko.com/api/media/${encodeURIComponent(videoFile)}` }
+                        video: { link: `https://auto.practiiko.com/api/media/${encodeURIComponent(item.file)}` }
                       }
                     ]
                   }
@@ -400,6 +476,20 @@ export async function POST(req) {
           ];
 
           await sendTemplate(senderNumber, "krrusel_a_v", carouselVelas);
+          await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [
+            senderNumber, 
+            JSON.stringify({ 
+              role: 'assistant', 
+              type: 'carousel',
+              template: 'krrusel_a_v',
+              content: '🎠 Carrusel de Velas Perladas (6 fragancias/modelos con video)',
+              cards: velasVideos.map(v => ({
+                title: v.name,
+                videoUrl: `https://auto.practiiko.com/api/media/${encodeURIComponent(v.file)}`,
+                buttons: ['Contactar a un asesor', 'Más Información']
+              }))
+            })
+          ]);
           return NextResponse.json({ status: "funnel_ruta_b_velas" });
 
         } else if (
@@ -474,7 +564,17 @@ export async function POST(req) {
         
         await sendTemplate(senderNumber, "welcome", headerComponent);
         
-        await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [senderNumber, JSON.stringify({ role: 'assistant', content: "[Sistema] Plantilla 'welcome' enviada." })]);
+        await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [
+          senderNumber, 
+          JSON.stringify({ 
+            role: 'assistant', 
+            type: 'template',
+            template: 'welcome',
+            imageUrl: 'https://www.practiiko.com/logo-p.jpeg',
+            content: "¡Bienvenido a PRACTIIKO!\nEstamos aquí para ayudarte a encontrar la solución perfecta para tu hogar.\n¿Qué quieres ver?",
+            buttons: ['SOFAS COMPRIMIDOS', 'COLCHONES', 'VELAS PERLADAS']
+          })
+        ]);
         return NextResponse.json({ status: "funnel_fase2_template" });
       }
 
@@ -497,7 +597,17 @@ export async function POST(req) {
       await sendTemplate(senderNumber, "welcome", headerComponent);
       await query(
         `INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`,
-        [senderNumber, JSON.stringify({ role: 'assistant', content: "[Sistema] Reorientación: Plantilla 'welcome' enviada." })]
+        [
+          senderNumber, 
+          JSON.stringify({ 
+            role: 'assistant', 
+            type: 'template',
+            template: 'welcome',
+            imageUrl: 'https://www.practiiko.com/logo-p.jpeg',
+            content: "¡Bienvenido a PRACTIIKO!\nEstamos aquí para ayudarte a encontrar la solución perfecta para tu hogar.\n¿Qué quieres ver?",
+            buttons: ['SOFAS COMPRIMIDOS', 'COLCHONES', 'VELAS PERLADAS']
+          })
+        ]
       );
       return NextResponse.json({ status: "funnel_reorient_welcome" });
       

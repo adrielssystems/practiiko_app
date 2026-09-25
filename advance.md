@@ -341,10 +341,12 @@
     - **`krrusel_a_v` (Velas Perladas - 6 tarjetas):** Tarjeta 1 Opulencia, Tarjeta 2 Midas, Tarjeta 3 Estoico, Tarjeta 4 Atenea, Tarjeta 5 Venus y Tarjeta 6 Vigor.
 - **Acciones Interactivas en Tarjetas de Carruseles:**
   - **`Contactar a un asesor`:** El sistema intercepta el botón, responde *"Entendido, en la brevedad posible uno de nuestros asesores lo contactara!"*, pausa la IA del cliente (`ai_enabled = false`) y activa la alerta para el equipo humano (`requires_human = true`).
-- **Desconexión Total de Modelos de IA Generativa (DeepSeek / Gemini):**
-  - A requerimiento de la dirección de Practiiko, se removieron todas las invocaciones a modelos de lenguaje (LLM) y el mecanismo de debounce en WhatsApp.
-  - Cero generación de respuestas alucinatorias o no estructuradas y cero consumo de tokens de IA en este canal.
-  - Ante cualquier mensaje de texto abierto que no corresponda a los botones del embudo, el bot responde reorientando amablemente al cliente mediante el reenvío de la plantilla interactiva `welcome`.
+- **Visualización Multimedia y Carruseles en el Panel de Monitoreo (`/whatsapp/[id]`):**
+  - Se refactorizó la persistencia del webhook para almacenar objetos estructurados (`video`, `audio`, `template`, `carousel`) en lugar de simples strings de log.
+  - La interfaz de chat del Autogestor ahora renderiza:
+    - **Plantilla `welcome`:** Imagen del logo en cabecera, texto real y botones nativos (`SOFAS COMPRIMIDOS`, `COLCHONES`, `VELAS PERLADAS`).
+    - **Media:** Reproductores nativos de video HTML5 (`benef2.mp4`) y notas de voz (`voice_beneficios.mp3`).
+    - **Carruseles:** Vista previa interactiva con scroll horizontal de las tarjetas con sus videos y botones de acción (`Contactar a un asesor` y `Más Información`).
 
 ## Planificación en Espera (Pendiente de Aprobación Comercial)
 
