@@ -362,6 +362,16 @@
     - Video de beneficios (`benef2.mp4`): de 14.3 MB a **6.9 MB**.
   - Validación completa: Todos los archivos tienen el átomo `moov` al inicio (`+faststart`) y fueron validados con `ffmpeg -v error -f null` con 0 errores de streams o NAL units.
 
+### 3. Personalización de Videos y Audios por Categoría en Plantilla Welcome (27 de Septiembre de 2026)
+- **Segmentación Multimedia:** Se reemplazó el video y audio genérico de beneficios (`benef2.mp4` / `voice_beneficios.mp3`) por contenido específico para cada categoría seleccionada en la plantilla de bienvenida `welcome`:
+  - **`SOFAS COMPRIMIDOS`**: Envía `video_sofas.mp4` (~15.6 MB optimizado a 720p H.264) y la nota de voz `voice_sofas.mp3` (153 KB, 44.1kHz MP3).
+  - **`COLCHONES`**: Envía `video_colchones.mp4` (~8.9 MB optimizado a 720p H.264) y la nota de voz `voice_colchones.mp3` (141 KB, 44.1kHz MP3).
+  - **`VELAS PERLADAS`**: Envía `video_velas.mp4` (~6.4 MB optimizado a 720p H.264) y la nota de voz `voice_velas.mp3` (212 KB, 44.1kHz MP3).
+- **Procesamiento y Estandarización de Archivos:**
+  - Los audios originales (`VOICE_*.mp3.mpeg`) fueron decodificados y re-encapsulados como MP3 estándar nativo a 64 kbps con tasa de muestreo 44.1 kHz para compatibilidad inmediata en WhatsApp móvil y Web.
+  - Los videos (`VIDEO_*.mp4`) fueron re-codificados con FFmpeg a 720p (`scale='min(720,iw)':-2`), códec H.264 baseline/high con bandera `-movflags +faststart` para streaming instantáneo.
+- **Cache-Busting:** Se integró el parámetro de versión `?v=2` en las URLs para evitar lecturas cacheadas de la CDN.
+
 
 ## Planificación en Espera (Pendiente de Aprobación Comercial)
 
