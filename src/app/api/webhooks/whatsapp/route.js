@@ -557,14 +557,14 @@ export async function POST(req) {
       if (isFirstContact) {
         await delay(1500); // Retraso simulado
         
-        // La plantilla 'welcome' configurada con header de video (GIF)
+        // La plantilla 'welcome' configurada con header de formato GIF (esperado por Meta para esta plantilla)
         const headerComponent = [
           {
             type: "header",
             parameters: [
               {
-                type: "video",
-                video: { link: "https://auto.practiiko.com/api/media/gif_welcome.mp4?v=2" }
+                type: "gif",
+                gif: { link: "https://auto.practiiko.com/api/media/gif_welcome.mp4?v=2" }
               }
             ]
           }
@@ -596,8 +596,8 @@ export async function POST(req) {
           type: "header",
           parameters: [
             {
-              type: "video",
-              video: { link: "https://auto.practiiko.com/api/media/gif_welcome.mp4?v=2" }
+              type: "gif",
+              gif: { link: "https://auto.practiiko.com/api/media/gif_welcome.mp4?v=2" }
             }
           ]
         }
