@@ -376,7 +376,7 @@ export async function POST(req) {
                   // 2. Intentar además enviar por DM privado el mensaje con catálogo y WhatsApp (si Meta lo autoriza para este comentario)
                   const dmText = aiResponse.dmText || aiResponse.text;
                   try {
-                    await sendInstagramPrivateReply(commentId, dmText, pageId);
+                    await sendInstagramPrivateReply(commentId, dmText, pageId, senderId);
                     if (aiResponse.imageUrls && aiResponse.imageUrls.length > 0) {
                       for (const imgUrl of aiResponse.imageUrls) {
                         await sendInstagramImage(senderId, imgUrl);
@@ -563,16 +563,28 @@ async function sendInstagramMessage(recipientId, text) {
   }
 }
 
-// Función para enviar respuesta privada a un comentario (DM automático con botones clickeables)
-async function sendInstagramPrivateReply(commentId, text, igId = "me") {
+// Función para enviar respuesta privada a un comentario (DM automático con audio nativo y botón PULSA ACÁ)
+async function sendInstagramPrivateReply(commentId, text, igId = "me", senderId = null) {
   const PAGE_ACCESS_TOKEN = process.env.INSTAGRAM_PAGE_ACCESS_TOKEN?.trim();
   if (!PAGE_ACCESS_TOKEN) return;
+
+  // Enviar audio nativo de beneficios genéricos si se dispone del senderId
+  if (senderId) {
+    try {
+      const audioUrl = "https://auto.practiiko.com/api/media/voice_beneficios.m4a?v=2";
+      console.log(`[INSTAGRAM COMMENT PRIVATE] Despachando audio nativo de beneficios a ${senderId}: ${audioUrl}`);
+      await sendInstagramAudio(senderId, audioUrl);
+      await new Promise(r => setTimeout(r, 1500));
+    } catch (audioErr) {
+      console.warn("[INSTAGRAM COMMENT PRIVATE AUDIO WARN]:", audioErr.message);
+    }
+  }
 
   console.log(`[DEBUG] Intentando respuesta privada via /${igId}/messages con token IGAA`);
 
   const url = `https://graph.instagram.com/v21.0/${igId}/messages`;
 
-  // 1. Intentar enviar con Plantilla Genérica de Meta (Botones Clickeables Interactivos)
+  // 1. Intentar enviar con Plantilla Genérica de Meta (Botón interactivo PULSA ACÁ hacia WhatsApp)
   const templatePayload = {
     recipient: { comment_id: commentId },
     message: {
@@ -583,17 +595,12 @@ async function sendInstagramPrivateReply(commentId, text, igId = "me") {
           elements: [
             {
               title: "Practiiko 💎",
-              subtitle: "¡Hola! Gracias por comunicarte. Elige una opción:",
+              subtitle: text || "Estás solo a un CLIC de distancia para transformar tu hogar.",
               buttons: [
                 {
                   type: "web_url",
-                  url: "https://practiiko.com/catalogo",
-                  title: "📖 Ver Catálogo Web"
-                },
-                {
-                  "type": "web_url",
-                  url: "https://wa.me/584248948664",
-                  title: "💬 Chat de WhatsApp"
+                  url: "https://wa.me/584248948664?text=Quiero%20transformar%20mi%20hogar",
+                  title: "📲 PULSA ACÁ"
                 }
               ]
             }
@@ -618,7 +625,7 @@ async function sendInstagramPrivateReply(commentId, text, igId = "me") {
       console.warn("[PRIVATE REPLY TEMPLATE WARN]:", data.error.message, "-> Usando fallback de texto formateado...");
       await sendInstagramPrivateReplyText(commentId, text, igId);
     } else {
-      console.log(`[INSTAGRAM] Respuesta privada con tarjeta de botones clickeables enviada al comentario ${commentId}`);
+      console.log(`[INSTAGRAM] Respuesta privada estandarizada enviada al comentario ${commentId}`);
     }
   } catch (e) {
     console.error("[EXCEPTION PRIVATE REPLY TEMPLATE]:", e);

@@ -408,7 +408,7 @@ export async function processInstagramMessage(message, sessionId, customerName =
       ];
 
       const publicCommentResponse = commentResponses[Math.floor(Math.random() * commentResponses.length)];
-      const privateDmResponse = `¡Hola! Estás solo a un CLIC de distancia para transformar tu hogar 💎\n\nDescubre nuestros productos modernos, funcionales, innovadores y de tendencia; creados para darle a su hogar el estilo y confort que se merece.\n\n📲 Escríbenos directo al WhatsApp para atención inmediata y conocer todas nuestras promociones:\n👉 https://wa.me/584248948664?text=Quiero%20transformar%20mi%20hogar\n\n📖 O mira nuestra colección completa y precios aquí:\nhttps://practiiko.com/catalogo`;
+      const privateDmResponse = `Estás solo a un CLIC de distancia para transformar tu hogar.\nDescubre nuestros productos modernos, funcionales, innovadores y de tendencia; creados para darle a su hogar el estilo y confort que se merece.`;
 
       await query(
         `INSERT INTO instagram_messages (session_id, message, source, comment_id) VALUES ($1, $2, $3, $4)`,
@@ -442,7 +442,7 @@ export async function processInstagramMessage(message, sessionId, customerName =
 
     // Enviar el flujo estricto de bienvenida para el PRIMER mensaje del cliente, sin importar qué diga.
     // Si ya hay conversación, dejamos que la IA responda de forma natural y respetuosa.
-    if (!hasChatHistory && !postContext) {
+    if (!hasChatHistory) {
       const greetingResponse = `Estás solo a un CLIC de distancia para transformar tu hogar.\nDescubre nuestros productos modernos, funcionales, innovadores y de tendencia; creados para darle a su hogar el estilo y confort que se merece.`;
 
       if (source === 'dm') {
@@ -461,6 +461,11 @@ export async function processInstagramMessage(message, sessionId, customerName =
 
       return { text: greetingResponse, imageUrls: [], isWelcomeTemplate: (source === 'dm') };
     }
+
+    // Si el cliente sigue escribiendo por DM o comentarios tras recibir la bienvenida/plantilla,
+    // el bot NO debe contestar nada más: su único trabajo en Instagram es entregar la plantilla y dirigir a WhatsApp.
+    console.log(`[INSTAGRAM AGENT] Cliente ${sessionId} ya recibió la plantilla de bienvenida. No se emitirá respuesta adicional.`);
+    return { text: "", imageUrls: [], ignored: true };
 
     // --- Fast-paths de Inteligencia Emocional con Emojis ---
     // Manejan respuestas sociales/emocionales sin llamar al LLM ni al inventario.
