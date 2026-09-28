@@ -185,6 +185,19 @@ async function sendTemplate(to, templateName, components = null) {
 
 const delay = ms => new Promise(res => setTimeout(res, ms));
 
+// Cache en memoria para deduplicar webhooks concurrentes o reintentos de YCloud / Meta
+const processedMessageIds = new Map();
+const inFlightUsers = new Set();
+
+function cleanDeduplicationCache() {
+  const now = Date.now();
+  for (const [id, timestamp] of processedMessageIds.entries()) {
+    if (now - timestamp > 60000) { // Limpiar después de 60 segundos
+      processedMessageIds.delete(id);
+    }
+  }
+}
+
 export async function POST(req) {
   try {
     const body = await req.json();
@@ -196,14 +209,68 @@ export async function POST(req) {
       const wim = body.whatsappInboundMessage;
       if (!wim) return NextResponse.json({ status: "success" });
 
-      const senderNumber = wim.from.replace('+', ''); // Quitar el '+' para la DB
-      const messageData = wim; 
-      const pushName = wim.customerProfile?.name || "Cliente WhatsApp";
+      const incomingMsgId = wim.id || wim.wamid;
+      cleanDeduplicationCache();
 
-      // 1. Extraer texto o botones interactivos
-      let userMessage = "";
-      let interactiveId = null;
-      let isImage = false;
+      // 1. DEDUPLICACIÓN POR ID DE MENSAJE
+      if (incomingMsgId) {
+        if (processedMessageIds.has(incomingMsgId)) {
+          console.log(`[WHATSAPP DEDUPLICATION] Mensaje duplicado ignorado: ${incomingMsgId}`);
+          return NextResponse.json({ status: "duplicate_ignored" });
+        }
+        processedMessageIds.set(incomingMsgId, Date.now());
+      }
+
+      const senderNumber = wim.from.replace('+', ''); // Quitar el '+' para la DB
+
+      // 2. BLOQUEO EN VUELO (Evita que dos clics simultáneos o doble webhook disparen el flujo 2 veces a la vez)
+      if (inFlightUsers.has(senderNumber)) {
+        console.log(`[WHATSAPP LOCK] Procesamiento en curso para ${senderNumber}. Ignorando solicitud concurrente.`);
+        return NextResponse.json({ status: "concurrent_inbound_ignored" });
+      }
+
+      inFlightUsers.add(senderNumber);
+
+      try {
+        return await handleInboundMessage(wim, senderNumber);
+      } finally {
+        // Liberar el lock después de que termine la secuencia (incluyendo delays)
+        setTimeout(() => {
+          inFlightUsers.delete(senderNumber);
+        }, 6000);
+      }
+    } else if (body.type === "whatsapp.message.updated") {
+      const msg = body.whatsappMessage || body.message;
+      if (msg) {
+        console.log(`[YCLOUD STATUS] Mensaje ${msg.id} a ${msg.to} -> Estado: ${msg.status}`);
+        if (msg.status === "failed") {
+          console.error(`[YCLOUD DELIVERY FAILED]:`, JSON.stringify(msg.error || msg, null, 2));
+        }
+      }
+    } else if (body.type === "whatsapp.message.echo" || (body.whatsappInboundMessage?.data?.type === "smb_message_echoes")) {
+      const wim = body.whatsappInboundMessage || body.message;
+      if (wim && wim.to) {
+        const customerNumber = wim.to.replace('+', '');
+        await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [customerNumber, JSON.stringify({ role: 'assistant', content: "[Asesor intervino desde App Móvil (YCloud)]", manual: true })]);
+        await query(`UPDATE whatsapp_customers SET ai_enabled = false WHERE id = $1`, [customerNumber]);
+      }
+    }
+
+    return NextResponse.json({ status: "success" });
+  } catch (error) {
+    console.error("[WHATSAPP YCLOUD WEBHOOK ERROR]:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+async function handleInboundMessage(wim, senderNumber) {
+  const messageData = wim; 
+  const pushName = wim.customerProfile?.name || "Cliente WhatsApp";
+
+  // 1. Extraer texto o botones interactivos
+  let userMessage = "";
+  let interactiveId = null;
+  let isImage = false;
       
       if (messageData.type === "text") {
         userMessage = messageData.text?.body || "";
@@ -651,27 +718,4 @@ export async function POST(req) {
         ]
       );
       return NextResponse.json({ status: "funnel_reorient_welcome" });
-      
-    } else if (body.type === "whatsapp.message.updated") {
-      const msg = body.whatsappMessage || body.message;
-      if (msg) {
-        console.log(`[YCLOUD STATUS] Mensaje ${msg.id} a ${msg.to} -> Estado: ${msg.status}`);
-        if (msg.status === "failed") {
-          console.error(`[YCLOUD DELIVERY FAILED]:`, JSON.stringify(msg.error || msg, null, 2));
-        }
-      }
-    } else if (body.type === "whatsapp.message.echo" || (body.whatsappInboundMessage?.data?.type === "smb_message_echoes")) {
-      const wim = body.whatsappInboundMessage || body.message;
-      if (wim && wim.to) {
-        const customerNumber = wim.to.replace('+', '');
-        await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [customerNumber, JSON.stringify({ role: 'assistant', content: "[Asesor intervino desde App Móvil (YCloud)]", manual: true })]);
-        await query(`UPDATE whatsapp_customers SET ai_enabled = false WHERE id = $1`, [customerNumber]);
-      }
-    }
-
-    return NextResponse.json({ status: "success" });
-  } catch (error) {
-    console.error("[WHATSAPP YCLOUD WEBHOOK ERROR]:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
 }
