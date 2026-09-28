@@ -325,6 +325,15 @@ async function handleInboundMessage(wim, senderNumber) {
       // 🚀 FUNNEL STATE MACHINE (MÁQUINA DE ESTADOS)
       // ==========================================
 
+      // Cargamos el historial reciente para saber si el asistente ya le ha hablado previamente
+      const historyRes = await query(`SELECT message FROM whatsapp_messages WHERE session_id = $1 ORDER BY created_at DESC LIMIT 6`, [senderNumber]);
+      const hasAssistantMsg = historyRes.rows.some(r => {
+        try {
+          const msg = typeof r.message === 'string' ? JSON.parse(r.message) : r.message;
+          return msg && msg.role === 'assistant';
+        } catch(e) { return false; }
+      });
+
       // A) EVALUAR INTERCEPTACIÓN POR BOTONES O COMANDOS DE PRUEBA (FASE 3)
       if (interactiveId || userMessage) {
         const msgText = userMessage.toUpperCase().trim();
@@ -580,18 +589,20 @@ async function handleInboundMessage(wim, senderNumber) {
 
         } else if (
           (interactiveId && (interactiveId.includes("info") || interactiveId.includes("mas_info") || interactiveId.includes("catalogo"))) ||
-          msgText.includes("MAS INFORMACION") ||
-          msgText.includes("MÁS INFORMACIÓN") ||
-          msgText.includes("MAS INFORMACION") ||
-          msgText.includes("MÁS INFORMACION") ||
-          msgText.includes("PRECIO") ||
-          msgText.includes("PRECIOS") ||
-          msgText.includes("CUANTO") ||
-          msgText.includes("CUÁNTO") ||
-          msgText.includes("CUESTA") ||
-          msgText.includes("VALE") ||
-          msgText.includes("CATALOGO") ||
-          msgText.includes("CATÁLOGO")
+          (hasAssistantMsg && (
+            msgText.includes("MAS INFORMACION") ||
+            msgText.includes("MÁS INFORMACIÓN") ||
+            msgText.includes("MAS INFORMACION") ||
+            msgText.includes("MÁS INFORMACION") ||
+            msgText.includes("PRECIO") ||
+            msgText.includes("PRECIOS") ||
+            msgText.includes("CUANTO") ||
+            msgText.includes("CUÁNTO") ||
+            msgText.includes("CUESTA") ||
+            msgText.includes("VALE") ||
+            msgText.includes("CATALOGO") ||
+            msgText.includes("CATÁLOGO")
+          ))
         ) {
           // Detectar si el usuario viene de un carrusel específico (Sofás, Colchones, Velas Perladas)
           let catalogUrl = "https://www.practiiko.com/catalogo";
@@ -637,17 +648,8 @@ async function handleInboundMessage(wim, senderNumber) {
       }
 
       // B) EVALUAR INTERCEPTACIÓN DE PRIMER CONTACTO (FASE 2)
-      // Cargamos el historial corto para saber si es el primer mensaje de la sesión actual
-      const historyRes = await query(`SELECT message FROM whatsapp_messages WHERE session_id = $1 ORDER BY created_at DESC LIMIT 6`, [senderNumber]);
       const mNorm = userMessage.toLowerCase().trim();
       let isFirstContact = false;
-      
-      const hasAssistantMsg = historyRes.rows.some(r => {
-        try {
-          const msg = typeof r.message === 'string' ? JSON.parse(r.message) : r.message;
-          return msg && msg.role === 'assistant';
-        } catch(e) { return false; }
-      });
 
       // Si es su primer mensaje (el bot nunca le ha respondido), o manda "menu", o viene de Instagram, lanzamos la bienvenida
       if (!hasAssistantMsg || mNorm === "menu" || mNorm.includes("hola") || mNorm.includes("quiero transformar mi hogar")) {
@@ -684,6 +686,51 @@ async function handleInboundMessage(wim, senderNumber) {
           })
         ]);
         return NextResponse.json({ status: "funnel_fase2_template" });
+      }
+
+      // C) INTERCEPTAR COMENTARIOS, AGRADECIMIENTOS O FEEDBACK POST-CATÁLOGO (SIN COSTO DE PLANTILLA)
+      // Detecta frases comunes venezolanas y de cortesía: "ta fino", "gracias", "ok", "chévere", "me gusta", etc.
+      const isPositiveOrAcknowledge = 
+        mNorm.includes("fino") || 
+        mNorm.includes("gracias") || 
+        mNorm.includes("gracia") || 
+        mNorm.includes("chevere") || 
+        mNorm.includes("chévere") || 
+        mNorm.includes("bueno") || 
+        mNorm.includes("excelente") || 
+        mNorm.includes("perfecto") || 
+        mNorm.includes("genial") || 
+        mNorm.includes("ok") || 
+        mNorm.includes("listo") || 
+        mNorm.includes("vale") || 
+        mNorm.includes("bien") || 
+        mNorm.includes("me gusta") || 
+        mNorm.includes("bellos") || 
+        mNorm.includes("hermosos");
+
+      // Comprobar si el asistente le envió el catálogo recientemente
+      const sentCatalogRecently = historyRes.rows.some(r => {
+        try {
+          const msg = typeof r.message === 'string' ? JSON.parse(r.message) : r.message;
+          const c = (msg?.content || "").toLowerCase();
+          return c.includes("catálogo") || c.includes("catalogo") || c.includes("practiiko.com/catalogo");
+        } catch(e) { return false; }
+      });
+
+      if (isPositiveOrAcknowledge || sentCatalogRecently) {
+        // Enviar mensaje de texto regular (NO plantilla de marketing pagada) con cierre hacia asesor
+        const politeReply = "¡Nos alegra mucho! 🎉\n\nSi deseas ordenar algún modelo, consultar disponibilidad de colores o tiempos de entrega a tu ciudad, déjanos tu consulta por acá y con gusto uno de nuestros asesores te atenderá de inmediato. ✨";
+        await sendWhatsAppMessage(senderNumber, politeReply);
+        await query(
+          `INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`,
+          [senderNumber, JSON.stringify({ role: 'assistant', content: politeReply })]
+        );
+        // Pausar bot para que las siguientes respuestas del cliente sean atendidas por el equipo humano
+        await query(
+          `UPDATE whatsapp_customers SET ai_enabled = false, requires_human = true WHERE id = $1`,
+          [senderNumber]
+        );
+        return NextResponse.json({ status: "funnel_post_catalog_polite_reply" });
       }
 
       // ==========================================
