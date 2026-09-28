@@ -515,7 +515,7 @@ export async function POST(req) {
           (interactiveId && (interactiveId.includes("info") || interactiveId.includes("mas_info") || interactiveId.includes("catalogo"))) ||
           msgText.includes("MAS INFORMACION") ||
           msgText.includes("MÁS INFORMACIÓN") ||
-          msgText.includes("MAS INFORMACIÓN") ||
+          msgText.includes("MAS INFORMACION") ||
           msgText.includes("MÁS INFORMACION") ||
           msgText.includes("PRECIO") ||
           msgText.includes("PRECIOS") ||
@@ -526,7 +526,40 @@ export async function POST(req) {
           msgText.includes("CATALOGO") ||
           msgText.includes("CATÁLOGO")
         ) {
-          const replyText = "Con gusto. Puede consultar todos nuestros modelos, medidas y precios a tasa oficial BCV directamente en nuestro catálogo oficial:\nhttps://www.practiiko.com/catalogo";
+          // Detectar si el usuario viene de un carrusel específico (Sofás, Colchones, Velas Perladas)
+          let catalogUrl = "https://www.practiiko.com/catalogo";
+          let categoryName = "";
+
+          try {
+            const lastMessages = await query(
+              `SELECT message FROM whatsapp_messages WHERE session_id = $1 ORDER BY created_at DESC LIMIT 8`,
+              [senderNumber]
+            );
+
+            for (const row of lastMessages.rows) {
+              const msgData = typeof row.message === "string" ? JSON.parse(row.message) : row.message;
+              const template = (msgData?.template || "").toLowerCase();
+              const content = (msgData?.content || "").toLowerCase();
+
+              if (template === "krrusel_a_v" || content.includes("velas") || content.includes("vela")) {
+                catalogUrl = "https://www.practiiko.com/catalogo?categoria=velas-perladas";
+                categoryName = " de Velas Perladas";
+                break;
+              } else if (template === "krrusel_a_c" || content.includes("colchón") || content.includes("colchon")) {
+                catalogUrl = "https://www.practiiko.com/catalogo?categoria=colchones";
+                categoryName = " de Colchones";
+                break;
+              } else if (template === "krrusel_a" || content.includes("sofá") || content.includes("sofa")) {
+                catalogUrl = "https://www.practiiko.com/catalogo?categoria=sofas";
+                categoryName = " de Sofás";
+                break;
+              }
+            }
+          } catch (err) {
+            console.error("Error detecting carousel context for catalog URL:", err);
+          }
+
+          const replyText = `Con gusto. Puede consultar nuestros modelos, medidas y precios a tasa oficial BCV directamente en nuestra sección${categoryName} del catálogo oficial:\n${catalogUrl}`;
           await sendWhatsAppMessage(senderNumber, replyText);
           await query(
             `INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`,
