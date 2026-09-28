@@ -272,8 +272,9 @@ export async function POST(req) {
                   await new Promise(r => setTimeout(r, 1200));
 
                   if (aiResponse.isWelcomeTemplate) {
-                    // Enviar primero el audio de beneficios de la marca
-                    const audioUrl = `${debounceState.baseUrl}/api/media/voice_beneficios.mp3`;
+                    // Enviar primero el audio de beneficios genéricos (.m4a para compatibilidad nativa con Instagram)
+                    const audioUrl = `https://auto.practiiko.com/api/media/voice_beneficios.m4a?v=2`;
+                    console.log(`[INSTAGRAM DM] Despachando audio nativo de beneficios a ${senderId}: ${audioUrl}`);
                     await sendInstagramAudio(senderId, audioUrl);
                     await new Promise(r => setTimeout(r, 2000));
                     

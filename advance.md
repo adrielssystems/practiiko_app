@@ -376,6 +376,14 @@
   - Se adaptó la vista de detalle de chats en el Autogestor ([`src/app/whatsapp/[id]/page.js`](file:///c:/Users/rhect/Documents/Proyectos/Practiiko/practiiko_app/src/app/whatsapp/[id]/page.js)) para previsualizar plantillas tanto con encabezado de video en bucle/autoplay como con imagen estática.
 - **Cache-Busting:** Se integró el parámetro de versión `?v=2` en las URLs para evitar lecturas cacheadas de la CDN.
 
+### 4. Estandarización del Embudo en DMs de Instagram y Conversión de Audio a .M4A (27 de Septiembre de 2026)
+- **Copia Institucional Estandarizada:** Se fijó el texto oficial de bienvenida para mensajes directos (DMs):
+  > *"Estás solo a un CLIC de distancia para transformar tu hogar.\nDescubre nuestros productos modernos, funcionales, innovadores y de tendencia; creados para darle a su hogar el estilo y confort que se merece."*
+- **Conversión de Audio a AAC/M4A Nativo (`voice_beneficios.m4a`):**
+  - Para superar la restricción de Meta Graph API que rechazaba o silenciaba archivos `.mp3` en DMs de Instagram, se generó `public/media/voice_beneficios.m4a` (303 KB, AAC estéreo 44.1 kHz, 64 kbps, con `moov atom` al inicio).
+  - Se vinculó en `src/app/api/webhooks/instagram/route.js` para que el cliente reciba la nota de voz nativa antes de la plantilla.
+- **Tarjeta Interactiva Directa a WhatsApp:** La plantilla genérica despacha el botón `📲 PULSA ACÁ` vinculado directamente a `https://wa.me/584248948664?text=Quiero%20transformar%20mi%20hogar` para aterrizar directamente en el embudo interactivo de WhatsApp.
+
 
 ## Planificación en Espera (Pendiente de Aprobación Comercial)
 
