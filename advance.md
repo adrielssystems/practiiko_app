@@ -371,7 +371,7 @@
   - Los audios originales (`VOICE_*.mp3.mpeg`) fueron decodificados y re-encapsulados como MP3 estándar nativo a 64 kbps con tasa de muestreo 44.1 kHz para compatibilidad inmediata en WhatsApp móvil y Web.
   - Los videos (`VIDEO_*.mp4`) fueron re-codificados con FFmpeg a 720p (`scale='min(720,iw)':-2`), códec H.264 baseline/high con bandera `-movflags +faststart` para streaming instantáneo.
 - **Procesamiento de GIF/Video para Plantilla Welcome:**
-  - El archivo `GIF_WS.mp4` (originalmente de 28.5 MB) fue comprimido y optimizado a **3.7 MB** (`gif_welcome.mp4`, 720x720 cuadrado, H.264, AAC y Faststart).
+  - El archivo `GIF_WS.mp4` (originalmente de 28.5 MB) fue comprimido y optimizado a **2.16 MB** (`gif_welcome.mp4`, 720x720 cuadrado, H.264 sin pista de audio y Faststart), cumpliendo holgadamente con el límite máximo de **3.5 MB** exigido por Meta para el encabezado GIF.
   - Se actualizó el encabezado de la plantilla `welcome` en el webhook ([`src/app/api/webhooks/whatsapp/route.js`](file:///c:/Users/rhect/Documents/Proyectos/Practiiko/practiiko_app/src/app/api/webhooks/whatsapp/route.js)) para enviar un header dinámico tipo video con `gif_welcome.mp4?v=2` en lugar de la imagen estática anterior.
   - Se adaptó la vista de detalle de chats en el Autogestor ([`src/app/whatsapp/[id]/page.js`](file:///c:/Users/rhect/Documents/Proyectos/Practiiko/practiiko_app/src/app/whatsapp/[id]/page.js)) para previsualizar plantillas tanto con encabezado de video en bucle/autoplay como con imagen estática.
 - **Cache-Busting:** Se integró el parámetro de versión `?v=2` en las URLs para evitar lecturas cacheadas de la CDN.
