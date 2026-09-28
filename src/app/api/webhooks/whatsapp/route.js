@@ -557,14 +557,14 @@ export async function POST(req) {
       if (isFirstContact) {
         await delay(1500); // Retraso simulado
         
-        // La plantilla 'welcome' exige un header de imagen
+        // La plantilla 'welcome' configurada con header de video (GIF)
         const headerComponent = [
           {
             type: "header",
             parameters: [
               {
-                type: "image",
-                image: { link: "https://www.practiiko.com/logo-p.jpeg" } // Logo público en la web - siempre accesible por Meta
+                type: "video",
+                video: { link: "https://auto.practiiko.com/api/media/gif_welcome.mp4?v=2" }
               }
             ]
           }
@@ -578,7 +578,7 @@ export async function POST(req) {
             role: 'assistant', 
             type: 'template',
             template: 'welcome',
-            imageUrl: 'https://www.practiiko.com/logo-p.jpeg',
+            videoUrl: 'https://auto.practiiko.com/api/media/gif_welcome.mp4?v=2',
             content: "¡Bienvenido a PRACTIIKO!\nEstamos aquí para ayudarte a encontrar la solución perfecta para tu hogar.\n¿Qué quieres ver?",
             buttons: ['SOFAS COMPRIMIDOS', 'COLCHONES', 'VELAS PERLADAS']
           })
@@ -596,8 +596,8 @@ export async function POST(req) {
           type: "header",
           parameters: [
             {
-              type: "image",
-              image: { link: "https://www.practiiko.com/logo-p.jpeg" }
+              type: "video",
+              video: { link: "https://auto.practiiko.com/api/media/gif_welcome.mp4?v=2" }
             }
           ]
         }
@@ -611,7 +611,7 @@ export async function POST(req) {
             role: 'assistant', 
             type: 'template',
             template: 'welcome',
-            imageUrl: 'https://www.practiiko.com/logo-p.jpeg',
+            videoUrl: 'https://auto.practiiko.com/api/media/gif_welcome.mp4?v=2',
             content: "¡Bienvenido a PRACTIIKO!\nEstamos aquí para ayudarte a encontrar la solución perfecta para tu hogar.\n¿Qué quieres ver?",
             buttons: ['SOFAS COMPRIMIDOS', 'COLCHONES', 'VELAS PERLADAS']
           })

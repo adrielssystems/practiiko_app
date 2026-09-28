@@ -134,8 +134,22 @@ export default async function WhatsAppChatPage({ params }) {
                 boxShadow: '0 2px 5px rgba(0,0,0,0.05)',
                 position: 'relative'
               }}>
-                {/* 1. Header con Imagen para Plantillas (Welcome) */}
-                {isTemplate && data.imageUrl && (
+                {/* 1. Header con Imagen o Video para Plantillas (Welcome) */}
+                {isTemplate && data.videoUrl && (
+                  <div style={{ marginBottom: '0.75rem', borderRadius: '12px', overflow: 'hidden', background: '#000' }}>
+                    <video 
+                      controls 
+                      autoPlay 
+                      loop 
+                      muted 
+                      playsInline 
+                      preload="metadata"
+                      src={data.videoUrl} 
+                      style={{ width: '100%', maxHeight: '220px', display: 'block' }}
+                    />
+                  </div>
+                )}
+                {isTemplate && data.imageUrl && !data.videoUrl && (
                   <div style={{ marginBottom: '0.75rem', borderRadius: '12px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
                     <img 
                       src={data.imageUrl} 
