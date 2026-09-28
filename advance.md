@@ -59,3 +59,16 @@
 - **Solución implementada:**
   - El trigger de texto de *"Más Información"* ahora exige estrictamente que el asistente ya le haya respondido antes (`hasAssistantMsg === true`).
   - Todo nuevo cliente (`hasAssistantMsg === false`) o con saludo (*"Hola"*, *"menu"*, etc.) recibe siempre con máxima prioridad la plantilla interactiva de bienvenida `welcome` con su GIF y 3 botones principales.
+
+### 7. Corrección de Workflow en Comentarios de Instagram (Audio de Beneficios + Plantilla con Botón)
+- **Incidencia detectada:** Cuando un usuario comentaba una publicación de Instagram, el sistema respondía públicamente al comentario pero no entregaba por DM el voice de beneficios (`voice_beneficios.m4a`) ni la plantilla con el botón nativo `📲 PULSA ACÁ` hacia WhatsApp.
+- **Causa raíz:**
+  - Los endpoints de Meta Graph API rechazan plantillas genéricas (`template_type: "generic"`) cuando se envían exclusivamente por Private Reply (`recipient: { comment_id }`), y el fallback de texto no incluía enlaces directos ni guardaba el registro en base de datos.
+  - Para usuarios nuevos sin ventana de 24 horas abierta por DM, el envío exclusivo a `senderId` fallaba silenciosamente.
+- **Solución implementada (`practiiko_app/src/app/api/webhooks/instagram/route.js`):**
+  - **Despacho del Voice de Beneficios:** Se ejecuta el envío de la nota de voz nativa (`voice_beneficios.m4a?v=2`) hacia el `senderId`.
+  - **Estrategia Dual de Entrega (Direct DM + Private Reply Fallback):**
+    1. Intenta despachar directamente la plantilla interactiva con el botón `📲 PULSA ACÁ` hacia `senderId` (como en los DMs nativos).
+    2. Si Meta requiere responder por el comentario (ventana cerrada), ejecuta la Private Reply vía `comment_id`. Si Meta rechaza la plantilla por esta vía, activa el fallback enriquecido que inyecta automáticamente el botón de texto con enlace directo a WhatsApp (`https://wa.me/584248948664?text=Quiero%20transformar%20mi%20hogar`) y catálogo web (`https://practiiko.com/catalogo`).
+  - **Persistencia en Auditoría:** Todos los DMs y respuestas privadas generadas tras un comentario ahora se registran en `instagram_messages` con `source = 'dm'`, haciéndolos visibles en el panel de monitoreo de Practiiko.
+

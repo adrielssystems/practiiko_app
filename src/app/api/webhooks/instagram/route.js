@@ -373,8 +373,8 @@ export async function POST(req) {
                   // 1. Responder públicamente al comentario con la frase aleatoria elegida
                   await replyToInstagramComment(commentId, aiResponse.text);
 
-                  // 2. Intentar además enviar por DM privado el mensaje con catálogo y WhatsApp (si Meta lo autoriza para este comentario)
-                  const dmText = aiResponse.dmText || aiResponse.text;
+                  // 2. Enviar por DM el audio de beneficios y la plantilla con el botón
+                  const dmText = aiResponse.dmText || `Estás solo a un CLIC de distancia para transformar tu hogar.\nDescubre nuestros productos modernos, funcionales, innovadores y de tendencia; creados para darle a su hogar el estilo y confort que se merece.`;
                   try {
                     await sendInstagramPrivateReply(commentId, dmText, pageId, senderId);
                     if (aiResponse.imageUrls && aiResponse.imageUrls.length > 0) {
@@ -568,10 +568,13 @@ async function sendInstagramPrivateReply(commentId, text, igId = "me", senderId 
   const PAGE_ACCESS_TOKEN = process.env.INSTAGRAM_PAGE_ACCESS_TOKEN?.trim();
   if (!PAGE_ACCESS_TOKEN) return;
 
-  // Enviar audio nativo de beneficios genéricos si se dispone del senderId
+  const audioUrl = "https://auto.practiiko.com/api/media/voice_beneficios.m4a?v=2";
+  const whatsappUrl = "https://wa.me/584248948664?text=Quiero%20transformar%20mi%20hogar";
+  const catalogUrl = "https://practiiko.com/catalogo";
+
+  // 1. Enviar el audio nativo de beneficios genéricos (voice de beneficios)
   if (senderId) {
     try {
-      const audioUrl = "https://auto.practiiko.com/api/media/voice_beneficios.m4a?v=2";
       console.log(`[INSTAGRAM COMMENT PRIVATE] Despachando audio nativo de beneficios a ${senderId}: ${audioUrl}`);
       await sendInstagramAudio(senderId, audioUrl);
       await new Promise(r => setTimeout(r, 1500));
@@ -580,73 +583,136 @@ async function sendInstagramPrivateReply(commentId, text, igId = "me", senderId 
     }
   }
 
-  console.log(`[DEBUG] Intentando respuesta privada via /${igId}/messages con token IGAA`);
-
-  const url = `https://graph.instagram.com/v21.0/${igId}/messages`;
-
-  // 1. Intentar enviar con Plantilla Genérica de Meta (Botón interactivo PULSA ACÁ hacia WhatsApp)
-  const templatePayload = {
-    recipient: { comment_id: commentId },
-    message: {
-      attachment: {
-        type: "template",
-        payload: {
-          template_type: "generic",
-          elements: [
-            {
-              title: "Practiiko 💎",
-              subtitle: text || "Estás solo a un CLIC de distancia para transformar tu hogar.",
-              buttons: [
+  // 2. Intentar primero enviar la plantilla oficial con botón PULSA ACÁ hacia el senderId directamente (como un DM nativo)
+  let directTemplateSent = false;
+  if (senderId) {
+    try {
+      const templateDirectPayload = {
+        recipient: { id: senderId },
+        message: {
+          attachment: {
+            type: "template",
+            payload: {
+              template_type: "generic",
+              elements: [
                 {
-                  type: "web_url",
-                  url: "https://wa.me/584248948664?text=Quiero%20transformar%20mi%20hogar",
-                  title: "📲 PULSA ACÁ"
+                  title: "Practiiko 💎",
+                  subtitle: text || "Estás solo a un CLIC de distancia para transformar tu hogar.",
+                  buttons: [
+                    {
+                      type: "web_url",
+                      url: whatsappUrl,
+                      title: "📲 PULSA ACÁ"
+                    }
+                  ]
                 }
               ]
             }
-          ]
+          }
+        }
+      };
+
+      const directRes = await fetch(`https://graph.instagram.com/v21.0/me/messages`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${PAGE_ACCESS_TOKEN}`
+        },
+        body: JSON.stringify(templateDirectPayload)
+      });
+      const directData = await directRes.json();
+      if (!directData.error) {
+        directTemplateSent = true;
+        console.log(`[INSTAGRAM] Plantilla con botón enviada exitosamente por DM directo a ${senderId}`);
+        // Guardar mensaje en base de datos
+        await query(
+          `INSERT INTO instagram_messages (session_id, message, source, comment_id) VALUES ($1, $2, 'dm', $3)`,
+          [senderId, JSON.stringify({ role: 'assistant', content: text, template: true }), commentId]
+        );
+      } else {
+        console.log(`[INSTAGRAM] Envío directo a senderId ${senderId} indicó:`, directData.error.message);
+      }
+    } catch (directErr) {
+      console.warn("[INSTAGRAM DIRECT DM ERR]:", directErr.message);
+    }
+  }
+
+  // 3. Si no se pudo enviar directamente por DM (ej. ventana de 24h cerrada para senderId), usar Private Reply por comment_id
+  if (!directTemplateSent && commentId) {
+    const url = `https://graph.instagram.com/v21.0/${igId}/messages`;
+
+    // Intentar plantilla genérica con comment_id
+    const templatePayload = {
+      recipient: { comment_id: commentId },
+      message: {
+        attachment: {
+          type: "template",
+          payload: {
+            template_type: "generic",
+            elements: [
+              {
+                title: "Practiiko 💎",
+                subtitle: text || "Estás solo a un CLIC de distancia para transformar tu hogar.",
+                buttons: [
+                  {
+                    type: "web_url",
+                    url: whatsappUrl,
+                    title: "📲 PULSA ACÁ"
+                  }
+                ]
+              }
+            ]
+          }
         }
       }
-    }
-  };
+    };
 
-  try {
-    const response = await fetch(url, { 
-      method: "POST",
-      headers: { 
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${PAGE_ACCESS_TOKEN}`
-      },
-      body: JSON.stringify(templatePayload)
-    });
-    const data = await response.json();
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${PAGE_ACCESS_TOKEN}`
+        },
+        body: JSON.stringify(templatePayload)
+      });
+      const data = await response.json();
 
-    if (data.error) {
-      console.warn("[PRIVATE REPLY TEMPLATE WARN]:", data.error.message, "-> Usando fallback de texto formateado...");
-      await sendInstagramPrivateReplyText(commentId, text, igId);
-    } else {
-      console.log(`[INSTAGRAM] Respuesta privada estandarizada enviada al comentario ${commentId}`);
+      if (data.error) {
+        console.warn("[PRIVATE REPLY TEMPLATE WARN]:", data.error.message, "-> Usando fallback de texto formateado con botón/enlace...");
+        const fallbackText = `${text}\n\n📲 *PULSA ACÁ PARA ATENCIÓN INMEDIATA:*\n👉 ${whatsappUrl}\n\n📖 *Catálogo:* ${catalogUrl}`;
+        await sendInstagramPrivateReplyText(commentId, fallbackText, igId, senderId);
+      } else {
+        console.log(`[INSTAGRAM] Respuesta privada estandarizada enviada al comentario ${commentId}`);
+        if (senderId) {
+          await query(
+            `INSERT INTO instagram_messages (session_id, message, source, comment_id) VALUES ($1, $2, 'dm', $3)`,
+            [senderId, JSON.stringify({ role: 'assistant', content: text, template: true }), commentId]
+          );
+        }
+      }
+    } catch (e) {
+      console.error("[EXCEPTION PRIVATE REPLY TEMPLATE]:", e);
+      const fallbackText = `${text}\n\n📲 *PULSA ACÁ PARA ATENCIÓN INMEDIATA:*\n👉 ${whatsappUrl}\n\n📖 *Catálogo:* ${catalogUrl}`;
+      await sendInstagramPrivateReplyText(commentId, fallbackText, igId, senderId);
     }
-  } catch (e) {
-    console.error("[EXCEPTION PRIVATE REPLY TEMPLATE]:", e);
-    await sendInstagramPrivateReplyText(commentId, text, igId);
   }
 }
 
-async function sendInstagramPrivateReplyText(commentId, text, igId = "me") {
+async function sendInstagramPrivateReplyText(commentId, text, igId = "me", senderId = null) {
   const PAGE_ACCESS_TOKEN = process.env.INSTAGRAM_PAGE_ACCESS_TOKEN?.trim();
   if (!PAGE_ACCESS_TOKEN) return;
 
   const url = `https://graph.instagram.com/v21.0/${igId}/messages`;
 
   try {
-    const response = await fetch(url, { 
+    const response = await fetch(url, {
       method: "POST",
-      headers: { 
+      headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${PAGE_ACCESS_TOKEN}`
       },
-      body: JSON.stringify({ 
+      body: JSON.stringify({
         recipient: { comment_id: commentId },
         message: { text: text }
       })
@@ -656,6 +722,12 @@ async function sendInstagramPrivateReplyText(commentId, text, igId = "me") {
       console.error("[ERROR PRIVATE REPLY TEXT]:", data.error);
     } else {
       console.log(`[INSTAGRAM] Respuesta privada de texto enviada al comentario ${commentId}`);
+      if (senderId) {
+        await query(
+          `INSERT INTO instagram_messages (session_id, message, source, comment_id) VALUES ($1, $2, 'dm', $3)`,
+          [senderId, JSON.stringify({ role: 'assistant', content: text }), commentId]
+        );
+      }
     }
   } catch (e) {
     console.error("[EXCEPTION PRIVATE REPLY TEXT]:", e);
