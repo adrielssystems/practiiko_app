@@ -234,10 +234,10 @@ export async function POST(req) {
       try {
         return await handleInboundMessage(wim, senderNumber);
       } finally {
-        // Liberar el lock después de que termine la secuencia (incluyendo delays)
+        // Liberar el lock después de que termine la secuencia (delays reducidos a 500ms)
         setTimeout(() => {
           inFlightUsers.delete(senderNumber);
-        }, 6000);
+        }, 2000);
       }
     } else if (body.type === "whatsapp.message.updated") {
       const msg = body.whatsappMessage || body.message;
@@ -364,7 +364,7 @@ async function handleInboundMessage(wim, senderNumber) {
               content: '📹 Video: Sofás Comprimidos en Caja' 
             })
           ]);
-          await delay(2500);
+          await delay(500);
 
           await sendMediaFile(senderNumber, "audio", "https://auto.practiiko.com/api/media/voice_sofas.mp3?v=2");
           await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [
@@ -376,7 +376,7 @@ async function handleInboundMessage(wim, senderNumber) {
               content: '🎙️ Nota de voz: Sofás Comprimidos' 
             })
           ]);
-          await delay(2500);
+          await delay(500);
 
           const sofaVideos = [
             { name: "Sofa Modular en L", file: "sofa_modular_l.mp4" },
@@ -439,7 +439,7 @@ async function handleInboundMessage(wim, senderNumber) {
               content: '📹 Video: Colchones' 
             })
           ]);
-          await delay(2500);
+          await delay(500);
 
           await sendMediaFile(senderNumber, "audio", "https://auto.practiiko.com/api/media/voice_colchones.mp3?v=2");
           await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [
@@ -451,7 +451,7 @@ async function handleInboundMessage(wim, senderNumber) {
               content: '🎙️ Nota de voz: Colchones' 
             })
           ]);
-          await delay(2500);
+          await delay(500);
 
           const colchonVideos = [
             { name: "Colchón Individual", file: "colchon_individual.mp4" },
@@ -508,7 +508,7 @@ async function handleInboundMessage(wim, senderNumber) {
               content: '📹 Video: Velas Perladas' 
             })
           ]);
-          await delay(2500);
+          await delay(500);
 
           await sendMediaFile(senderNumber, "audio", "https://auto.practiiko.com/api/media/voice_velas.mp3?v=2");
           await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [
@@ -520,7 +520,7 @@ async function handleInboundMessage(wim, senderNumber) {
               content: '🎙️ Nota de voz: Velas Perladas' 
             })
           ]);
-          await delay(2500);
+          await delay(500);
 
           const velasVideos = [
             { name: "Opulencia", file: "vela_opulencia.mp4" },
@@ -574,7 +574,7 @@ async function handleInboundMessage(wim, senderNumber) {
           msgText.includes("CONTACTAR ASESOR") ||
           msgText.includes("ASESOR")
         ) {
-          const replyText = "Entendido, en la brevedad posible uno de nuestros asesores lo contactara!";
+          const replyText = `🎉 ¡Gracias por elegir Practiiko!\n\nHemos recibido tu solicitud correctamente. 🛋️✨\nMuy pronto, un asesor especializado de Practiiko se pondrá en contacto contigo para continuar con tu atención y ayudarte con los siguientes pasos.\n\n🕘 *Nuestro horario de atención:*\nLunes a viernes: 9:00 a. m. a 4:00 p. m.\nSábados: 9:00 a. m. a 1:00 p. m.\n\nSi nos escribes fuera de este horario, no te preocupes: hemos recibido tu mensaje y un asesor te contactará en nuestro próximo horario de atención.\n\n💬 ¡Gracias por confiar en Practiiko! Estamos aquí para ayudarte.`;
           await sendWhatsAppMessage(senderNumber, replyText);
           await query(
             `INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`,
@@ -657,7 +657,7 @@ async function handleInboundMessage(wim, senderNumber) {
       }
 
       if (isFirstContact) {
-        await delay(1500); // Retraso simulado
+        await delay(500); // Retraso reducido a 500ms
         
         // La plantilla 'welcome' configurada con header de formato GIF (esperado por Meta para esta plantilla)
         const headerComponent = [
@@ -737,7 +737,7 @@ async function handleInboundMessage(wim, senderNumber) {
       // MENSAJES LIBRES NO CUBIERTOS: REORIENTAR AL FLUJO DETERMINISTA
       // (Se desconectó DeepSeek/Gemini a petición de la dirección de la empresa)
       // ==========================================
-      await delay(1000);
+      await delay(500);
       const headerComponent = [
         {
           type: "header",

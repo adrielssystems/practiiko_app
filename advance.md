@@ -72,3 +72,12 @@
     2. Si Meta requiere responder por el comentario (ventana cerrada), ejecuta la Private Reply vía `comment_id`. Si Meta rechaza la plantilla por esta vía, activa el fallback enriquecido que inyecta automáticamente el botón de texto con enlace directo a WhatsApp (`https://wa.me/584248948664?text=Quiero%20transformar%20mi%20hogar`) y catálogo web (`https://practiiko.com/catalogo`).
   - **Persistencia en Auditoría:** Todos los DMs y respuestas privadas generadas tras un comentario ahora se registran en `instagram_messages` con `source = 'dm'`, haciéndolos visibles en el panel de monitoreo de Practiiko.
 
+### 8. Optimización de Tiempos de Respuesta (500ms) y Nuevo Mensaje de Asesor en WhatsApp
+- **Reducción General de Tiempos de Respuesta (`practiiko_app/src/app/api/webhooks/whatsapp/route.js`):**
+  - Se redujeron todos los delays intermedios (`delay(...)`) a **500ms** tanto en la bienvenida como en las secuencias de categorías (Video ➡️ Audio ➡️ Carrusel).
+  - Se redujo el bloqueo en vuelo (`inFlightUsers`) de 6s a **2s** para permitir interacciones fluidas sin tiempos de espera perceptibles para el usuario.
+- **Nuevo Mensaje de Contacto a un Asesor:**
+  - Al pulsar cualquiera de los botones *"Contactar a un asesor"* o solicitar asesor humano, el bot despacha el mensaje formal con horarios de atención:
+    > *"🎉 ¡Gracias por elegir Practiiko!*\n\n*Hemos recibido tu solicitud correctamente. 🛋️✨*\n*Muy pronto, un asesor especializado de Practiiko se pondrá en contacto contigo para continuar con tu atención y ayudarte con los siguientes pasos.*\n\n*🕘 Nuestro horario de atención:*\n*Lunes a viernes: 9:00 a. m. a 4:00 p. m.*\n*Sábados: 9:00 a. m. a 1:00 p. m.*\n\n*Si nos escribes fuera de este horario, no te preocupes: hemos recibido tu mensaje y un asesor te contactará en nuestro próximo horario de atención.*\n\n*💬 ¡Gracias por confiar en Practiiko! Estamos aquí para ayudarte."*
+  - Mantiene la pausa automática de la IA (`ai_enabled = false`) y la alerta para el equipo humano (`requires_human = true`).
+
