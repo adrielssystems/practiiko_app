@@ -659,14 +659,14 @@ async function handleInboundMessage(wim, senderNumber) {
       if (isFirstContact) {
         await delay(500); // Retraso reducido a 500ms
         
-        // La plantilla 'welcome' configurada con header de formato GIF (esperado por Meta para esta plantilla)
+        // La plantilla 'welcome' configurada con header de formato VIDEO (para reproducir audio nativo)
         const headerComponent = [
           {
             type: "header",
             parameters: [
               {
-                type: "gif",
-                gif: { link: "https://auto.practiiko.com/api/media/gif_welcome.mp4?v=2" }
+                type: "video",
+                video: { link: "https://auto.practiiko.com/api/media/video_welcome.mp4?v=2" }
               }
             ]
           }
@@ -680,7 +680,7 @@ async function handleInboundMessage(wim, senderNumber) {
             role: 'assistant', 
             type: 'template',
             template: 'welcome',
-            videoUrl: 'https://auto.practiiko.com/api/media/gif_welcome.mp4?v=2',
+            videoUrl: 'https://auto.practiiko.com/api/media/video_welcome.mp4?v=2',
             content: "¡Bienvenido a PRACTIIKO!\nEstamos aquí para ayudarte a encontrar la solución perfecta para tu hogar.\n¿Qué quieres ver?",
             buttons: ['SOFAS COMPRIMIDOS', 'COLCHONES', 'VELAS PERLADAS']
           })
@@ -743,8 +743,8 @@ async function handleInboundMessage(wim, senderNumber) {
           type: "header",
           parameters: [
             {
-              type: "gif",
-              gif: { link: "https://auto.practiiko.com/api/media/gif_welcome.mp4?v=2" }
+              type: "video",
+              video: { link: "https://auto.practiiko.com/api/media/video_welcome.mp4?v=2" }
             }
           ]
         }
@@ -758,7 +758,7 @@ async function handleInboundMessage(wim, senderNumber) {
             role: 'assistant', 
             type: 'template',
             template: 'welcome',
-            videoUrl: 'https://auto.practiiko.com/api/media/gif_welcome.mp4?v=2',
+            videoUrl: 'https://auto.practiiko.com/api/media/video_welcome.mp4?v=2',
             content: "¡Bienvenido a PRACTIIKO!\nEstamos aquí para ayudarte a encontrar la solución perfecta para tu hogar.\n¿Qué quieres ver?",
             buttons: ['SOFAS COMPRIMIDOS', 'COLCHONES', 'VELAS PERLADAS']
           })

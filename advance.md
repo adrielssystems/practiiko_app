@@ -81,3 +81,12 @@
     > *"🎉 ¡Gracias por elegir Practiiko!*\n\n*Hemos recibido tu solicitud correctamente. 🛋️✨*\n*Muy pronto, un asesor especializado de Practiiko se pondrá en contacto contigo para continuar con tu atención y ayudarte con los siguientes pasos.*\n\n*🕘 Nuestro horario de atención:*\n*Lunes a viernes: 9:00 a. m. a 4:00 p. m.*\n*Sábados: 9:00 a. m. a 1:00 p. m.*\n\n*Si nos escribes fuera de este horario, no te preocupes: hemos recibido tu mensaje y un asesor te contactará en nuestro próximo horario de atención.*\n\n*💬 ¡Gracias por confiar en Practiiko! Estamos aquí para ayudarte."*
   - Mantiene la pausa automática de la IA (`ai_enabled = false`) y la alerta para el equipo humano (`requires_human = true`).
 
+### 9. Activación de Audio en Plantilla Welcome (Migración de GIF a Video con Audio)
+- **Requerimiento:** Habilitar el audio en la plantilla interactiva de bienvenida `welcome` de WhatsApp.
+- **Implementación técnica (`practiiko_app/src/app/api/webhooks/whatsapp/route.js`):**
+  - Se tomó el archivo `GIF_WS_compr.mp4` que contiene pista de audio estéreo AAC (44.1 kHz, 133 kbps) y video H.264 cuadrado (1080x1080).
+  - Se generó el archivo `public/media/video_welcome.mp4` asegurando la inyección del átomo `moov` al inicio (`+faststart`) para streaming instantáneo en WhatsApp móvil.
+  - Se modificó el encabezado de la plantilla en el webhook de `type: "gif"` a `type: "video"` con el enlace `https://auto.practiiko.com/api/media/video_welcome.mp4?v=2`.
+  - Ahora el usuario puede escuchar el audio de la bienvenida directamente en la aplicación de WhatsApp sin estar silenciado como un GIF.
+
+
