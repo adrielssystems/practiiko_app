@@ -71,7 +71,7 @@ async function sendWhatsAppImage(to, imageUrl) {
   }
 }
 
-// NUEVA FUNCION: Enviar Menú Interactivo de 3 botones (Fase 2)
+// NUEVA FUNCION: Enviar Menú Interactivo de 3 botones gratuito dentro de ventana 24h (Fase 2 sin costo de plantilla)
 async function sendInteractiveMenu(to) {
   const phoneId = getPhoneId();
   const token = getApiKey();
@@ -95,11 +95,16 @@ async function sendInteractiveMenu(to) {
       }
     };
 
-    await fetch(`https://api.ycloud.com/v2/whatsapp/messages/sendDirectly`, {
+    const response = await fetch(`https://api.ycloud.com/v2/whatsapp/messages/sendDirectly`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-API-Key': token },
       body: JSON.stringify(payload)
     });
+    const data = await response.json();
+    if (data.errorCode || !response.ok) {
+      console.error("[WHATSAPP INTERACTIVE ERROR]:", data);
+    }
+    return data;
   } catch (error) {
     console.error("[WHATSAPP INTERACTIVE ERROR]:", error);
   }
@@ -325,19 +330,55 @@ async function handleInboundMessage(wim, senderNumber) {
       // 🚀 FUNNEL STATE MACHINE (MÁQUINA DE ESTADOS)
       // ==========================================
 
-      // Cargamos el historial reciente para saber si el asistente ya le ha hablado previamente
-      const historyRes = await query(`SELECT message FROM whatsapp_messages WHERE session_id = $1 ORDER BY created_at DESC LIMIT 6`, [senderNumber]);
-      const hasAssistantMsg = historyRes.rows.some(r => {
-        try {
-          const msg = typeof r.message === 'string' ? JSON.parse(r.message) : r.message;
-          return msg && msg.role === 'assistant';
-        } catch(e) { return false; }
-      });
+      // Cargamos el historial completo de la conversación para control permanente de costos de plantillas Meta
+      // (Solo se resetea si un asesor elimina el chat desde el panel administrativo)
+      const historyRes = await query(
+        `SELECT message FROM whatsapp_messages WHERE session_id = $1 ORDER BY created_at DESC`,
+        [senderNumber]
+      );
+
+      const parsedHistory = historyRes.rows
+        .map(r => {
+          try {
+            return typeof r.message === "string" ? JSON.parse(r.message) : r.message;
+          } catch (e) {
+            return null;
+          }
+        })
+        .filter(Boolean);
+
+      const hasAssistantMsg = parsedHistory.some(msg => msg.role === "assistant");
+
+      // Verificar si ya se envió la plantilla pagada 'welcome' alguna vez en el historial
+      const hasWelcomeSent = parsedHistory.some(
+        msg => msg.role === "assistant" && (msg.template === "welcome" || msg.isWelcomeTemplate === true)
+      );
+
+      // Verificar si el cliente ya eligió su ÚNICA categoría permitida (carrusel enviado en su historial)
+      let sentCarouselCategory = null;
+      for (const msg of parsedHistory) {
+        if (msg.role !== "assistant") continue;
+        const tpl = (msg.template || "").toLowerCase();
+        const cnt = (msg.content || "").toLowerCase();
+
+        if (tpl === "krrusel_a_v" || (msg.type === "carousel" && cnt.includes("vela"))) {
+          sentCarouselCategory = "velas";
+          break;
+        } else if (tpl === "krrusel_a_c" || (msg.type === "carousel" && cnt.includes("colch"))) {
+          sentCarouselCategory = "colchones";
+          break;
+        } else if (tpl === "krrusel_a" || (msg.type === "carousel" && cnt.includes("sof"))) {
+          sentCarouselCategory = "sofas";
+          break;
+        }
+      }
+      const hasReceivedCategoryCarousel = Boolean(sentCarouselCategory);
 
       // A) EVALUAR INTERCEPTACIÓN POR BOTONES O COMANDOS DE PRUEBA (FASE 3)
       if (interactiveId || userMessage) {
         const msgText = userMessage.toUpperCase().trim();
-        
+        const msgClean = msgText.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
         // 🧪 COMANDOS DE PRUEBA DIRECTOS
         if (msgText === "TESTAUDIO" || msgText === "AUDIO") {
           console.log(`[TEST] Enviando audio de prueba voice_beneficios.mp3 a ${senderNumber}`);
@@ -353,288 +394,83 @@ async function handleInboundMessage(wim, senderNumber) {
           return NextResponse.json({ status: "test_video_sent", result: res });
         }
 
-        if (interactiveId === "btn_sofas" || msgText.includes("SOFAS COMPRIMIDOS") || msgText === "SOFÁS" || msgText === "SOFAS") {
-          await sendMediaFile(senderNumber, "video", "https://auto.practiiko.com/api/media/video_sofas.mp4?v=2");
-          await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [
-            senderNumber, 
-            JSON.stringify({ 
-              role: 'assistant', 
-              type: 'video',
-              mediaUrl: 'https://auto.practiiko.com/api/media/video_sofas.mp4?v=2',
-              content: '📹 Video: Sofás Comprimidos en Caja' 
-            })
-          ]);
-          await delay(500);
+        // Detectar clic explícito en botón de menú de categorías vs palabras clave
+        const isCategoryMenuButton =
+          interactiveId === "btn_sofas" ||
+          interactiveId === "btn_colchones" ||
+          interactiveId === "btn_velas" ||
+          (messageData.type === "button" && (
+            msgClean === "SOFAS COMPRIMIDOS" ||
+            msgClean === "COLCHONES" ||
+            msgClean === "VELAS PERLADAS"
+          ));
 
-          await sendMediaFile(senderNumber, "audio", "https://auto.practiiko.com/api/media/voice_sofas.mp3?v=2");
-          await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [
-            senderNumber, 
-            JSON.stringify({ 
-              role: 'assistant', 
-              type: 'audio',
-              mediaUrl: 'https://auto.practiiko.com/api/media/voice_sofas.mp3?v=2',
-              content: '🎙️ Nota de voz: Sofás Comprimidos' 
-            })
-          ]);
-          await delay(500);
+        const mentionedCategories = [];
+        if (interactiveId === "btn_sofas" || msgClean.includes("SOFA")) {
+          mentionedCategories.push("sofas");
+        }
+        if (interactiveId === "btn_colchones" || msgClean.includes("COLCHON")) {
+          mentionedCategories.push("colchones");
+        }
+        if (interactiveId === "btn_velas" || msgClean.includes("VELAS PERLADAS") || /\bVELAS?\b/.test(msgClean)) {
+          mentionedCategories.push("velas");
+        }
+        const requestedCategory = mentionedCategories[0] || null;
 
-          const sofaVideos = [
-            { name: "Sofa Modular en L", file: "sofa_modular_l.mp4" },
-            { name: "Sofa Cama Tandem", file: "sofa_cama_tandem.mp4" },
-            { name: "Sofa Avila", file: "sofa_avila.mp4" },
-            { name: "Sofa Remanso", file: "sofa_remanso.mp4" },
-            { name: "Sofa Cama Plegable", file: "sofa_cama_plegable.mp4" },
-            { name: "Sofa Reclinable", file: "sofa_reclinable.mp4" },
-            { name: "Sofa Merey", file: "sofa_merey.mp4" },
-            { name: "Sofa Caterpillar", file: "sofa_caterpillar.mp4" },
-            { name: "Sofa Burbuja", file: "sofa_burbuja.mp4" },
-            { name: "Sofa Nube Modular", file: "sofa_nube_modular.mp4" }
-          ];
+        const isContactarAsesor =
+          !isCategoryMenuButton && (
+            (interactiveId && (interactiveId.includes("asesor") || interactiveId.includes("contactar"))) ||
+            msgClean.includes("CONTACTAR A UN ASESOR") ||
+            msgClean.includes("CONTACTAR ASESOR") ||
+            msgClean.includes("ASESOR")
+          );
 
-          const carouselSofas = [
-            {
-              type: "carousel",
-              cards: sofaVideos.map((item, idx) => ({
-                card_index: idx,
-                components: [
-                  {
-                    type: "header",
-                    parameters: [
-                      {
-                        type: "video",
-                        video: { link: `https://auto.practiiko.com/api/media/${item.file}?v=2` }
-                      }
-                    ]
-                  }
-                ]
-              }))
-            }
-          ];
+        const isMasInformacion =
+          !isCategoryMenuButton && (
+            (interactiveId && (interactiveId.includes("info") || interactiveId.includes("mas_info") || interactiveId.includes("catalogo"))) ||
+            (hasAssistantMsg && (
+              msgClean.includes("MAS INFORMACION") ||
+              msgClean.includes("PRECIO") ||
+              msgClean.includes("CUANTO") ||
+              msgClean.includes("CUESTA") ||
+              msgClean.includes("VALE") ||
+              msgClean.includes("CATALOGO")
+            ))
+          );
 
-          await sendTemplate(senderNumber, "krrusel_a", carouselSofas);
-          await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [
-            senderNumber, 
-            JSON.stringify({ 
-              role: 'assistant', 
-              type: 'carousel',
-              template: 'krrusel_a',
-              content: '🎠 Carrusel de Sofás Comprimidos (10 modelos con video)',
-              cards: sofaVideos.map(s => ({
-                title: s.name,
-                videoUrl: `https://auto.practiiko.com/api/media/${s.file}?v=2`,
-                buttons: ['Contactar a un asesor', 'Más Información']
-              }))
-            })
-          ]);
-          return NextResponse.json({ status: "funnel_ruta_a_sofas" });
-
-        } else if (interactiveId === "btn_colchones" || msgText.includes("COLCHONES")) {
-          await sendMediaFile(senderNumber, "video", "https://auto.practiiko.com/api/media/video_colchones.mp4?v=2");
-          await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [
-            senderNumber, 
-            JSON.stringify({ 
-              role: 'assistant', 
-              type: 'video',
-              mediaUrl: 'https://auto.practiiko.com/api/media/video_colchones.mp4?v=2',
-              content: '📹 Video: Colchones' 
-            })
-          ]);
-          await delay(500);
-
-          await sendMediaFile(senderNumber, "audio", "https://auto.practiiko.com/api/media/voice_colchones.mp3?v=2");
-          await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [
-            senderNumber, 
-            JSON.stringify({ 
-              role: 'assistant', 
-              type: 'audio',
-              mediaUrl: 'https://auto.practiiko.com/api/media/voice_colchones.mp3?v=2',
-              content: '🎙️ Nota de voz: Colchones' 
-            })
-          ]);
-          await delay(500);
-
-          const colchonVideos = [
-            { name: "Colchón Individual", file: "colchon_individual.mp4" },
-            { name: "Colchón Matrimonial", file: "colchon_matrimonial.mp4" },
-            { name: "Colchón Queen", file: "colchon_queen.mp4" },
-            { name: "Colchón King", file: "colchon_king.mp4" }
-          ];
-
-          const carouselColchones = [
-            {
-              type: "carousel",
-              cards: colchonVideos.map((item, idx) => ({
-                card_index: idx,
-                components: [
-                  {
-                    type: "header",
-                    parameters: [
-                      {
-                        type: "video",
-                        video: { link: `https://auto.practiiko.com/api/media/${item.file}?v=2` }
-                      }
-                    ]
-                  }
-                ]
-              }))
-            }
-          ];
-
-          await sendTemplate(senderNumber, "krrusel_a_c", carouselColchones);
-          await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [
-            senderNumber, 
-            JSON.stringify({ 
-              role: 'assistant', 
-              type: 'carousel',
-              template: 'krrusel_a_c',
-              content: '🎠 Carrusel de Colchones (4 medidas con video)',
-              cards: colchonVideos.map(c => ({
-                title: c.name,
-                videoUrl: `https://auto.practiiko.com/api/media/${c.file}?v=2`,
-                buttons: ['Contactar a un asesor', 'Más Información']
-              }))
-            })
-          ]);
-          return NextResponse.json({ status: "funnel_ruta_a_colchones" });
-
-        } else if (interactiveId === "btn_velas" || msgText.includes("VELAS PERLADAS") || msgText.includes("VELAS")) {
-          await sendMediaFile(senderNumber, "video", "https://auto.practiiko.com/api/media/video_velas.mp4?v=2");
-          await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [
-            senderNumber, 
-            JSON.stringify({ 
-              role: 'assistant', 
-              type: 'video',
-              mediaUrl: 'https://auto.practiiko.com/api/media/video_velas.mp4?v=2',
-              content: '📹 Video: Velas Perladas' 
-            })
-          ]);
-          await delay(500);
-
-          await sendMediaFile(senderNumber, "audio", "https://auto.practiiko.com/api/media/voice_velas.mp3?v=2");
-          await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [
-            senderNumber, 
-            JSON.stringify({ 
-              role: 'assistant', 
-              type: 'audio',
-              mediaUrl: 'https://auto.practiiko.com/api/media/voice_velas.mp3?v=2',
-              content: '🎙️ Nota de voz: Velas Perladas' 
-            })
-          ]);
-          await delay(500);
-
-          const velasVideos = [
-            { name: "Opulencia", file: "vela_opulencia.mp4" },
-            { name: "Midas", file: "vela_midas.mp4" },
-            { name: "Estoico", file: "vela_estoico.mp4" },
-            { name: "Atenea", file: "vela_atenea.mp4" },
-            { name: "Venus", file: "vela_venus.mp4" },
-            { name: "Vigor", file: "vela_vigor.mp4" }
-          ];
-
-          const carouselVelas = [
-            {
-              type: "carousel",
-              cards: velasVideos.map((item, idx) => ({
-                card_index: idx,
-                components: [
-                  {
-                    type: "header",
-                    parameters: [
-                      {
-                        type: "video",
-                        video: { link: `https://auto.practiiko.com/api/media/${item.file}?v=2` }
-                      }
-                    ]
-                  }
-                ]
-              }))
-            }
-          ];
-
-          await sendTemplate(senderNumber, "krrusel_a_v", carouselVelas);
-          await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [
-            senderNumber, 
-            JSON.stringify({ 
-              role: 'assistant', 
-              type: 'carousel',
-              template: 'krrusel_a_v',
-              content: '🎠 Carrusel de Velas Perladas (6 fragancias/modelos con video)',
-              cards: velasVideos.map(v => ({
-                title: v.name,
-                videoUrl: `https://auto.practiiko.com/api/media/${v.file}?v=2`,
-                buttons: ['Contactar a un asesor', 'Más Información']
-              }))
-            })
-          ]);
-          return NextResponse.json({ status: "funnel_ruta_b_velas" });
-
-        } else if (
-          (interactiveId && (interactiveId.includes("asesor") || interactiveId.includes("contactar"))) ||
-          msgText.includes("CONTACTAR A UN ASESOR") ||
-          msgText.includes("CONTACTAR ASESOR") ||
-          msgText.includes("ASESOR")
-        ) {
+        // 1. Solicitud de Asesor Humano (botón del carrusel o texto)
+        if (isContactarAsesor) {
           const replyText = `🎉 ¡Gracias por elegir Practiiko!\n\nHemos recibido tu solicitud correctamente. 🛋️✨\nMuy pronto, un asesor especializado de Practiiko se pondrá en contacto contigo para continuar con tu atención y ayudarte con los siguientes pasos.\n\n🕘 *Nuestro horario de atención:*\nLunes a viernes: 9:00 a. m. a 4:00 p. m.\nSábados: 9:00 a. m. a 1:00 p. m.\n\nSi nos escribes fuera de este horario, no te preocupes: hemos recibido tu mensaje y un asesor te contactará en nuestro próximo horario de atención.\n\n💬 ¡Gracias por confiar en Practiiko! Estamos aquí para ayudarte.`;
           await sendWhatsAppMessage(senderNumber, replyText);
           await query(
             `INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`,
             [senderNumber, JSON.stringify({ role: 'assistant', content: replyText })]
           );
-          // Pausar IA y marcar que requiere asesor humano
           await query(
             `UPDATE whatsapp_customers SET ai_enabled = false, requires_human = true WHERE id = $1`,
             [senderNumber]
           );
           return NextResponse.json({ status: "funnel_contactar_asesor" });
+        }
 
-        } else if (
-          (interactiveId && (interactiveId.includes("info") || interactiveId.includes("mas_info") || interactiveId.includes("catalogo"))) ||
-          (hasAssistantMsg && (
-            msgText.includes("MAS INFORMACION") ||
-            msgText.includes("MÁS INFORMACIÓN") ||
-            msgText.includes("MAS INFORMACION") ||
-            msgText.includes("MÁS INFORMACION") ||
-            msgText.includes("PRECIO") ||
-            msgText.includes("PRECIOS") ||
-            msgText.includes("CUANTO") ||
-            msgText.includes("CUÁNTO") ||
-            msgText.includes("CUESTA") ||
-            msgText.includes("VALE") ||
-            msgText.includes("CATALOGO") ||
-            msgText.includes("CATÁLOGO")
-          ))
-        ) {
-          // Detectar si el usuario viene de un carrusel específico (Sofás, Colchones, Velas Perladas)
+        // 2. Más Información / Precios (si no pide otra categoría distinta a la ya elegida)
+        const isSameOrNoCategoryInfo =
+          !requestedCategory ||
+          (hasReceivedCategoryCarousel && mentionedCategories.every(cat => cat === sentCarouselCategory));
+
+        if (isMasInformacion && isSameOrNoCategoryInfo) {
           let catalogUrl = "https://www.practiiko.com/catalogo";
           let categoryName = "";
 
-          try {
-            const lastMessages = await query(
-              `SELECT message FROM whatsapp_messages WHERE session_id = $1 ORDER BY created_at DESC LIMIT 8`,
-              [senderNumber]
-            );
-
-            for (const row of lastMessages.rows) {
-              const msgData = typeof row.message === "string" ? JSON.parse(row.message) : row.message;
-              const template = (msgData?.template || "").toLowerCase();
-              const content = (msgData?.content || "").toLowerCase();
-
-              if (template === "krrusel_a_v" || content.includes("velas") || content.includes("vela")) {
-                catalogUrl = "https://www.practiiko.com/catalogo?categoria=velas-perladas";
-                categoryName = " de Velas Perladas";
-                break;
-              } else if (template === "krrusel_a_c" || content.includes("colchón") || content.includes("colchon")) {
-                catalogUrl = "https://www.practiiko.com/catalogo?categoria=colchones";
-                categoryName = " de Colchones";
-                break;
-              } else if (template === "krrusel_a" || content.includes("sofá") || content.includes("sofa")) {
-                catalogUrl = "https://www.practiiko.com/catalogo?categoria=sofas";
-                categoryName = " de Sofás";
-                break;
-              }
-            }
-          } catch (err) {
-            console.error("Error detecting carousel context for catalog URL:", err);
+          if (sentCarouselCategory === "velas") {
+            catalogUrl = "https://www.practiiko.com/catalogo?categoria=velas-perladas";
+            categoryName = " de Velas Perladas";
+          } else if (sentCarouselCategory === "colchones") {
+            catalogUrl = "https://www.practiiko.com/catalogo?categoria=colchones";
+            categoryName = " de Colchones";
+          } else if (sentCarouselCategory === "sofas") {
+            catalogUrl = "https://www.practiiko.com/catalogo?categoria=sofas";
+            categoryName = " de Sofás";
           }
 
           const replyText = `Con gusto. Puede consultar nuestros modelos, medidas y precios a tasa oficial BCV directamente en nuestra sección${categoryName} del catálogo oficial:\n${catalogUrl}`;
@@ -645,51 +481,245 @@ async function handleInboundMessage(wim, senderNumber) {
           );
           return NextResponse.json({ status: "funnel_mas_informacion" });
         }
-      }
 
-      // B) EVALUAR INTERCEPTACIÓN DE PRIMER CONTACTO (FASE 2)
-      const mNorm = userMessage.toLowerCase().trim();
-      let isFirstContact = false;
-
-      // Si es su primer mensaje (el bot nunca le ha respondido), o manda "menu", o viene de Instagram, lanzamos la bienvenida
-      if (!hasAssistantMsg || mNorm === "menu" || mNorm.includes("hola") || mNorm.includes("quiero transformar mi hogar")) {
-        isFirstContact = true;
-      }
-
-      if (isFirstContact) {
-        await delay(500); // Retraso reducido a 500ms
-        
-        // La plantilla 'welcome' configurada con header de formato VIDEO (para reproducir audio nativo)
-        const headerComponent = [
-          {
-            type: "header",
-            parameters: [
-              {
-                type: "video",
-                video: { link: "https://auto.practiiko.com/api/media/video_welcome.mp4?v=2" }
-              }
-            ]
+        // 3. Selección de Categoría (Sofás, Colchones o Velas Perladas)
+        if (requestedCategory) {
+          // 🔒 LÍMITE ESTRICTO DE 1 SOLA CATEGORÍA POR CLIENTE (Evita cobros múltiples de plantillas en Meta)
+          if (hasReceivedCategoryCarousel) {
+            const limitReplyText = `✨ Para explorar todas nuestras categorías, modelos, medidas y precios actualizados, te invitamos a visitar nuestro catálogo general oficial:\nhttps://www.practiiko.com/catalogo\n\nHemos asignado tu conversación a uno de nuestros asesores especializados de Practiiko, quien se pondrá en contacto contigo muy pronto para brindarte atención personalizada. 🛋️💬\n\n🕘 *Nuestro horario de atención:*\nLunes a viernes: 9:00 a. m. a 4:00 p. m.\nSábados: 9:00 a. m. a 1:00 p. m.`;
+            await sendWhatsAppMessage(senderNumber, limitReplyText);
+            await query(
+              `INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`,
+              [senderNumber, JSON.stringify({ role: 'assistant', content: limitReplyText })]
+            );
+            await query(
+              `UPDATE whatsapp_customers SET ai_enabled = false, requires_human = true WHERE id = $1`,
+              [senderNumber]
+            );
+            return NextResponse.json({ status: "funnel_category_limit_handoff" });
           }
-        ];
-        
-        await sendTemplate(senderNumber, "welcome", headerComponent);
-        
-        await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [
-          senderNumber, 
-          JSON.stringify({ 
-            role: 'assistant', 
-            type: 'template',
-            template: 'welcome',
-            videoUrl: 'https://auto.practiiko.com/api/media/video_welcome.mp4?v=2',
-            content: "¡Bienvenido a PRACTIIKO!\nEstamos aquí para ayudarte a encontrar la solución perfecta para tu hogar.\n¿Qué quieres ver?",
-            buttons: ['SOFAS COMPRIMIDOS', 'COLCHONES', 'VELAS PERLADAS']
-          })
-        ]);
-        return NextResponse.json({ status: "funnel_fase2_template" });
+
+          // Primera (y única) categoría seleccionada por el cliente: ejecutar secuencia completa normal
+          if (requestedCategory === "sofas") {
+            await sendMediaFile(senderNumber, "video", "https://auto.practiiko.com/api/media/video_sofas.mp4?v=2");
+            await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [
+              senderNumber, 
+              JSON.stringify({ 
+                role: 'assistant', 
+                type: 'video',
+                mediaUrl: 'https://auto.practiiko.com/api/media/video_sofas.mp4?v=2',
+                content: '📹 Video: Sofás Comprimidos en Caja' 
+              })
+            ]);
+            await delay(500);
+
+            await sendMediaFile(senderNumber, "audio", "https://auto.practiiko.com/api/media/voice_sofas.mp3?v=2");
+            await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [
+              senderNumber, 
+              JSON.stringify({ 
+                role: 'assistant', 
+                type: 'audio',
+                mediaUrl: 'https://auto.practiiko.com/api/media/voice_sofas.mp3?v=2',
+                content: '🎙️ Nota de voz: Sofás Comprimidos' 
+              })
+            ]);
+            await delay(500);
+
+            const sofaVideos = [
+              { name: "Sofa Modular en L", file: "sofa_modular_l.mp4" },
+              { name: "Sofa Cama Tandem", file: "sofa_cama_tandem.mp4" },
+              { name: "Sofa Avila", file: "sofa_avila.mp4" },
+              { name: "Sofa Remanso", file: "sofa_remanso.mp4" },
+              { name: "Sofa Cama Plegable", file: "sofa_cama_plegable.mp4" },
+              { name: "Sofa Reclinable", file: "sofa_reclinable.mp4" },
+              { name: "Sofa Merey", file: "sofa_merey.mp4" },
+              { name: "Sofa Caterpillar", file: "sofa_caterpillar.mp4" },
+              { name: "Sofa Burbuja", file: "sofa_burbuja.mp4" },
+              { name: "Sofa Nube Modular", file: "sofa_nube_modular.mp4" }
+            ];
+
+            const carouselSofas = [
+              {
+                type: "carousel",
+                cards: sofaVideos.map((item, idx) => ({
+                  card_index: idx,
+                  components: [
+                    {
+                      type: "header",
+                      parameters: [
+                        {
+                          type: "video",
+                          video: { link: `https://auto.practiiko.com/api/media/${item.file}?v=2` }
+                        }
+                      ]
+                    }
+                  ]
+                }))
+              }
+            ];
+
+            await sendTemplate(senderNumber, "krrusel_a", carouselSofas);
+            await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [
+              senderNumber, 
+              JSON.stringify({ 
+                role: 'assistant', 
+                type: 'carousel',
+                template: 'krrusel_a',
+                content: '🎠 Carrusel de Sofás Comprimidos (10 modelos con video)',
+                cards: sofaVideos.map(s => ({
+                  title: s.name,
+                  videoUrl: `https://auto.practiiko.com/api/media/${s.file}?v=2`,
+                  buttons: ['Contactar a un asesor', 'Más Información']
+                }))
+              })
+            ]);
+            return NextResponse.json({ status: "funnel_ruta_a_sofas" });
+
+          } else if (requestedCategory === "colchones") {
+            await sendMediaFile(senderNumber, "video", "https://auto.practiiko.com/api/media/video_colchones.mp4?v=2");
+            await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [
+              senderNumber, 
+              JSON.stringify({ 
+                role: 'assistant', 
+                type: 'video',
+                mediaUrl: 'https://auto.practiiko.com/api/media/video_colchones.mp4?v=2',
+                content: '📹 Video: Colchones' 
+              })
+            ]);
+            await delay(500);
+
+            await sendMediaFile(senderNumber, "audio", "https://auto.practiiko.com/api/media/voice_colchones.mp3?v=2");
+            await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [
+              senderNumber, 
+              JSON.stringify({ 
+                role: 'assistant', 
+                type: 'audio',
+                mediaUrl: 'https://auto.practiiko.com/api/media/voice_colchones.mp3?v=2',
+                content: '🎙️ Nota de voz: Colchones' 
+              })
+            ]);
+            await delay(500);
+
+            const colchonVideos = [
+              { name: "Colchón Individual", file: "colchon_individual.mp4" },
+              { name: "Colchón Matrimonial", file: "colchon_matrimonial.mp4" },
+              { name: "Colchón Queen", file: "colchon_queen.mp4" },
+              { name: "Colchón King", file: "colchon_king.mp4" }
+            ];
+
+            const carouselColchones = [
+              {
+                type: "carousel",
+                cards: colchonVideos.map((item, idx) => ({
+                  card_index: idx,
+                  components: [
+                    {
+                      type: "header",
+                      parameters: [
+                        {
+                          type: "video",
+                          video: { link: `https://auto.practiiko.com/api/media/${item.file}?v=2` }
+                        }
+                      ]
+                    }
+                  ]
+                }))
+              }
+            ];
+
+            await sendTemplate(senderNumber, "krrusel_a_c", carouselColchones);
+            await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [
+              senderNumber, 
+              JSON.stringify({ 
+                role: 'assistant', 
+                type: 'carousel',
+                template: 'krrusel_a_c',
+                content: '🎠 Carrusel de Colchones (4 medidas con video)',
+                cards: colchonVideos.map(c => ({
+                  title: c.name,
+                  videoUrl: `https://auto.practiiko.com/api/media/${c.file}?v=2`,
+                  buttons: ['Contactar a un asesor', 'Más Información']
+                }))
+              })
+            ]);
+            return NextResponse.json({ status: "funnel_ruta_a_colchones" });
+
+          } else if (requestedCategory === "velas") {
+            await sendMediaFile(senderNumber, "video", "https://auto.practiiko.com/api/media/video_velas.mp4?v=2");
+            await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [
+              senderNumber, 
+              JSON.stringify({ 
+                role: 'assistant', 
+                type: 'video',
+                mediaUrl: 'https://auto.practiiko.com/api/media/video_velas.mp4?v=2',
+                content: '📹 Video: Velas Perladas' 
+              })
+            ]);
+            await delay(500);
+
+            await sendMediaFile(senderNumber, "audio", "https://auto.practiiko.com/api/media/voice_velas.mp3?v=2");
+            await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [
+              senderNumber, 
+              JSON.stringify({ 
+                role: 'assistant', 
+                type: 'audio',
+                mediaUrl: 'https://auto.practiiko.com/api/media/voice_velas.mp3?v=2',
+                content: '🎙️ Nota de voz: Velas Perladas' 
+              })
+            ]);
+            await delay(500);
+
+            const velasVideos = [
+              { name: "Opulencia", file: "vela_opulencia.mp4" },
+              { name: "Midas", file: "vela_midas.mp4" },
+              { name: "Estoico", file: "vela_estoico.mp4" },
+              { name: "Atenea", file: "vela_atenea.mp4" },
+              { name: "Venus", file: "vela_venus.mp4" },
+              { name: "Vigor", file: "vela_vigor.mp4" }
+            ];
+
+            const carouselVelas = [
+              {
+                type: "carousel",
+                cards: velasVideos.map((item, idx) => ({
+                  card_index: idx,
+                  components: [
+                    {
+                      type: "header",
+                      parameters: [
+                        {
+                          type: "video",
+                          video: { link: `https://auto.practiiko.com/api/media/${item.file}?v=2` }
+                        }
+                      ]
+                    }
+                  ]
+                }))
+              }
+            ];
+
+            await sendTemplate(senderNumber, "krrusel_a_v", carouselVelas);
+            await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [
+              senderNumber, 
+              JSON.stringify({ 
+                role: 'assistant', 
+                type: 'carousel',
+                template: 'krrusel_a_v',
+                content: '🎠 Carrusel de Velas Perladas (6 fragancias/modelos con video)',
+                cards: velasVideos.map(v => ({
+                  title: v.name,
+                  videoUrl: `https://auto.practiiko.com/api/media/${v.file}?v=2`,
+                  buttons: ['Contactar a un asesor', 'Más Información']
+                }))
+              })
+            ]);
+            return NextResponse.json({ status: "funnel_ruta_b_velas" });
+          }
+        }
       }
 
-      // C) INTERCEPTAR COMENTARIOS, AGRADECIMIENTOS O FEEDBACK POST-CATÁLOGO (SIN COSTO DE PLANTILLA)
-      // Detecta frases comunes venezolanas y de cortesía: "ta fino", "gracias", "ok", "chévere", "me gusta", etc.
+      // B) COMENTARIOS, CORTESÍA O MENSAJES LIBRES CUANDO YA RECIBIÓ SU CATEGORÍA (SIN COSTO DE PLANTILLA)
+      const mNorm = userMessage.toLowerCase().trim();
       const isPositiveOrAcknowledge = 
         mNorm.includes("fino") || 
         mNorm.includes("gracias") || 
@@ -708,51 +738,49 @@ async function handleInboundMessage(wim, senderNumber) {
         mNorm.includes("bellos") || 
         mNorm.includes("hermosos");
 
-      // Comprobar si el asistente le envió el catálogo recientemente
-      const sentCatalogRecently = historyRes.rows.some(r => {
-        try {
-          const msg = typeof r.message === 'string' ? JSON.parse(r.message) : r.message;
-          const c = (msg?.content || "").toLowerCase();
-          return c.includes("catálogo") || c.includes("catalogo") || c.includes("practiiko.com/catalogo");
-        } catch(e) { return false; }
+      const sentCatalogRecently = parsedHistory.slice(0, 6).some(msg => {
+        if (msg.role !== "assistant") return false;
+        const c = (msg.content || "").toLowerCase();
+        return c.includes("catálogo") || c.includes("catalogo") || c.includes("practiiko.com/catalogo");
       });
 
-      if (isPositiveOrAcknowledge || sentCatalogRecently) {
-        // Enviar mensaje de texto regular (NO plantilla de marketing pagada) con cierre hacia asesor
-        const politeReply = "¡Nos alegra mucho! 🎉\n\nSi deseas ordenar algún modelo, consultar disponibilidad de colores o tiempos de entrega a tu ciudad, déjanos tu consulta por acá y con gusto uno de nuestros asesores te atenderá de inmediato. ✨";
-        await sendWhatsAppMessage(senderNumber, politeReply);
+      if (hasReceivedCategoryCarousel || sentCatalogRecently) {
+        const handoffReply = (isPositiveOrAcknowledge || sentCatalogRecently)
+          ? "¡Nos alegra mucho! 🎉\n\nSi deseas ordenar algún modelo, consultar disponibilidad de colores o tiempos de entrega a tu ciudad, déjanos tu consulta por acá y con gusto uno de nuestros asesores te atenderá de inmediato. ✨"
+          : `✨ Gracias por escribirnos. Puedes consultar todos nuestros modelos, medidas y precios actualizados en nuestro catálogo general oficial:\nhttps://www.practiiko.com/catalogo\n\nUno de nuestros asesores especializados de Practiiko atenderá tu mensaje muy pronto de forma personalizada. 🛋️💬`;
+
+        await sendWhatsAppMessage(senderNumber, handoffReply);
         await query(
           `INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`,
-          [senderNumber, JSON.stringify({ role: 'assistant', content: politeReply })]
+          [senderNumber, JSON.stringify({ role: 'assistant', content: handoffReply })]
         );
-        // Pausar bot para que las siguientes respuestas del cliente sean atendidas por el equipo humano
         await query(
           `UPDATE whatsapp_customers SET ai_enabled = false, requires_human = true WHERE id = $1`,
           [senderNumber]
         );
-        return NextResponse.json({ status: "funnel_post_catalog_polite_reply" });
+        return NextResponse.json({ status: "funnel_post_category_handoff" });
       }
 
-      // ==========================================
-      // MENSAJES LIBRES NO CUBIERTOS: REORIENTAR AL FLUJO DETERMINISTA
-      // (Se desconectó DeepSeek/Gemini a petición de la dirección de la empresa)
-      // ==========================================
+      // C) CLIENTE AÚN NO HA ELEGIDO CATEGORÍA: BIENVENIDA ÚNICA O MENÚ INTERACTIVO GRATUITO ($0 META)
       await delay(500);
-      const headerComponent = [
-        {
-          type: "header",
-          parameters: [
-            {
-              type: "video",
-              video: { link: "https://auto.practiiko.com/api/media/video_welcome.mp4?v=2" }
-            }
-          ]
-        }
-      ];
-      await sendTemplate(senderNumber, "welcome", headerComponent);
-      await query(
-        `INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`,
-        [
+
+      // Si NUNCA ha recibido la plantilla 'welcome', se envía por única vez
+      if (!hasWelcomeSent) {
+        const headerComponent = [
+          {
+            type: "header",
+            parameters: [
+              {
+                type: "video",
+                video: { link: "https://auto.practiiko.com/api/media/video_welcome.mp4?v=2" }
+              }
+            ]
+          }
+        ];
+
+        await sendTemplate(senderNumber, "welcome", headerComponent);
+
+        await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [
           senderNumber, 
           JSON.stringify({ 
             role: 'assistant', 
@@ -762,7 +790,30 @@ async function handleInboundMessage(wim, senderNumber) {
             content: "¡Bienvenido a PRACTIIKO!\nEstamos aquí para ayudarte a encontrar la solución perfecta para tu hogar.\n¿Qué quieres ver?",
             buttons: ['SOFAS COMPRIMIDOS', 'COLCHONES', 'VELAS PERLADAS']
           })
-        ]
-      );
-      return NextResponse.json({ status: "funnel_reorient_welcome" });
+        ]);
+        return NextResponse.json({ status: "funnel_fase2_template" });
+      }
+
+      // Si YA recibió 'welcome' antes pero aún no ha elegido su categoría, enviamos menú interactivo GRATUITO (ventana 24h)
+      const menuRes = await sendInteractiveMenu(senderNumber);
+      if (!menuRes || menuRes.errorCode) {
+        const fallbackMenuText = "Para atenderte lo más rápido, escríbenos qué deseas ver:\n• *Sofás Comprimidos*\n• *Colchones*\n• *Velas Perladas*";
+        await sendWhatsAppMessage(senderNumber, fallbackMenuText);
+        await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [
+          senderNumber,
+          JSON.stringify({ role: 'assistant', content: fallbackMenuText })
+        ]);
+        return NextResponse.json({ status: "funnel_free_text_menu" });
+      }
+
+      await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [
+        senderNumber,
+        JSON.stringify({
+          role: 'assistant',
+          type: 'template',
+          content: "Para atenderte lo más rápido, dinos... ¿Qué quieres ver?",
+          buttons: ['SOFAS COMPRIMIDOS', 'COLCHONES', 'VELAS PERLADAS']
+        })
+      ]);
+      return NextResponse.json({ status: "funnel_free_interactive_menu" });
 }

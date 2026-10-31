@@ -89,4 +89,13 @@
   - Se modificó el encabezado de la plantilla en el webhook de `type: "gif"` a `type: "video"` con el enlace `https://auto.practiiko.com/api/media/video_welcome.mp4?v=2`.
   - Ahora el usuario puede escuchar el audio de la bienvenida directamente en la aplicación de WhatsApp sin estar silenciado como un GIF.
 
+### 10. Límite Permanente de 1 Sola Categoría por Cliente y Protección Anti-Reenvío de `welcome` (31 de Octubre de 2026)
+- **Objetivo financiero:** Evitar cobros múltiples de plantillas de marketing en Meta cuando un cliente curioso pulsa varias categorías en `welcome` (Sofás, Colchones, Velas) o vuelve a escribir saludos/mensajes libres.
+- **Implementación técnica (`practiiko_app/src/app/api/webhooks/whatsapp/route.js` — cero cambios DDL):**
+  - **Inspección de Historial Permanente (`whatsapp_messages`):** Se evalúa todo el historial de mensajes del cliente (`hasWelcomeSent` y `hasReceivedCategoryCarousel`), manteniendo la restricción permanente salvo que un asesor elimine el chat en el panel (`delete-chat`).
+  - **1 Sola Categoría Permitida:** La primera categoría elegida despacha normalmente su secuencia (Video + Audio + Carrusel `krrusel_a` / `krrusel_a_c` / `krrusel_a_v`) y continúa su flujo normal (`Más Información` contextual y `Contactar a un asesor`).
+  - **Bloqueo de 2da Categoría ($0 en Meta):** Si el cliente intenta pulsar o pedir una segunda categoría tras haber recibido su primer carrusel, el bot bloquea el envío de multimedia/carrusel pagado, envía un mensaje de texto gratuito invitando al catálogo general (`https://www.practiiko.com/catalogo`) y transfiere el chat a un asesor humano (`ai_enabled = false`, `requires_human = true`).
+  - **Protección Anti-Reenvío de `welcome`:** La plantilla pagada `welcome` solo se envía una vez en el historial del cliente. Si el cliente vuelve a escribir antes de elegir su única categoría, se le envía el menú interactivo nativo gratuito de 3 botones (`sendInteractiveMenu`, costo $0 dentro de la ventana de 24h).
+
+
 
