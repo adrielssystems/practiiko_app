@@ -90,12 +90,21 @@
   - Ahora el usuario puede escuchar el audio de la bienvenida directamente en la aplicación de WhatsApp sin estar silenciado como un GIF.
 
 ### 10. Límite Permanente de 1 Sola Categoría por Cliente y Protección Anti-Reenvío de `welcome` (31 de Octubre de 2026)
-- **Objetivo financiero:** Evitar cobros múltiples de plantillas de marketing en Meta cuando un cliente curioso pulsa varias categorías en `welcome` (Sofás, Colchones, Velas) o vuelve a escribir saludos/mensajes libres.
-- **Implementación técnica (`practiiko_app/src/app/api/webhooks/whatsapp/route.js` — cero cambios DDL):**
-  - **Inspección de Historial Permanente (`whatsapp_messages`):** Se evalúa todo el historial de mensajes del cliente (`hasWelcomeSent` y `hasReceivedCategoryCarousel`), manteniendo la restricción permanente salvo que un asesor elimine el chat en el panel (`delete-chat`).
-  - **1 Sola Categoría Permitida:** La primera categoría elegida despacha normalmente su secuencia (Video + Audio + Carrusel `krrusel_a` / `krrusel_a_c` / `krrusel_a_v`) y continúa su flujo normal (`Más Información` contextual y `Contactar a un asesor`).
-  - **Bloqueo de 2da Categoría ($0 en Meta):** Si el cliente intenta pulsar o pedir una segunda categoría tras haber recibido su primer carrusel, el bot bloquea el envío de multimedia/carrusel pagado, envía un mensaje de texto gratuito invitando al catálogo general (`https://www.practiiko.com/catalogo`) y transfiere el chat a un asesor humano (`ai_enabled = false`, `requires_human = true`).
-  - **Protección Anti-Reenvío de `welcome`:** La plantilla pagada `welcome` solo se envía una vez en el historial del cliente. Si el cliente vuelve a escribir antes de elegir su única categoría, se le envía el menú interactivo nativo gratuito de 3 botones (`sendInteractiveMenu`, costo $0 dentro de la ventana de 24h).
+- **Objetivo financiero:** Evitar cobros innecesarios y recurrentes de plantillas de marketing en Meta (YCloud) generados por clientes curiosos que navegan por todas las opciones (`krrusel_a`, `krrusel_a_c`, `krrusel_a_v`) sin concretar compra, o que al escribir textos libres provocaban el reenvío de la plantilla pagada `welcome`.
+- **Reglas de Negocio Acordadas:**
+  1. **Límite de 1 sola categoría:** El usuario solo puede activar un carrusel interactivo en su vida útil dentro del chat.
+  2. **Intento de 2da categoría:** Si pulsa otra categoría tras haber recibido su primer carrusel, el bot no envía plantillas ni videos/audios adicionales; despacha un mensaje de texto gratuito ($0 en Meta) con el enlace al catálogo general (`https://www.practiiko.com/catalogo`) y transfiere el chat a un asesor humano (`ai_enabled = false`, `requires_human = true`).
+  3. **Duración de la restricción:** Permanente por historial del cliente (`whatsapp_messages`). Solo se reinicia si un asesor elimina la conversación desde el panel administrativo (`/api/whatsapp/delete-chat`).
+  4. **Protección anti-reenvío de `welcome`:** La plantilla pagada `welcome` se envía únicamente la primera vez. Si el usuario vuelve a escribir antes de elegir categoría, recibe el menú interactivo nativo gratuito de 3 botones (`sendInteractiveMenu`, $0 dentro de la ventana de 24h) o su fallback en texto.
+- **Implementación Técnica (`practiiko_app/src/app/api/webhooks/whatsapp/route.js` — cero cambios DDL):**
+  - **Inspección de Historial Permanente:** Se analiza la sesión en `whatsapp_messages` para calcular `hasWelcomeSent` y `hasReceivedCategoryCarousel` (rastreando si ya se le envió previamente `krrusel_a`, `krrusel_a_c` o `krrusel_a_v`).
+  - **Flujo Primera Categoría:** Despacha normalmente su secuencia completa (Video ➡️ Audio ➡️ Carrusel) y mantiene habilitados los botones `Más Información` (con URL contextual a la categoría elegida) y `Contactar a un asesor`.
+  - **Bloqueo de Segunda Categoría:** Detecta clics en botones de otra categoría o menciones en texto libre y responde con texto amigable y horarios de atención, pausando la IA y activando la alerta de asesor humano.
+  - **Reenvío Determinista Gratuito:** Sustitución del fallback que reenviaba la plantilla `welcome` por `sendInteractiveMenu` (botones interactivos de WhatsApp nativos sin costo de plantilla).
+- **Validación y Compilación:**
+  - Sintaxis de JavaScript verificada sin errores (`node --check`).
+  - Resolución e instalación de dependencias completada con `pnpm v11.17.0`.
+  - Arranque exitoso del servidor de desarrollo con Next.js 16.2.4 y Turbopack (`pnpm run dev`), listo para despliegue en Easypanel.
 
 
 
