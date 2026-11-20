@@ -1,4 +1,5 @@
 import { processInstagramMessage } from "@/lib/ai/instagramAgent";
+import { processWhatsappMessage } from "@/lib/ai/whatsappAgent";
 import { query } from "@/lib/db";
 import { NextResponse } from "next/server";
 
@@ -6,13 +7,46 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req) {
   try {
-    const { message, sessionId, testId, customerName } = await req.json();
-    
-    // Resolver el ID de sesión: priorizar sessionId, luego testId, luego default
-    const resolvedSessionId = sessionId || testId || 'simul-user';
-    const resolvedName = customerName || 'Explorador (Simulador)';
+    const { message, sessionId, testId, customerName, platform } = await req.json();
 
-    // Persistir el cliente de prueba en la DB para que sea visible en el panel
+    const protocol = req.headers.get("x-forwarded-proto") || "https";
+    const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "localhost:3000";
+    const baseUrl = `${protocol}://${host}`;
+
+    // Modo Simulador WhatsApp (Super Agente Vendedor en el panel /settings/ai)
+    if (platform === "whatsapp") {
+      const resolvedSessionId = sessionId || "simulador-wa-admin";
+      const resolvedName = customerName || "Cliente Simulador";
+
+      await query(
+        `INSERT INTO whatsapp_customers (id, full_name, ai_enabled, requires_human, last_seen)
+         VALUES ($1, $2, true, false, NOW())
+         ON CONFLICT (id) DO UPDATE SET full_name = $2, last_seen = NOW()`,
+        [resolvedSessionId, resolvedName]
+      );
+
+      await query(
+        `INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`,
+        [resolvedSessionId, JSON.stringify({ role: "user", content: message })]
+      );
+
+      const waResponse = await processWhatsappMessage(
+        message,
+        resolvedSessionId,
+        resolvedName,
+        baseUrl
+      );
+
+      return NextResponse.json({
+        success: true,
+        bot_response: waResponse,
+      });
+    }
+
+    // Flujo original del Simulador Instagram
+    const resolvedSessionId = sessionId || testId || "simul-user";
+    const resolvedName = customerName || "Explorador (Simulador)";
+
     try {
       await query(
         `INSERT INTO instagram_customers (id, username, full_name, last_seen)
@@ -24,52 +58,47 @@ export async function POST(req) {
       console.warn("[SIMULATOR] No se pudo upsert cliente:", dbErr.message);
     }
 
-    // Guardar el mensaje del USUARIO en la DB antes de procesar la IA
-    // Esto es crucial para que el agente tenga un historial completo y coherente
     try {
       await query(
         `INSERT INTO instagram_messages (session_id, message, source)
          VALUES ($1, $2, $3)`,
-        [resolvedSessionId, JSON.stringify({ role: 'user', content: message }), 'dm']
+        [resolvedSessionId, JSON.stringify({ role: "user", content: message }), "dm"]
       );
     } catch (dbErr) {
       console.warn("[SIMULATOR] No se pudo guardar mensaje de usuario:", dbErr.message);
     }
 
-    // Simular el tiempo de espera de 5 segundos acordado en el simulador
     await new Promise(resolve => setTimeout(resolve, 5000));
-    
-    const protocol = req.headers.get("x-forwarded-proto") || "https";
-    const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "localhost:3000";
-    const baseUrl = `${protocol}://${host}`;
 
     const aiResponse = await processInstagramMessage(
-      message, 
-      resolvedSessionId, 
+      message,
+      resolvedSessionId,
       resolvedName,
       baseUrl,
-      'dm',
+      "dm",
       null
     );
-    
-    // Si es plantilla de bienvenida, adjuntar el audio de beneficios
+
     let audioUrl = null;
     if (aiResponse.isWelcomeTemplate) {
       audioUrl = `${baseUrl}/api/media/voice_beneficios.mp3`;
     }
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       bot_response: {
         ...aiResponse,
-        audioUrl
-      }
+        audioUrl,
+      },
     });
   } catch (error) {
     console.error("Simulator API Error:", error);
-    return NextResponse.json({ 
-      success: false, 
-      error: "Error en el agente virtual" 
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Error en el agente virtual",
+      },
+      { status: 500 }
+    );
   }
 }

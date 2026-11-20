@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { query } from "@/lib/db";
+import { processWhatsappMessage } from "@/lib/ai/whatsappAgent";
 
 export const dynamic = "force-dynamic";
 
@@ -272,6 +273,12 @@ async function handleInboundMessage(wim, senderNumber) {
   const messageData = wim;
   const pushName = wim.customerProfile?.name || "Cliente WhatsApp";
 
+  // Ignorar reacciones y mensajes anulados para no disparar respuestas ni consumir cuota
+  if (messageData.type === "reaction" || messageData.type === "revoke") {
+    console.log(`[WHATSAPP] Evento '${messageData.type}' de ${senderNumber} ignorado.`);
+    return NextResponse.json({ status: `ignored_${messageData.type}` });
+  }
+
   // 1. Extraer texto o botones interactivos
   let userMessage = "";
   let interactiveId = null;
@@ -326,12 +333,49 @@ async function handleInboundMessage(wim, senderNumber) {
     return NextResponse.json({ status: "paused" });
   }
 
+  const msgText = (userMessage || "").toUpperCase().trim();
+
+  // 🧪 COMANDOS DE PRUEBA DIRECTOS (mantenidos para diagnóstico)
+  if (msgText === "TESTAUDIO" || msgText === "AUDIO") {
+    console.log(`[TEST] Enviando audio de prueba voice_beneficios.mp3 a ${senderNumber}`);
+    const res = await sendMediaFile(senderNumber, "audio", "https://auto.practiiko.com/api/media/voice_beneficios.mp3");
+    await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [senderNumber, JSON.stringify({ role: 'assistant', content: "[Sistema] Audio de prueba 'voice_beneficios.mp3' enviado." })]);
+    return NextResponse.json({ status: "test_audio_sent", result: res });
+  }
+
+  if (msgText === "TESTVIDEO" || msgText === "VIDEO") {
+    console.log(`[TEST] Enviando video de prueba benef2.mp4 a ${senderNumber}`);
+    const res = await sendMediaFile(senderNumber, "video", "https://auto.practiiko.com/api/media/benef2.mp4");
+    await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [senderNumber, JSON.stringify({ role: 'assistant', content: "[Sistema] Video de prueba 'benef2.mp4' enviado." })]);
+    return NextResponse.json({ status: "test_video_sent", result: res });
+  }
+
+  // 5. Verificar Interruptor del Super Agente Vendedor (ON/OFF desde la sección Agente)
+  const superAgentRes = await query("SELECT value FROM app_settings WHERE key = 'whatsapp_super_agent_enabled'");
+  const isSuperAgentEnabled = superAgentRes.rows.length > 0 ? superAgentRes.rows[0].value === 'true' : false;
+
+  if (isSuperAgentEnabled) {
+    const aiResult = await processWhatsappMessage(userMessage, senderNumber, pushName, "https://auto.practiiko.com");
+    if (!aiResult.ignored && aiResult.text) {
+      await sendWhatsAppMessage(senderNumber, aiResult.text);
+      if (aiResult.imageUrls && aiResult.imageUrls.length > 0) {
+        for (const imgUrl of aiResult.imageUrls.slice(0, 2)) {
+          await delay(300);
+          await sendWhatsAppImage(senderNumber, imgUrl);
+        }
+      }
+    }
+    return NextResponse.json({
+      status: "super_agent_processed",
+      transferred: aiResult.transferred || false,
+      actionTag: aiResult.actionTag || null
+    });
+  }
+
   // ==========================================
-  // 🚀 FUNNEL STATE MACHINE (MÁQUINA DE ESTADOS)
+  // 🚀 FUNNEL STATE MACHINE (MODO FIJO MARGARITA - SIN PLANTILLAS PAGADAS)
   // ==========================================
 
-  // Cargamos el historial completo de la conversación para control permanente de costos de plantillas Meta
-  // (Solo se resetea si un asesor elimina el chat desde el panel administrativo)
   const historyRes = await query(
     `SELECT message FROM whatsapp_messages WHERE session_id = $1 ORDER BY created_at DESC`,
     [senderNumber]
@@ -349,30 +393,9 @@ async function handleInboundMessage(wim, senderNumber) {
 
   const hasAssistantMsg = parsedHistory.some(msg => msg.role === "assistant");
 
-  // ==========================================
-  // 🚀 FLUJO GRATUITO MARGARITA (SIN PLANTILLAS PAGADAS)
-  // ==========================================
-
-    const STORE_ADDRESS = "Av. Llano Adentro, CC Terranova Plaza, Local A14, Porlamar, Nueva Esparta, Venezuela";
-    const STORE_PLUS_CODE = "X49X+XF9 Porlamar, Nueva Esparta, Venezuela";
-    const STORE_MAPS_URL = "https://maps.google.com/?q=10.969917,-63.851278";
-
-    const msgText = (userMessage || "").toUpperCase().trim();
-
-    // 🧪 COMANDOS DE PRUEBA DIRECTOS (mantenidos para diagnóstico)
-    if (msgText === "TESTAUDIO" || msgText === "AUDIO") {
-      console.log(`[TEST] Enviando audio de prueba voice_beneficios.mp3 a ${senderNumber}`);
-      const res = await sendMediaFile(senderNumber, "audio", "https://auto.practiiko.com/api/media/voice_beneficios.mp3");
-      await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [senderNumber, JSON.stringify({ role: 'assistant', content: "[Sistema] Audio de prueba 'voice_beneficios.mp3' enviado." })]);
-      return NextResponse.json({ status: "test_audio_sent", result: res });
-    }
-
-      if (msgText === "TESTVIDEO" || msgText === "VIDEO") {
-        console.log(`[TEST] Enviando video de prueba benef2.mp4 a ${senderNumber}`);
-        const res = await sendMediaFile(senderNumber, "video", "https://auto.practiiko.com/api/media/benef2.mp4");
-        await query(`INSERT INTO whatsapp_messages (session_id, message) VALUES ($1, $2)`, [senderNumber, JSON.stringify({ role: 'assistant', content: "[Sistema] Video de prueba 'benef2.mp4' enviado." })]);
-        return NextResponse.json({ status: "test_video_sent", result: res });
-      }
+  const STORE_ADDRESS = "Av. Llano Adentro, CC Terranova Plaza, Local A14, Porlamar, Nueva Esparta, Venezuela";
+  const STORE_PLUS_CODE = "X49X+XF9 Porlamar, Nueva Esparta, Venezuela";
+  const STORE_MAPS_URL = "https://maps.google.com/?q=10.969917,-63.851278";
 
       // 1) PRIMER CONTACTO: Enviar 1 único mensaje de servicio gratuito (ventana 24h, $0 en plantillas)
       if (!hasAssistantMsg) {

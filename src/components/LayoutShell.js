@@ -52,7 +52,7 @@ export default function LayoutShell({ children }) {
     { name: 'Productos', href: '/products', icon: Package, adminOnly: true },
     { name: 'Instagram', href: '/instagram', icon: MessageCircle },
     { name: 'WhatsApp', href: '/whatsapp', icon: MessageSquare },
-    { name: 'Cerebro IA', href: '/settings/ai', icon: Zap, adminOnly: true },
+    { name: 'Agente', href: '/settings/ai', icon: Zap, adminOnly: true },
   ];
 
   return (
